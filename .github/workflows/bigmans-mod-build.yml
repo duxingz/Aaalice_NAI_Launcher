@@ -1,0 +1,124 @@
+name: Bigman Mod Build (Windows portable)
+run-name: Bigman Mod ${{ inputs.build-mode || 'release' }} ${{ inputs.run-tests && 'with tests' || 'no tests' }}
+
+on:
+  workflow_dispatch:
+    inputs:
+      build-mode:
+        description: Flutter build mode
+        required: true
+        default: release
+        type: choice
+        options:
+          - release
+          - debug
+      run-tests:
+        description: Run targeted regression tests before building
+        required: true
+        default: true
+        type: boolean
+
+permissions:
+  contents: read
+
+concurrency:
+  group: bigmans-mod-${{ github.ref }}-${{ inputs.build-mode || 'release' }}
+  cancel-in-progress: true
+
+env:
+  FLUTTER_VERSION: "3.44.2"
+  PUB_HOSTED_URL: "https://pub.dev"
+  BUILD_MODE: ${{ inputs.build-mode || 'release' }}
+  BUNDLE_PATH: build/windows/x64/runner/${{ inputs.build-mode == 'debug' && 'Debug' || 'Release' }}
+
+jobs:
+  build-windows-portable:
+    name: Build Windows ${{ inputs.build-mode || 'release' }} portable
+    runs-on: windows-2022
+    timeout-minutes: 60
+
+    steps:
+      - name: Checkout without LFS payloads
+        uses: actions/checkout@v6
+        with:
+          lfs: false
+
+      - name: Download verified bundled database
+        shell: pwsh
+        run: ./scripts/prepare_bundled_database.ps1
+
+      - name: Prepare Flutter build
+        uses: ./.github/actions/prepare-flutter-build
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          cache-namespace: bigmans-mod
+          cache-flutter-sdk: "true"
+          cache-pub-dependencies: "true"
+          cache-windows-build: "true"
+
+      - name: Setup NuGet
+        uses: NuGet/setup-nuget@v4
+        with:
+          nuget-version: latest
+
+      - name: Verify NuGet
+        shell: pwsh
+        run: ./scripts/verify_nuget.ps1
+
+      - name: Analyze (errors only)
+        shell: pwsh
+        run: flutter analyze --no-fatal-infos --no-fatal-warnings
+
+      - name: Run targeted regression tests
+        if: inputs.run-tests == true
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $targets = @(
+            'test/core/utils/image_save_utils_test.dart',
+            'test/core/utils/nai_prompt_formatter_test.dart',
+            'test/core/utils/nai_prompt_parser_test.dart',
+            'test/presentation/widgets/prompt/unified/hardware_shortcuts_test.dart',
+            'test/presentation/widgets/prompt/unified/copy_alias_expansion_test.dart',
+            'test/presentation/widgets/prompt/tag_editor_session_test.dart',
+            'test/presentation/screens/generation/widgets/prompt_input_test.dart',
+            'test/presentation/providers/generation_settings_notifiers_test.dart'
+          )
+          foreach ($t in $targets) {
+            if (!(Test-Path $t)) { throw "Missing expected test file: $t" }
+          }
+          flutter test @targets
+
+      - name: Build Windows portable
+        shell: pwsh
+        run: flutter build windows --$env:BUILD_MODE --no-pub
+
+      - name: Package user-ready portable archive
+        id: package
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $match = Select-String -Path pubspec.yaml -Pattern '^version:\s*(.+)$'
+          if (!$match) { throw 'pubspec.yaml does not contain a version field.' }
+          $version = $match.Matches[0].Groups[1].Value.Trim() -replace '\+.*$', ''
+          $configuration = if ($env:BUILD_MODE -eq 'debug') { 'Debug' } else { 'Release' }
+          ./scripts/package_windows_release.ps1 `
+            -Version $version `
+            -BuildMode $configuration `
+            -SkipFlutterBuild `
+            -PortableOnly
+          $archive = [IO.Path]::GetFullPath(
+            (Join-Path $env:GITHUB_WORKSPACE "dist/NAI_Launcher_Windows_${version}_Portable.zip")
+          )
+          if (!(Test-Path -LiteralPath $archive)) { throw "Portable archive not found: $archive" }
+          "archive-path=$archive" >> $env:GITHUB_OUTPUT
+          "archive-name=BigmanMod_Windows_${version}_Portable.zip" >> $env:GITHUB_OUTPUT
+
+      - name: Upload portable artifact
+        uses: actions/upload-artifact@v6
+        with:
+          name: bigmans-mod-windows-${{ inputs.build-mode || 'release' }}-portable
+          path: ${{ steps.package.outputs.archive-path }}
+          if-no-files-found: error
+          retention-days: 7
+          compression-level: 0
