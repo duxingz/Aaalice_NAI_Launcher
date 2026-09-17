@@ -21,8 +21,19 @@
   "bigmanMod_saveNameSectionTitle": "保存ファイル名のルール",
   "bigmanMod_saveNameSectionDescription": "テンプレートを空にすると元の「時刻-シード」命名のままです。",
   "bigmanMod_saveNameTemplate": "名前テンプレート",
-  "bigmanMod_saveNameTemplateHint": "例：'{n}' または 胖大叔_'{n}'",
-  "bigmanMod_saveNameVariables": "使用できる変数：'{n}' 連番 · '{seed}' シード · '{date}' 日付 · '{time}' 時刻",
+  "bigmanMod_saveNameTemplateHint": "例：{n} または 胖大叔_{n}",
+  "@bigmanMod_saveNameTemplateHint": {
+    "placeholders": {"n": {"type": "String"}}
+  },
+  "bigmanMod_saveNameVariables": "使用できる変数：{n} 連番 · {seed} シード · {date} 日付 · {time} 時刻",
+  "@bigmanMod_saveNameVariables": {
+    "placeholders": {
+      "n": {"type": "String"},
+      "seed": {"type": "String"},
+      "date": {"type": "String"},
+      "time": {"type": "String"}
+    }
+  },
   "bigmanMod_saveNameCounterMode": "連番の取得元",
   "bigmanMod_saveNameCounterGlobal": "全体で連続カウント",
   "bigmanMod_saveNameCounterScan": "毎回フォルダを走査して最大値",

@@ -21,8 +21,19 @@
   "bigmanMod_saveNameSectionTitle": "保存文件名规则",
   "bigmanMod_saveNameSectionDescription": "模板留空表示保持原来的「时间-种子」命名。",
   "bigmanMod_saveNameTemplate": "命名模板",
-  "bigmanMod_saveNameTemplateHint": "例如 '{n}' 或 胖大叔_'{n}'",
-  "bigmanMod_saveNameVariables": "可用变量：'{n}' 序号 · '{seed}' 种子 · '{date}' 日期 · '{time}' 时间",
+  "bigmanMod_saveNameTemplateHint": "例如 {n} 或 胖大叔_{n}",
+  "@bigmanMod_saveNameTemplateHint": {
+    "placeholders": {"n": {"type": "String"}}
+  },
+  "bigmanMod_saveNameVariables": "可用变量：{n} 序号 · {seed} 种子 · {date} 日期 · {time} 时间",
+  "@bigmanMod_saveNameVariables": {
+    "placeholders": {
+      "n": {"type": "String"},
+      "seed": {"type": "String"},
+      "date": {"type": "String"},
+      "time": {"type": "String"}
+    }
+  },
   "bigmanMod_saveNameCounterMode": "序号来源",
   "bigmanMod_saveNameCounterGlobal": "全局连续计数",
   "bigmanMod_saveNameCounterScan": "每次扫描目录取最大号",

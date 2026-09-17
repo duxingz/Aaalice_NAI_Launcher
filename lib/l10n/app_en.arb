@@ -21,8 +21,19 @@
   "bigmanMod_saveNameSectionTitle": "Saved file name rule",
   "bigmanMod_saveNameSectionDescription": "Leave the template empty to keep the original time-seed naming.",
   "bigmanMod_saveNameTemplate": "Name template",
-  "bigmanMod_saveNameTemplateHint": "For example '{n}' or Bigman_'{n}'",
-  "bigmanMod_saveNameVariables": "Variables: '{n}' index · '{seed}' seed · '{date}' date · '{time}' time",
+  "bigmanMod_saveNameTemplateHint": "For example {n} or Bigman_{n}",
+  "@bigmanMod_saveNameTemplateHint": {
+    "placeholders": {"n": {"type": "String"}}
+  },
+  "bigmanMod_saveNameVariables": "Variables: {n} index · {seed} seed · {date} date · {time} time",
+  "@bigmanMod_saveNameVariables": {
+    "placeholders": {
+      "n": {"type": "String"},
+      "seed": {"type": "String"},
+      "date": {"type": "String"},
+      "time": {"type": "String"}
+    }
+  },
   "bigmanMod_saveNameCounterMode": "Index source",
   "bigmanMod_saveNameCounterGlobal": "Global counter",
   "bigmanMod_saveNameCounterScan": "Scan folder for the highest index",

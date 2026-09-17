@@ -130,8 +130,14 @@ class _BigmanModSettingsSectionState
                   onChanged: notifier.setSaveNameTemplate,
                   decoration: InputDecoration(
                     labelText: l10n.bigmanMod_saveNameTemplate,
-                    hintText: l10n.bigmanMod_saveNameTemplateHint,
-                    helperText: l10n.bigmanMod_saveNameVariables,
+                    // 大括号在 ARB 里是占位符语法，字面量只能从调用侧传入。
+                    hintText: l10n.bigmanMod_saveNameTemplateHint('{n}'),
+                    helperText: l10n.bigmanMod_saveNameVariables(
+                      '{n}',
+                      '{seed}',
+                      '{date}',
+                      '{time}',
+                    ),
                     helperMaxLines: 2,
                   ),
                 ),
