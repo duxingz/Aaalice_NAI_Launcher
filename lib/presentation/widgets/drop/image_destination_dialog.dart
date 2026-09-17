@@ -1498,6 +1498,9 @@ class _DestinationButton extends StatelessWidget {
 }
 
 /// 胖大叔自用改：导入选项的紧凑勾选行。
+///
+/// 刻意不用 ListTile 系控件：动作面板是带背景色的 Container，
+/// ListTile 放在其中会触发框架的「背景色遮住 ink splash」断言。
 class _ImportOptionTile extends StatelessWidget {
   const _ImportOptionTile({
     required this.label,
@@ -1511,14 +1514,27 @@ class _ImportOptionTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return CheckboxListTile(
-      dense: true,
-      visualDensity: VisualDensity.compact,
-      contentPadding: EdgeInsets.zero,
-      controlAffinity: ListTileControlAffinity.leading,
-      value: value,
-      onChanged: (next) => onChanged(next ?? false),
-      title: Text(label, style: Theme.of(context).textTheme.bodyMedium),
+    final theme = Theme.of(context);
+    return InkWell(
+      onTap: () => onChanged(!value),
+      borderRadius: BorderRadius.circular(6),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 1),
+        child: Row(
+          children: [
+            Checkbox(
+              value: value,
+              visualDensity: VisualDensity.compact,
+              materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              onChanged: (next) => onChanged(next ?? false),
+            ),
+            const SizedBox(width: 6),
+            Expanded(
+              child: Text(label, style: theme.textTheme.bodyMedium),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
