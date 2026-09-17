@@ -171,4 +171,150 @@ class PromptWeightEditing {
     }
     return disabled ? PromptEditDocument.disable(text) : text;
   }
+
+  /// 胖大叔自用改：定位光标（或选区）所在的标签。
+  ///
+  /// 已有选区且正好覆盖一个完整标签时直接使用它；否则按光标偏移在解析
+  /// 树里找到最内层叶子。返回 null 表示当前位置没有可操作的标签。
+  static PromptEditSpan? spanAtCursor(TextEditingController controller) {
+    final text = controller.text;
+    final selection = controller.selection;
+    if (!selection.isValid || text.isEmpty) return null;
+
+    if (!selection.isCollapsed) {
+      return PromptEditDocument.singleSelected(
+        text,
+        selection.start,
+        selection.end,
+      );
+    }
+
+    final offset = selection.extentOffset;
+    if (offset < 0 || offset > text.length) return null;
+    for (final root in PromptEditDocument.parse(text)) {
+      final hit = _locateLeaf(root, offset);
+      if (hit != null) return hit;
+    }
+    return null;
+  }
+
+  static PromptEditSpan? _locateLeaf(PromptEditSpan span, int offset) {
+    if (offset < span.start || offset > span.end) return null;
+    if (span.children.isEmpty) return span.complete ? span : null;
+    for (final child in span.children) {
+      final hit = _locateLeaf(child, offset);
+      if (hit != null) return hit;
+    }
+    // 光标落在权重壳上（例如 `1.5::` 的数字里）时，整段仍算命中。
+    return span.children.length == 1 && span.complete
+        ? span.children.single
+        : null;
+  }
+
+  /// 胖大叔自用改：按光标所在标签调整权重。
+  ///
+  /// 步进由调用方给出；权重回到 1.0 时 [withWeight] 会自动去掉权重语法。
+  /// 返回 false 表示没有可调整的标签，调用方应把按键交回默认处理。
+  static bool adjustWeightAtCursor(
+    TextEditingController controller,
+    double step, {
+    bool numericEmphasisEnabled = true,
+  }) {
+    final span = spanAtCursor(controller);
+    if (span == null || span.disabled) return false;
+    final current = parseWeightSyntax(span.raw).weight;
+    final next = (current + step).clamp(0.1, 3.0);
+    if ((next - current).abs() < 0.00001) return false;
+    final replacement = withWeight(
+      span.raw,
+      next,
+      numericEmphasisEnabled: numericEmphasisEnabled,
+    );
+    if (replacement == span.raw) return false;
+    controller.value = TextEditingValue(
+      text: controller.text.replaceRange(span.start, span.end, replacement),
+      selection: TextSelection(
+        baseOffset: span.start,
+        extentOffset: span.start + replacement.length,
+      ),
+    );
+    return true;
+  }
+
+  /// 胖大叔自用改：与相邻标签交换位置。
+  ///
+  /// 只在同一层级内交换；当前标签所在组只有一个子项时，整组作为移动单位，
+  /// 避免权重组在移动中被拆散。返回 false 表示已经到边界。
+  static bool moveTagAtCursor(TextEditingController controller, int direction) {
+    if (direction != -1 && direction != 1) return false;
+    final text = controller.text;
+    final selection = controller.selection;
+    if (!selection.isValid || text.isEmpty) return false;
+    final anchorStart = selection.isCollapsed
+        ? selection.extentOffset
+        : selection.start;
+    final anchorEnd = selection.isCollapsed
+        ? selection.extentOffset
+        : selection.end;
+    final located = _locateSiblings(
+      PromptEditDocument.parse(text),
+      anchorStart,
+      anchorEnd,
+    );
+    if (located == null) return false;
+
+    final siblings = located.siblings;
+    final target = located.index + direction;
+    if (target < 0 || target >= siblings.length) return false;
+
+    final moving = siblings[located.index];
+    final other = siblings[target];
+    final left = direction < 0 ? other : moving;
+    final right = direction < 0 ? moving : other;
+
+    final updated =
+        text.substring(0, left.start) +
+        right.raw +
+        text.substring(left.end, right.start) +
+        left.raw +
+        text.substring(right.end);
+
+    final newRightStart = left.start;
+    final newLeftStart =
+        left.start + right.raw.length + (right.start - left.end);
+    final newMovingStart = identical(moving, left)
+        ? newLeftStart
+        : newRightStart;
+    controller.value = TextEditingValue(
+      text: updated,
+      selection: TextSelection(
+        baseOffset: newMovingStart,
+        extentOffset: newMovingStart + moving.raw.length,
+      ),
+    );
+    return true;
+  }
+
+  static ({List<PromptEditSpan> siblings, int index})? _locateSiblings(
+    List<PromptEditSpan> spans,
+    int start,
+    int end,
+  ) {
+    for (var index = 0; index < spans.length; index++) {
+      final span = spans[index];
+      if (start < span.start || end > span.end) continue;
+      if (span.children.isNotEmpty) {
+        final inner = _locateSiblings(span.children, start, end);
+        if (inner != null) {
+          // 单子项组整体移动，与父层兄弟交换位置。
+          if (span.children.length == 1) {
+            return (siblings: spans, index: index);
+          }
+          return inner;
+        }
+      }
+      return (siblings: spans, index: index);
+    }
+    return null;
+  }
 }

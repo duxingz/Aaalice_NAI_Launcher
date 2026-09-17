@@ -419,4 +419,22 @@ class StorageKeys {
 
   // 旧版资产保护 key，保留读取兼容。
   static const String assetProtectionMode = 'asset_protection_mode';
+
+  // 胖大叔自用改（Bigman Mod）
+  static const String bigmanPromptWeightShortcut =
+      'bigman_prompt_weight_shortcut';
+  static const String bigmanPromptMoveShortcut = 'bigman_prompt_move_shortcut';
+  static const String bigmanQualityPresetEnabled =
+      'bigman_quality_preset_enabled';
+  static const String bigmanUcPresetEnabled = 'bigman_uc_preset_enabled';
+  static const String bigmanRandomPromptEnabled =
+      'bigman_random_prompt_enabled';
+  static const String bigmanAutoDateFolder = 'bigman_auto_date_folder';
+  static const String bigmanSaveNameTemplate = 'bigman_save_name_template';
+  static const String bigmanSaveNameCounterMode =
+      'bigman_save_name_counter_mode';
+  static const String bigmanSaveNameCounterValue =
+      'bigman_save_name_counter_value';
+  static const String bigmanSaveNamePadding = 'bigman_save_name_padding';
+  static const String bigmanSaveNameStart = 'bigman_save_name_start';
 }

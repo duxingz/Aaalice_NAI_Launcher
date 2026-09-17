@@ -9,6 +9,7 @@ enum SettingsSection {
   network('network'),
   shortcuts('shortcuts'),
   integrations('integrations'),
+  bigmanMod('bigman-mod'),
   about('about');
 
   const SettingsSection(this.id);

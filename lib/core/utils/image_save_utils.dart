@@ -15,6 +15,7 @@ import '../../data/services/metadata/unified_metadata_parser.dart';
 import '../constants/api_constants.dart';
 import '../enums/precise_ref_type.dart';
 import 'app_logger.dart';
+import 'bigman_save_name.dart';
 import 'isolate_pool.dart';
 import 'prompt_semantics_utils.dart';
 
@@ -676,8 +677,14 @@ class ImageSaveUtils {
   }) async {
     final time = now ?? DateTime.now();
     String two(int v) => v.toString().padLeft(2, '0');
+    // 胖大叔自用改：日期文件夹可关闭，文件名可套用自定义规则；
+    // 未启用自定义命名时，这两处行为与上游完全一致。
+    final customName = BigmanSaveName.read();
+    final useDateFolder = customName?.autoDateFolder ?? true;
     final dateFolder = '${time.year}-${two(time.month)}-${two(time.day)}';
-    final dir = Directory(p.join(rootPath, dateFolder));
+    final dir = Directory(
+      useDateFolder ? p.join(rootPath, dateFolder) : rootPath,
+    );
     if (!await dir.exists()) {
       await dir.create(recursive: true);
     }
@@ -687,12 +694,24 @@ class ImageSaveUtils {
               .basenameWithoutExtension(p.basename(preferredFileName))
               .replaceAll(RegExp(r'[<>:"/\\|?*\x00-\x1F]'), '_')
               .trim();
-    final seedPart = (seed != null && seed >= 0)
-        ? '$seed'
-        : '${time.millisecondsSinceEpoch}';
-    final baseName = preferredStem.isNotEmpty
-        ? preferredStem
-        : '${two(time.hour)}-${two(time.minute)}-${two(time.second)}-$seedPart';
+    String? baseName;
+    if (preferredStem.isNotEmpty) {
+      baseName = preferredStem;
+    } else if (customName != null) {
+      baseName = await _resolveCustomBaseName(
+        customName,
+        rootPath: rootPath,
+        directoryPath: dir.path,
+        seed: seed,
+        time: time,
+      );
+    } else {
+      final seedPart = (seed != null && seed >= 0)
+          ? '$seed'
+          : '${time.millisecondsSinceEpoch}';
+      baseName =
+          '${two(time.hour)}-${two(time.minute)}-${two(time.second)}-$seedPart';
+    }
     var candidate = p.join(dir.path, '$baseName.png');
     var suffix = 2;
     File file;
@@ -721,6 +740,36 @@ class ImageSaveUtils {
       rethrow;
     }
     return candidate;
+  }
+
+  /// 胖大叔自用改：按用户规则取一个尚未占用的文件名主干。
+  ///
+  /// 序号可以来自本机计数器或保存目录里已用的最大编号；目录里已有同名
+  /// 文件时向后寻找空号，绝不覆盖既有文件。
+  static Future<String> _resolveCustomBaseName(
+    BigmanSaveNameConfig config, {
+    required String rootPath,
+    required String directoryPath,
+    required int? seed,
+    required DateTime time,
+  }) async {
+    if (!config.hasIndex) {
+      return config.formatName(config.start, seed: seed, time: time);
+    }
+    var index = await config.resolveNextIndex(rootPath);
+    // ponytail: 只向后试 1000 个号；正常图库远达不到，纯属防死循环。
+    for (var attempt = 0; attempt < 1000; attempt++) {
+      final name = config.formatName(index, seed: seed, time: time);
+      if (!await File(p.join(directoryPath, '$name.png')).exists()) {
+        await config.commitIndex(index);
+        return name;
+      }
+      index++;
+    }
+    throw FileSystemException(
+      'Cannot find a free file name for the custom save rule.',
+      directoryPath,
+    );
   }
 
   /// 解析图片的真实 seed：优先用已有元数据，否则从 PNG 字节解析。

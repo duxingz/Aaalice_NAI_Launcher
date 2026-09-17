@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:nai_launcher/core/utils/localization_extension.dart';
 import 'package:nai_launcher/presentation/adaptive/interaction_policy.dart';
+import 'package:nai_launcher/presentation/providers/bigman/bigman_mod_settings.dart';
 import 'package:nai_launcher/presentation/providers/image_generation_provider.dart';
 import 'package:nai_launcher/presentation/themes/theme_extension.dart';
 
@@ -29,6 +30,10 @@ class _RandomModeToggleState extends ConsumerState<RandomModeToggle> {
     final theme = Theme.of(context);
     final colors = theme.colorScheme;
     final reduceMotion = MediaQuery.disableAnimationsOf(context);
+    // 胖大叔自用改：关闭随机提示词时保留骰子图标，点击不产生任何反应。
+    final bigmanRandom = ref.watch(
+      bigmanModSettingsProvider.select((s) => s.randomPromptEnabled),
+    );
     final duration = reduceMotion ? Duration.zero : theme.appTheme.fastDuration;
     final controlExtent = widget.compact
         ? 36.0
@@ -70,8 +75,10 @@ class _RandomModeToggleState extends ConsumerState<RandomModeToggle> {
               ),
               clipBehavior: Clip.antiAlias,
               child: InkWell(
-                onTap: () =>
-                    ref.read(randomPromptModeProvider.notifier).toggle(),
+                onTap: bigmanRandom
+                    ? () =>
+                          ref.read(randomPromptModeProvider.notifier).toggle()
+                    : () {},
                 child: Center(
                   child: AnimatedRotation(
                     key: const ValueKey('random-mode-dice-rotation'),

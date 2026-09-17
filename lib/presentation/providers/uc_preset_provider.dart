@@ -3,6 +3,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../core/constants/api_constants.dart';
 import '../../core/storage/local_storage_service.dart';
+import '../../core/utils/bigman_mod_flags.dart';
 import '../../data/models/tag_library/tag_library_entry.dart';
 import 'tag_library_page_provider.dart';
 
@@ -138,6 +139,8 @@ class UcPresetNotifier extends _$UcPresetNotifier {
   /// [model] 当前选择的模型
   /// 返回 null 表示不添加预设内容
   String? getEffectiveContent(String model) {
+    // 胖大叔自用改：负面预设关闭时不再注入，界面保持不变。
+    if (!BigmanModFlags.ucPresetEnabled()) return null;
     // 如果有自定义条目，使用自定义内容
     if (state.isCustom) {
       final entries = ref.read(tagLibraryPageNotifierProvider).entries;

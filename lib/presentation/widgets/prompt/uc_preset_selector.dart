@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/constants/api_constants.dart';
 import '../../../core/utils/localization_extension.dart';
 import '../../../data/models/tag_library/tag_library_entry.dart';
+import '../../providers/bigman/bigman_mod_settings.dart';
 import '../../providers/uc_preset_provider.dart';
 import '../common/translated_tag_text.dart';
 import '../../themes/prompt_semantic_colors.dart';
@@ -64,6 +65,10 @@ class _UcPresetSelectorState extends ConsumerState<UcPresetSelector> {
         .read(ucPresetNotifierProvider.notifier)
         .getEffectiveContent(widget.model);
     final isEnabled = !presetState.isDisabled;
+    // 胖大叔自用改：关闭时保留图标与悬浮说明，只让点击不再弹出菜单。
+    final bigmanEnabled = ref.watch(
+      bigmanModSettingsProvider.select((s) => s.ucPresetEnabled),
+    );
     return DelayedRichTooltip(
       content: RichTooltipSurface(
         maxWidth: 360,
@@ -79,7 +84,9 @@ class _UcPresetSelectorState extends ConsumerState<UcPresetSelector> {
         key: _buttonKey,
         color: theme.promptSemanticColors.negativeQuality,
         active: isEnabled,
-        onPressed: () => _showMenu(context, presetState, customEntries),
+        onPressed: bigmanEnabled
+            ? () => _showMenu(context, presetState, customEntries)
+            : () {},
         padding: EdgeInsets.symmetric(
           horizontal: widget.compact ? 8 : 10,
           vertical: widget.compact ? 4 : 6,

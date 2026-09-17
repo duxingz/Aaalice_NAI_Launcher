@@ -11,6 +11,7 @@ import '../../../core/autocomplete/tag_translation_lookup.dart';
 import '../../../core/utils/app_logger.dart';
 import '../../../core/utils/localization_extension.dart';
 import '../../../core/utils/prompt_edit_document.dart';
+import '../../providers/bigman/bigman_mod_settings.dart';
 import '../../adaptive/interaction_policy.dart';
 import '../../themes/core/layered_surface_style.dart';
 import '../../themes/core/input_surface_style.dart';
@@ -579,6 +580,33 @@ class _TagEditorViewState extends ConsumerState<TagEditorView> {
       }
       return KeyEventResult.ignored;
     }
+    // 胖大叔自用改：Ctrl+↑/↓ 调整选中标签的权重，Ctrl+←/→ 移动位置。
+    if (modifier && !keyboard.isShiftPressed) {
+      final commands = TagEditorCommands(session);
+      final mod = ref.read(bigmanModSettingsProvider);
+      if (mod.promptWeightShortcut &&
+          (key == LogicalKeyboardKey.arrowUp ||
+              key == LogicalKeyboardKey.arrowDown) &&
+          commands.canAdjust) {
+        commands.adjustWeight(
+          step: key == LogicalKeyboardKey.arrowUp ? 0.05 : -0.05,
+        );
+        return KeyEventResult.handled;
+      }
+      if (mod.promptMoveShortcut &&
+          key == LogicalKeyboardKey.arrowLeft &&
+          commands.available(TagEditorAction.previous)) {
+        commands.move(TagEditorAction.previous);
+        return KeyEventResult.handled;
+      }
+      if (mod.promptMoveShortcut &&
+          key == LogicalKeyboardKey.arrowRight &&
+          commands.available(TagEditorAction.next)) {
+        commands.move(TagEditorAction.next);
+        return KeyEventResult.handled;
+      }
+    }
+
     TagEditorAction? action;
     if (modifier) {
       action = switch (key) {

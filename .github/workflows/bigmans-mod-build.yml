@@ -75,6 +75,8 @@ jobs:
         run: |
           $ErrorActionPreference = 'Stop'
           $targets = @(
+            'test/core/utils/bigman_save_name_test.dart',
+            'test/presentation/widgets/prompt/prompt_shortcut_editing_test.dart',
             'test/core/utils/image_save_utils_test.dart',
             'test/core/utils/nai_prompt_formatter_test.dart',
             'test/core/utils/nai_prompt_parser_test.dart',

@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/platform/platform_capabilities.dart';
 import '../../../core/shortcuts/default_shortcuts.dart';
 import '../../../core/utils/app_logger.dart';
+import '../../../core/utils/bigman_mod_flags.dart';
 import '../../../core/windowing/workspace_side_panel_contract.dart';
 import '../../../data/models/queue/replication_task.dart';
 import '../../providers/character_prompt_provider.dart';
@@ -108,6 +109,8 @@ class _DesktopGenerationLayoutState
       },
       // 随机提示词
       ShortcutIds.randomPrompt: () {
+        // 胖大叔自用改：关闭随机提示词时快捷键静默无效。
+        if (!BigmanModFlags.randomPromptEnabled()) return;
         if (ref.read(randomPromptToolsVisibilityProvider)) {
           ref.read(randomPromptModeProvider.notifier).toggle();
         } else {

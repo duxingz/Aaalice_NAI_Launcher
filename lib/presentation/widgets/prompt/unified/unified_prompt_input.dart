@@ -29,6 +29,7 @@ import '../../../prompt_assistant/providers/prompt_assistant_state_provider.dart
 import '../../../prompt_assistant/services/prompt_assistant_service.dart';
 import '../../../prompt_assistant/widgets/prompt_assistant_overlay.dart';
 import '../../../providers/fixed_tags_provider.dart';
+import '../../../providers/bigman/bigman_mod_settings.dart';
 import '../../../providers/prompt_regex_rules_provider.dart';
 import '../comfyui_import_wrapper.dart';
 import '../nai_syntax_controller.dart';
@@ -236,6 +237,34 @@ class _UnifiedPromptInputState extends ConsumerState<UnifiedPromptInput> {
 
     if (!promptFocused || searchFocused || replaceFocused) {
       return false;
+    }
+
+    // 胖大叔自用改：Ctrl+↑/↓ 调整光标所在标签的权重，
+    // Ctrl+←/→ 与相邻标签交换位置。标签模式交给 TagEditorView 处理。
+    if (!_tagMode && (isCtrl || isMeta) && !isShift) {
+      final isUp = logicalKey == LogicalKeyboardKey.arrowUp;
+      final isDown = logicalKey == LogicalKeyboardKey.arrowDown;
+      final isLeft = logicalKey == LogicalKeyboardKey.arrowLeft;
+      final isRight = logicalKey == LogicalKeyboardKey.arrowRight;
+      if (isUp || isDown || isLeft || isRight) {
+        final mod = ref.read(bigmanModSettingsProvider);
+        if ((isUp || isDown) && mod.promptWeightShortcut) {
+          final handled = PromptWeightEditing.adjustWeightAtCursor(
+            _effectiveController,
+            isUp ? 0.05 : -0.05,
+            numericEmphasisEnabled:
+                _syntaxController?.numericEmphasisEnabled ?? true,
+          );
+          if (handled) return true;
+        }
+        if ((isLeft || isRight) && mod.promptMoveShortcut) {
+          final handled = PromptWeightEditing.moveTagAtCursor(
+            _effectiveController,
+            isLeft ? -1 : 1,
+          );
+          if (handled) return true;
+        }
+      }
     }
 
     if (!widget.enableAssistant) {
