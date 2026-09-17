@@ -249,6 +249,7 @@ NaiImageMetadata? _parseStealthMetadataFromImageBytes(Uint8List bytes) {
 bool imageDestinationRequiresOriginalBytes(ImageDestination destination) {
   return switch (destination) {
     ImageDestination.img2img ||
+    ImageDestination.img2imgWithPrompts ||
     ImageDestination.reversePrompt ||
     ImageDestination.vibeTransfer ||
     ImageDestination.vibeTransferRaw ||

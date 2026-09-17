@@ -77,6 +77,8 @@ jobs:
           $targets = @(
             'test/core/utils/bigman_save_name_test.dart',
             'test/presentation/widgets/prompt/prompt_shortcut_editing_test.dart',
+            'test/presentation/widgets/drop/image_destination_dialog_test.dart',
+            'test/presentation/widgets/drop/global_drop_handler_test.dart',
             'test/core/utils/image_save_utils_test.dart',
             'test/core/utils/nai_prompt_formatter_test.dart',
             'test/core/utils/nai_prompt_parser_test.dart',

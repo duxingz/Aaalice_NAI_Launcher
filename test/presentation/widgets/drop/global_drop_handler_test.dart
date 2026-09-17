@@ -234,6 +234,7 @@ void main() {
         },
         {
           ImageDestination.img2img: true,
+          ImageDestination.img2imgWithPrompts: true,
           ImageDestination.reversePrompt: true,
           ImageDestination.vibeTransfer: true,
           ImageDestination.vibeTransferReuse: false,

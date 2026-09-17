@@ -14,6 +14,7 @@ import '../../../core/utils/app_logger.dart';
 import '../../../core/utils/localization_extension.dart';
 import '../../../core/utils/vibe_file_parser.dart';
 import '../../../data/models/gallery/nai_image_metadata.dart';
+import '../../../data/models/metadata/metadata_import_options.dart';
 import '../../../data/models/queue/replication_task.dart';
 import '../../../data/models/vibe/vibe_library_entry.dart';
 import '../../../data/models/vibe/vibe_reference.dart';
@@ -271,7 +272,7 @@ class GlobalDropActionCoordinator {
     final inspection = await _inspector.inspect(fileData);
     if (!context.mounted) return;
     final detectedMetadata = inspection.metadataDetection.metadata;
-    final destination = await ImageDestinationDialog.show(
+    final selection = await ImageDestinationDialog.show(
       context,
       imageBytes: inspection.previewBytes,
       fileName: fileName,
@@ -281,7 +282,9 @@ class GlobalDropActionCoordinator {
       detectedVibe: inspection.detectedVibe,
       isBundle: inspection.detectedVibes.length > 1,
     );
-    if (destination == null || !context.mounted) return;
+    if (selection == null || !context.mounted) return;
+    // 胖大叔自用改：导入勾选随动作一次性返回，不再弹第二次对话框。
+    final destination = selection.destination;
 
     var destinationBytes = inspection.previewBytes;
     if (fileData.imageBytesArePreview &&
@@ -300,6 +303,7 @@ class GlobalDropActionCoordinator {
       detectedMetadata,
       ref.read(generationParamsNotifierProvider.notifier),
       l10n,
+      selection.options,
     );
     if (actionCompleted &&
         openGenerationAfterAction &&
@@ -312,6 +316,7 @@ class GlobalDropActionCoordinator {
   static bool _isGenerationDestination(ImageDestination destination) {
     return switch (destination) {
       ImageDestination.img2img ||
+      ImageDestination.img2imgWithPrompts ||
       ImageDestination.reversePrompt ||
       ImageDestination.vibeTransfer ||
       ImageDestination.vibeTransferReuse ||
@@ -349,6 +354,7 @@ class GlobalDropActionCoordinator {
     NaiImageMetadata? detectedMetadata,
     GenerationParamsNotifier notifier,
     AppLocalizations l10n,
+    MetadataImportOptions importOptions,
   ) async {
     switch (destination) {
       case ImageDestination.img2img:
@@ -379,7 +385,14 @@ class GlobalDropActionCoordinator {
         await _handleCharacterReference(bytes, notifier, l10n);
         return true;
       case ImageDestination.extractMetadata:
-        return _handleExtractMetadata(detectedMetadata, bytes, l10n);
+        return _handleExtractMetadata(
+          detectedMetadata,
+          bytes,
+          l10n,
+          importOptions,
+        );
+      case ImageDestination.img2imgWithPrompts:
+        return _handleImg2ImgWithPrompts(detectedMetadata, bytes, l10n);
       case ImageDestination.addToQueue:
         await _handleAddToQueue(detectedMetadata, bytes, l10n);
         return false;
@@ -391,6 +404,53 @@ class GlobalDropActionCoordinator {
         .read(imageWorkflowControllerProvider.notifier)
         .replaceSourceImageAsync(bytes);
     if (context.mounted) AppToast.success(context, l10n.drop_addedToImg2Img);
+  }
+
+  /// 胖大叔自用改：设为图生图源图，并导入正面提示词与角色提示词。
+  ///
+  /// 生成参数（步骤、引导值、尺寸、采样器、模型、种子等）保持用户当前设置，
+  /// 只把画面描述与角色带过来。
+  Future<bool> _handleImg2ImgWithPrompts(
+    NaiImageMetadata? detectedMetadata,
+    Uint8List bytes,
+    AppLocalizations l10n,
+  ) async {
+    await ref
+        .read(imageWorkflowControllerProvider.notifier)
+        .replaceSourceImageAsync(bytes);
+    if (context.mounted) AppToast.success(context, l10n.drop_addedToImg2Img);
+    if (!context.mounted) return true;
+
+    final metadata =
+        detectedMetadata ??
+        await ImageMetadataService().getMetadataFromBytes(bytes);
+    if (metadata == null || !metadata.hasData) return true;
+    if (!context.mounted) return true;
+
+    final options = MetadataImportOptions(
+      importNegativePrompt: false,
+      importFixedTags: false,
+      importFixedPrefix: false,
+      importFixedSuffix: false,
+      importFixedNegativePrefix: false,
+      importFixedNegativeSuffix: false,
+      importQualityTags: false,
+      importVibeReferences: false,
+      importPreciseReferences: false,
+      selectedCharacterIndices: List<int>.generate(
+        metadata.characterInfos.length,
+        (index) => index,
+      ),
+    );
+    await ImageMetadataImportWorkflow(
+      optionsPicker: (context, metadata) async => options,
+    ).run(
+      context: context,
+      read: ref.read,
+      metadata: metadata,
+      openGenerationPage: false,
+    );
+    return true;
   }
 
   Future<void> _handleReversePrompt(
@@ -556,8 +616,9 @@ class GlobalDropActionCoordinator {
   Future<bool> _handleExtractMetadata(
     NaiImageMetadata? detectedMetadata,
     Uint8List bytes,
-    AppLocalizations l10n,
-  ) async {
+    AppLocalizations l10n, [
+    MetadataImportOptions? presetOptions,
+  ]) async {
     try {
       final metadata =
           detectedMetadata ??
@@ -569,7 +630,13 @@ class GlobalDropActionCoordinator {
         return false;
       }
       if (!context.mounted) return false;
-      final result = await ImageMetadataImportWorkflow.shared.run(
+      // 胖大叔自用改：对话框里已经勾过导入项，直接使用，不再弹第二次。
+      final workflow = presetOptions == null
+          ? ImageMetadataImportWorkflow.shared
+          : ImageMetadataImportWorkflow(
+              optionsPicker: (context, metadata) async => presetOptions,
+            );
+      final result = await workflow.run(
         context: context,
         read: ref.read,
         metadata: metadata,
