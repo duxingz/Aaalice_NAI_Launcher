@@ -1,9 +1,11 @@
+import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:nai_launcher/core/utils/bigman_import_prefs.dart';
 import 'package:nai_launcher/core/utils/localization_extension.dart';
 
 import '../common/image_viewport_surface.dart';
@@ -168,11 +170,14 @@ class ImageDestinationDialog extends ConsumerWidget {
   }
 
   /// 与上游第二次弹窗一致的默认值：全部导入并全选各列表。
+  ///
+  /// 胖大叔自用改：上次在本对话框改过勾选时沿用上次的选择，
+  /// 没有记录（首次使用）才回到全选。
   static MetadataImportOptions _defaultImportOptions(
     NaiImageMetadata? metadata,
   ) {
     if (metadata == null) return MetadataImportOptions.none();
-    return MetadataImportOptions.all().copyWith(
+    final base = MetadataImportOptions.all().copyWith(
       selectedQualityTags: metadata.qualityTags.isNotEmpty
           ? List<String>.from(metadata.qualityTags)
           : const <String>[],
@@ -185,6 +190,17 @@ class ImageDestinationDialog extends ConsumerWidget {
       selectedPreciseReferenceIndices: metadata.preciseReferences.isNotEmpty
           ? List<int>.generate(metadata.preciseReferences.length, (i) => i)
           : const <int>[],
+    );
+    final remembered = BigmanImportPrefs.read();
+    if (remembered == null) return base;
+    return _withSettings(
+      base.copyWith(
+        importPrompt: remembered.prompt,
+        importNegativePrompt: remembered.negative,
+        importCharacterPrompts: remembered.characters,
+        importSeed: remembered.seed,
+      ),
+      remembered.settings,
     );
   }
 
@@ -672,6 +688,22 @@ class ImageDestinationDialog extends ConsumerWidget {
     return ValueListenableBuilder<MetadataImportOptions>(
       valueListenable: notifier,
       builder: (context, options, _) {
+        // 胖大叔自用改：每次改动都记下来，下次拖图沿用这次的选择。
+        void apply(MetadataImportOptions next) {
+          notifier.value = next;
+          unawaited(
+            BigmanImportPrefs.save(
+              BigmanImportPrefsValue(
+                prompt: next.importPrompt,
+                negative: next.importNegativePrompt,
+                characters: next.importCharacterPrompts,
+                settings: _settingsSelected(next),
+                seed: next.importSeed,
+              ),
+            ),
+          );
+        }
+
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
@@ -692,33 +724,29 @@ class ImageDestinationDialog extends ConsumerWidget {
               label: l10n.drop_importPrompt,
               value: options.importPrompt,
               onChanged: (value) =>
-                  notifier.value = options.copyWith(importPrompt: value),
+                  apply(options.copyWith(importPrompt: value)),
             ),
             _ImportOptionTile(
               label: l10n.drop_importNegativePrompt,
               value: options.importNegativePrompt,
-              onChanged: (value) => notifier.value = options.copyWith(
-                importNegativePrompt: value,
-              ),
+              onChanged: (value) =>
+                  apply(options.copyWith(importNegativePrompt: value)),
             ),
             _ImportOptionTile(
               label: l10n.drop_importCharacters,
               value: options.importCharacterPrompts,
-              onChanged: (value) => notifier.value = options.copyWith(
-                importCharacterPrompts: value,
-              ),
+              onChanged: (value) =>
+                  apply(options.copyWith(importCharacterPrompts: value)),
             ),
             _ImportOptionTile(
               label: l10n.drop_importSettings,
               value: _settingsSelected(options),
-              onChanged: (value) =>
-                  notifier.value = _withSettings(options, value),
+              onChanged: (value) => apply(_withSettings(options, value)),
             ),
             _ImportOptionTile(
               label: l10n.drop_importSeed,
               value: options.importSeed,
-              onChanged: (value) =>
-                  notifier.value = options.copyWith(importSeed: value),
+              onChanged: (value) => apply(options.copyWith(importSeed: value)),
             ),
           ],
         );

@@ -1,9 +1,9 @@
 import 'character_prompt_block_parser.dart';
-import 'text_space_converter.dart';
 import 'prompt_edit_document.dart';
 
 /// NAI 提示词格式化工具
-/// 简化版：只做中文逗号转英文和空格转下划线
+/// 只做中文逗号转英文、统一标签分隔与首尾空白；
+/// 胖大叔自用改：不再把标签内部的空格转成下划线。
 class NaiPromptFormatter {
   static final RegExp _lineBreakPattern = RegExp(r'\r\n|\r|\n');
   static final RegExp _horizontalWhitespacePattern = RegExp(r'[ \t\f\u00a0]+');
@@ -81,16 +81,11 @@ class NaiPromptFormatter {
     content = _normalizeHorizontalWhitespace(content).replaceAll('，', ',');
     final keepsTrailingComma = content.endsWith(',');
 
+    // 胖大叔自用改：不再把标签内部的空格转成下划线。
+    // 只统一分隔符与空白，保留 "soft dramatic lighting" 这类空格式写法。
     final tags = content
         .split(',')
-        .map((tag) {
-          final trimmed = tag.trim();
-          if (trimmed.isEmpty) return '';
-          return TextSpaceConverter.convert(
-            trimmed,
-            protectChars: TextSpaceConverter.naiFormat,
-          );
-        })
+        .map((tag) => tag.trim())
         .where((tag) => tag.isNotEmpty)
         .toList();
 

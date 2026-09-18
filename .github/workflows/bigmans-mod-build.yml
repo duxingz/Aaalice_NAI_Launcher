@@ -79,6 +79,8 @@ jobs:
             'test/presentation/widgets/prompt/prompt_shortcut_editing_test.dart',
             'test/presentation/widgets/drop/image_destination_dialog_test.dart',
             'test/presentation/widgets/drop/global_drop_handler_test.dart',
+            'test/core/utils/prompt_disabled_contract_test.dart',
+            'test/presentation/widgets/prompt/unified/regex_replace_on_blur_test.dart',
             'test/core/utils/image_save_utils_test.dart',
             'test/core/utils/nai_prompt_formatter_test.dart',
             'test/core/utils/nai_prompt_parser_test.dart',
