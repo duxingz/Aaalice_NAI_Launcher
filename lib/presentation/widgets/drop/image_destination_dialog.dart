@@ -1,10 +1,10 @@
-import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:nai_launcher/core/storage/local_storage_service.dart';
 import 'package:nai_launcher/core/utils/bigman_import_prefs.dart';
 import 'package:nai_launcher/core/utils/localization_extension.dart';
 
@@ -96,6 +96,9 @@ class ImageDestinationDialog extends ConsumerWidget {
   /// 胖大叔自用改：对话框内的元数据导入勾选，由 [show] 创建并读取。
   final ValueNotifier<MetadataImportOptions>? optionsNotifier;
 
+  /// 胖大叔自用改：记住导入勾选用的本地存储；为空时不做记忆。
+  final LocalStorageService? storage;
+
   const ImageDestinationDialog({
     super.key,
     required this.imageBytes,
@@ -107,6 +110,7 @@ class ImageDestinationDialog extends ConsumerWidget {
     this.isBundle = false,
     this.scrollController,
     this.optionsNotifier,
+    this.storage,
   });
 
   /// 显示对话框
@@ -121,8 +125,12 @@ class ImageDestinationDialog extends ConsumerWidget {
     bool isBundle = false,
   }) async {
     // 胖大叔自用改：勾选状态随动作一起返回，省掉第二次弹窗。
+    final storage = ProviderScope.containerOf(
+      context,
+      listen: false,
+    ).read(localStorageServiceProvider);
     final optionsNotifier = ValueNotifier<MetadataImportOptions>(
-      _defaultImportOptions(metadata),
+      _defaultImportOptions(metadata, storage),
     );
     try {
       final destination = await AdaptivePresenter.showForm<ImageDestination>(
@@ -160,6 +168,7 @@ class ImageDestinationDialog extends ConsumerWidget {
           isBundle: isBundle,
           scrollController: scrollController,
           optionsNotifier: optionsNotifier,
+          storage: storage,
         ),
       );
       if (destination == null) return null;
@@ -175,6 +184,7 @@ class ImageDestinationDialog extends ConsumerWidget {
   /// 没有记录（首次使用）才回到全选。
   static MetadataImportOptions _defaultImportOptions(
     NaiImageMetadata? metadata,
+    LocalStorageService? storage,
   ) {
     if (metadata == null) return MetadataImportOptions.none();
     final base = MetadataImportOptions.all().copyWith(
@@ -191,7 +201,7 @@ class ImageDestinationDialog extends ConsumerWidget {
           ? List<int>.generate(metadata.preciseReferences.length, (i) => i)
           : const <int>[],
     );
-    final remembered = BigmanImportPrefs.read();
+    final remembered = BigmanImportPrefs.read(storage);
     if (remembered == null) return base;
     return _withSettings(
       base.copyWith(
@@ -691,15 +701,14 @@ class ImageDestinationDialog extends ConsumerWidget {
         // 胖大叔自用改：每次改动都记下来，下次拖图沿用这次的选择。
         void apply(MetadataImportOptions next) {
           notifier.value = next;
-          unawaited(
-            BigmanImportPrefs.save(
-              BigmanImportPrefsValue(
-                prompt: next.importPrompt,
-                negative: next.importNegativePrompt,
-                characters: next.importCharacterPrompts,
-                settings: _settingsSelected(next),
-                seed: next.importSeed,
-              ),
+          BigmanImportPrefs.save(
+            storage,
+            BigmanImportPrefsValue(
+              prompt: next.importPrompt,
+              negative: next.importNegativePrompt,
+              characters: next.importCharacterPrompts,
+              settings: _settingsSelected(next),
+              seed: next.importSeed,
             ),
           );
         }

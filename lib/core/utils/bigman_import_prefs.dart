@@ -1,30 +1,27 @@
-import 'package:hive/hive.dart';
+import 'dart:async';
 
 import '../constants/storage_keys.dart';
+import '../storage/local_storage_service.dart';
 
 /// 胖大叔自用改：记住上次在拖入图片对话框里勾选的导入项。
 ///
-/// 只记忆对话框暴露的五个开关；其余字段继续沿用 `MetadataImportOptions.all`
-/// 的默认值。存储未就绪或从未保存过时 [read] 返回 null，调用方回退到全选。
+/// 走项目自带的 [LocalStorageService]（SharedPreferences 后端）：读取是同步的，
+/// 写入异步刷盘且不持有文件句柄 —— 不引入新的 Hive 使用者，避免测试清理
+/// 阶段的「文件被占用」失败。
 class BigmanImportPrefs {
   BigmanImportPrefs._();
 
-  static bool? _readBool(String key) {
-    try {
-      if (!Hive.isBoxOpen(StorageKeys.settingsBox)) return null;
-      return Hive.box(StorageKeys.settingsBox).get(key) as bool?;
-    } catch (_) {
-      return null;
-    }
-  }
+  static bool? _readBool(LocalStorageService storage, String key) =>
+      storage.getSetting<bool>(key);
 
   /// 读取上次的选择；任一开关缺失都视为「没有记录」。
-  static BigmanImportPrefsValue? read() {
-    final prompt = _readBool(StorageKeys.bigmanImportPrompt);
-    final negative = _readBool(StorageKeys.bigmanImportNegative);
-    final characters = _readBool(StorageKeys.bigmanImportCharacters);
-    final settings = _readBool(StorageKeys.bigmanImportSettings);
-    final seed = _readBool(StorageKeys.bigmanImportSeed);
+  static BigmanImportPrefsValue? read(LocalStorageService? storage) {
+    if (storage == null) return null;
+    final prompt = _readBool(storage, StorageKeys.bigmanImportPrompt);
+    final negative = _readBool(storage, StorageKeys.bigmanImportNegative);
+    final characters = _readBool(storage, StorageKeys.bigmanImportCharacters);
+    final settings = _readBool(storage, StorageKeys.bigmanImportSettings);
+    final seed = _readBool(storage, StorageKeys.bigmanImportSeed);
     if (prompt == null ||
         negative == null ||
         characters == null ||
@@ -41,20 +38,21 @@ class BigmanImportPrefs {
     );
   }
 
-  /// 保存本次选择；失败只影响记忆，不影响本次导入。
-  static Future<void> save(BigmanImportPrefsValue value) async {
-    try {
-      if (!Hive.isBoxOpen(StorageKeys.settingsBox)) return;
-      await Hive.box(StorageKeys.settingsBox).putAll({
+  /// 保存本次选择；不等待写入完成，失败也不影响本次导入。
+  static void save(
+    LocalStorageService? storage,
+    BigmanImportPrefsValue value,
+  ) {
+    if (storage == null) return;
+    unawaited(
+      storage.setSettings({
         StorageKeys.bigmanImportPrompt: value.prompt,
         StorageKeys.bigmanImportNegative: value.negative,
         StorageKeys.bigmanImportCharacters: value.characters,
         StorageKeys.bigmanImportSettings: value.settings,
         StorageKeys.bigmanImportSeed: value.seed,
-      });
-    } catch (_) {
-      // 记忆失败不影响本次导入。
-    }
+      }),
+    );
   }
 }
 
