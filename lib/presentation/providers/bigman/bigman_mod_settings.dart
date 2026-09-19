@@ -15,7 +15,7 @@ enum BigmanSaveNameCounterMode {
 /// 胖大叔自用改的全部开关与参数。
 ///
 /// 默认值遵循自用改的需求：提示词快捷键默认开启；质量词预设、负面预设与
-/// 随机提示词工具默认关闭；保存命名保持原样；日期文件夹默认保持开启。
+/// 随机提示词工具默认关闭；保存命名默认用 {n} 连续编号；日期文件夹默认不新建。
 class BigmanModSettings {
   const BigmanModSettings({
     this.promptWeightShortcut = true,
@@ -23,8 +23,8 @@ class BigmanModSettings {
     this.qualityPresetEnabled = false,
     this.ucPresetEnabled = false,
     this.randomPromptEnabled = false,
-    this.autoDateFolder = true,
-    this.saveNameTemplate = '',
+    this.autoDateFolder = false,
+    this.saveNameTemplate = '{n}',
     this.saveNameCounterMode = BigmanSaveNameCounterMode.global,
     this.saveNamePadding = 0,
     this.saveNameStart = 1,
@@ -133,10 +133,11 @@ class BigmanModSettingsNotifier extends StateNotifier<BigmanModSettings> {
       autoDateFolder: _readBool(
         storage,
         StorageKeys.bigmanAutoDateFolder,
-        true,
+        false,
       ),
       saveNameTemplate:
-          storage.getSetting<String>(StorageKeys.bigmanSaveNameTemplate) ?? '',
+          storage.getSetting<String>(StorageKeys.bigmanSaveNameTemplate) ??
+          '{n}',
       saveNameCounterMode:
           _readInt(storage, StorageKeys.bigmanSaveNameCounterMode, 0) == 1
           ? BigmanSaveNameCounterMode.scan

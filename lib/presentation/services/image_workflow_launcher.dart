@@ -15,11 +15,9 @@ import '../../data/services/image_metadata_service.dart';
 import '../providers/generation/image_workflow_controller.dart';
 import '../providers/image_generation_provider.dart';
 import '../providers/krita/krita_bridge_notifier.dart';
-import '../providers/quality_preset_provider.dart';
 import '../providers/subscription_provider.dart';
 import '../screens/director_tools/director_tools_screen.dart';
 import '../utils/metadata_import_applier.dart';
-import '../utils/prompt_preset_import_utils.dart';
 import '../widgets/common/app_toast.dart';
 import '../widgets/image_editor/image_editor_screen.dart';
 
@@ -372,16 +370,14 @@ class ImageWorkflowLauncher {
         updateVarietyPlus: notifier.updateVarietyPlus,
         updateNoiseSchedule: notifier.updateNoiseSchedule,
         updateCfgRescale: notifier.updateCfgRescale,
+        // 胖大叔自用改：读图只还原本次请求的参数，不再改写本机预设。
+        // 预设被图片改掉会让后续生成多出质量词，或丢掉反向抑制词出摩尔纹。
         updateQualityToggle: (value) {
-          notifier.updateQualityToggle(value);
-          applyImportedQualityToggle(read, value);
+          notifier.updateQualityToggleWithoutPresetSync(value);
         },
-        updateQualityTier: (value) {
-          read(qualityPresetNotifierProvider.notifier).setNaiTier(value);
-        },
+        updateQualityTier: (_) {},
         updateUcPreset: (value) {
-          notifier.updateUcPreset(value);
-          applyImportedUcPreset(read, value);
+          notifier.updateUcPresetWithoutPresetSync(value);
         },
         updateTransparentBackground: notifier.updateTransparentBackground,
       ),

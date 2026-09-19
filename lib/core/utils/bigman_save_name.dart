@@ -27,19 +27,23 @@ class BigmanSaveName {
     }
   }
 
-  /// 读取当前保存命名配置；未启用或存储未就绪时返回 null。
+  /// 读取当前保存命名配置；存储未就绪时返回 null。
+  ///
+  /// 从没设置过时使用默认模板 `{n}`；用户显式清空模板表示关闭自定义命名。
   static BigmanSaveNameConfig? read() {
     final box = settingsBox();
     if (box == null) return null;
-    final template =
-        (box.get(StorageKeys.bigmanSaveNameTemplate) as String?)?.trim() ?? '';
+    final rawTemplate = box.get(StorageKeys.bigmanSaveNameTemplate);
+    final template = rawTemplate == null
+        ? '{n}'
+        : (rawTemplate as String).trim();
     if (template.isEmpty) return null;
     final padding = (box.get(StorageKeys.bigmanSaveNamePadding) as int?) ?? 0;
     final start = (box.get(StorageKeys.bigmanSaveNameStart) as int?) ?? 1;
     final counterMode =
         (box.get(StorageKeys.bigmanSaveNameCounterMode) as int?) ?? 0;
     final autoDateFolder =
-        (box.get(StorageKeys.bigmanAutoDateFolder) as bool?) ?? true;
+        (box.get(StorageKeys.bigmanAutoDateFolder) as bool?) ?? false;
     return BigmanSaveNameConfig(
       template: template,
       padding: padding.clamp(0, 8),

@@ -8,7 +8,6 @@ import '../../l10n/app_localizations.dart';
 import '../providers/character_prompt_provider.dart';
 import '../providers/fixed_tags_provider.dart';
 import '../providers/image_generation_provider.dart';
-import '../providers/quality_preset_provider.dart';
 import 'metadata_import_applier.dart';
 import 'fixed_tag_import_resolution.dart';
 import 'prompt_preset_import_utils.dart';
@@ -57,16 +56,17 @@ class MetadataImportCoordinator {
         updateVarietyPlus: notifier.updateVarietyPlus,
         updateNoiseSchedule: notifier.updateNoiseSchedule,
         updateCfgRescale: notifier.updateCfgRescale,
+        // 胖大叔自用改：读图只还原「这次请求」的参数，
+        // 不再改写本机的质量词 / 负面预设。
+        // 预设是本机长期配置，被图片改掉后会让之后的生成莫名多出质量词，
+        // 或丢掉负面预设里的抑制词（heavy→light 会失去 screentone /
+        // halftone / dithering，直接表现为出图带摩尔纹）。
         updateQualityToggle: (value) {
-          notifier.updateQualityToggle(value);
-          applyImportedQualityToggle(read, value);
+          notifier.updateQualityToggleWithoutPresetSync(value);
         },
-        updateQualityTier: (value) {
-          read(qualityPresetNotifierProvider.notifier).setNaiTier(value);
-        },
+        updateQualityTier: (_) {},
         updateUcPreset: (value) {
-          notifier.updateUcPreset(value);
-          applyImportedUcPreset(read, value);
+          notifier.updateUcPresetWithoutPresetSync(value);
         },
         updateTransparentBackground: notifier.updateTransparentBackground,
       ),

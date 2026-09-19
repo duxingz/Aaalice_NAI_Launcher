@@ -848,6 +848,24 @@ class GenerationParamsNotifier extends _$GenerationParamsNotifier {
     }
   }
 
+  /// 胖大叔自用改：只更新请求参数，**不改本机质量词预设**。
+  ///
+  /// 导入图片元数据时用它 —— 图片自带的质量开关状态不该覆盖用户本机预设，
+  /// 否则后续每次生成都会莫名多出质量词。用户手动开关仍走 [updateQualityToggle]。
+  void updateQualityToggleWithoutPresetSync(bool qualityToggle) {
+    state = state.copyWith(qualityToggle: qualityToggle);
+  }
+
+  /// 胖大叔自用改：只更新请求参数，**不改本机负面预设**。
+  ///
+  /// 导入图片元数据时用它 —— 负面预设被图片改档会丢掉抑制词
+  /// （heavy→light 失去 screentone / halftone / dithering），表现为出图带摩尔纹。
+  void updateUcPresetWithoutPresetSync(int ucPreset) {
+    state = state.copyWith(
+      ucPreset: UcPresets.toApiValue(UcPresets.getPresetTypeFromInt(ucPreset)),
+    );
+  }
+
   /// 更新多样性增强 (V4+)
   void updateVarietyPlus(bool varietyPlus) {
     state = state.copyWith(varietyPlus: varietyPlus);
