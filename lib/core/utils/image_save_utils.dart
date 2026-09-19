@@ -677,10 +677,10 @@ class ImageSaveUtils {
   }) async {
     final time = now ?? DateTime.now();
     String two(int v) => v.toString().padLeft(2, '0');
-    // 胖大叔自用改：日期文件夹可关闭，文件名可套用自定义规则；
-    // 未启用自定义命名时，这两处行为与上游完全一致。
+    // 胖大叔自用改：日期文件夹可关闭，文件名可套用自定义规则。
     final customName = BigmanSaveName.read();
-    final useDateFolder = customName?.autoDateFolder ?? true;
+    // 日期文件夹开关独立于命名模板：模板清空时它仍然生效。
+    final useDateFolder = BigmanSaveName.readAutoDateFolder();
     final dateFolder = '${time.year}-${two(time.month)}-${two(time.day)}';
     final dir = Directory(
       useDateFolder ? p.join(rootPath, dateFolder) : rootPath,

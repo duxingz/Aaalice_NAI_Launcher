@@ -52,6 +52,20 @@ class BigmanSaveName {
       autoDateFolder: autoDateFolder,
     );
   }
+
+  /// 只读「自动新建日期文件夹」开关。
+  ///
+  /// 与命名模板相互独立：模板清空（关闭自定义命名）时它仍然生效，
+  /// 否则用户就没办法在保留原名命名的同时关掉日期文件夹。
+  static bool readAutoDateFolder() {
+    try {
+      final box = settingsBox();
+      if (box == null) return false;
+      return (box.get(StorageKeys.bigmanAutoDateFolder) as bool?) ?? false;
+    } catch (_) {
+      return false;
+    }
+  }
 }
 
 /// 自定义保存命名的解析结果。

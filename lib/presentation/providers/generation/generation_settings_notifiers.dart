@@ -4,6 +4,7 @@ import '../../../core/autocomplete/autocomplete_settings.dart'
     as completion_settings;
 import '../../../core/storage/local_storage_service.dart';
 import '../../../core/utils/app_logger.dart';
+import '../bigman/bigman_mod_settings.dart';
 
 part 'generation_settings_notifiers.g.dart';
 
@@ -161,7 +162,16 @@ class RandomPromptMode extends _$RandomPromptMode {
   LocalStorageService get _storage => ref.read(localStorageServiceProvider);
 
   @override
-  bool build() => _storage.getRandomPromptMode();
+  bool build() {
+    // 胖大叔自用改：功能停用时抽卡模式一律视为关闭，
+    // 避免历史遗留的开启状态在生成时仍然偷偷替换提示词。
+    if (!ref.watch(
+      bigmanModSettingsProvider.select((s) => s.randomPromptEnabled),
+    )) {
+      return false;
+    }
+    return _storage.getRandomPromptMode();
+  }
 
   void toggle() => set(!state);
 
