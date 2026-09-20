@@ -16,7 +16,7 @@ void main() {
   });
 
   group('NaiPromptFormatter.format', () {
-    test('标签内部保留空格，不再转下划线', () {
+    test('标签内部保留空格，并把下划线换成空格', () {
       expect(
         NaiPromptFormatter.format('soft dramatic lighting, blue eyes'),
         'soft dramatic lighting, blue eyes',
@@ -24,6 +24,46 @@ void main() {
       expect(
         NaiPromptFormatter.format('1.2::soft volumetric lighting::, solo'),
         '1.2::soft volumetric lighting::, solo',
+      );
+      expect(
+        NaiPromptFormatter.format('soft_dramatic_lighting, blue_hair'),
+        'soft dramatic lighting, blue hair',
+      );
+      expect(
+        NaiPromptFormatter.format('au_ra, h&k_g11'),
+        'au ra, h&k g11',
+      );
+    });
+
+    test('表情类标签的下划线保持原样', () {
+      const faces = [
+        'x_x',
+        'o_o',
+        'O_o',
+        '0_0',
+        'T_T',
+        '+_+',
+        '._.',
+        '^_^',
+        '|_|',
+        '@_@',
+        '-_-',
+        '>_<',
+        '>_o',
+        ';_;',
+        '<o>_<o>',
+      ];
+      for (final face in faces) {
+        expect(
+          NaiPromptFormatter.format(face),
+          face,
+          reason: '表情标签 $face 不应被改写',
+        );
+      }
+      // 混在正常标签里也要保护
+      expect(
+        NaiPromptFormatter.format('girl, x_x, blue_hair'),
+        'girl, x_x, blue hair',
       );
     });
 
