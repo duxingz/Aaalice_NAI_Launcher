@@ -160,8 +160,9 @@ void main() {
     });
 
     test('划词一部分也能移动所在标签', () {
-      final controller = cursorIn('cat, dog', 5, extent: 6);
-      expect(PromptWeightEditing.moveTagAtCursor(controller, 1), isTrue);
+      // 选中 "do"（dog 的一部分）后左移，与 cat 交换
+      final controller = cursorIn('cat, dog', 5, extent: 7);
+      expect(PromptWeightEditing.moveTagAtCursor(controller, -1), isTrue);
       expect(controller.text, 'dog, cat');
     });
 
