@@ -157,11 +157,13 @@ class PromptWeightEditing {
     final spans = PromptEditDocument.parse(source);
     final disabled = spans.length == 1 && spans.single.disabled;
     final parsed = parseWeightSyntax(source);
-    final value = weight.clamp(0.1, 3.0);
+    // 胖大叔自用改：范围放宽到 ±10，允许负权重压制（如 -1::sweat::）。
+    final value = weight.clamp(minWeight, maxWeight);
     String text;
     if ((value - 1).abs() < 0.00001) {
       text = parsed.baseText;
-    } else if (numericEmphasisEnabled) {
+    } else if (numericEmphasisEnabled || value <= 0) {
+      // 负权重只能用数字语法：{} / [] 表达不了负数，log 也取不到负值。
       text = '${value.toStringAsFixed(2)}::${parsed.baseText}::';
     } else {
       final depth = (math.log(value).abs() / math.log(1.05)).round();
@@ -172,24 +174,19 @@ class PromptWeightEditing {
     return disabled ? PromptEditDocument.disable(text) : text;
   }
 
-  /// 胖大叔自用改：定位光标（或选区）所在的标签。
+  /// 胖大叔自用改：定位光标（或选区中点）所在的标签。
   ///
-  /// 已有选区且正好覆盖一个完整标签时直接使用它；否则按光标偏移在解析
-  /// 树里找到最内层叶子。返回 null 表示当前位置没有可操作的标签。
+  /// 有选区时取**中点**定位 —— 这样「划到标签一半」也能命中，
+  /// 不再要求选区精确等于整个标签（对齐 NovelAI Prompt Helper 的做法）。
+  /// 返回 null 表示当前位置没有可操作的标签。
   static PromptEditSpan? spanAtCursor(TextEditingController controller) {
     final text = controller.text;
     final selection = controller.selection;
     if (!selection.isValid || text.isEmpty) return null;
 
-    if (!selection.isCollapsed) {
-      return PromptEditDocument.singleSelected(
-        text,
-        selection.start,
-        selection.end,
-      );
-    }
-
-    final offset = selection.extentOffset;
+    final offset = selection.isCollapsed
+        ? selection.extentOffset
+        : (selection.start + selection.end) ~/ 2;
     if (offset < 0 || offset > text.length) return null;
     for (final root in PromptEditDocument.parse(text)) {
       final hit = _locateLeaf(root, offset);
@@ -211,7 +208,14 @@ class PromptWeightEditing {
         : null;
   }
 
-  /// 胖大叔自用改：按光标所在标签调整权重。
+  /// 权重可调范围（胖大叔自用改：放宽到 ±10，方便做负权重抑制）。
+  static const double minWeight = -10.0;
+  static const double maxWeight = 10.0;
+
+  /// 胖大叔自用改：调整光标（或选区）内标签的权重。
+  ///
+  /// - 无选区：调光标所在的那一个标签
+  /// - 有选区：调与选区**相交的每一个**标签（多选批量）
   ///
   /// 步进由调用方给出；权重回到 1.0 时 [withWeight] 会自动去掉权重语法。
   /// 返回 false 表示没有可调整的标签，调用方应把按键交回默认处理。
@@ -220,25 +224,70 @@ class PromptWeightEditing {
     double step, {
     bool numericEmphasisEnabled = true,
   }) {
-    final span = spanAtCursor(controller);
-    if (span == null || span.disabled) return false;
-    final current = parseWeightSyntax(span.raw).weight;
-    final next = (current + step).clamp(0.1, 3.0);
-    if ((next - current).abs() < 0.00001) return false;
-    final replacement = withWeight(
-      span.raw,
-      next,
-      numericEmphasisEnabled: numericEmphasisEnabled,
-    );
-    if (replacement == span.raw) return false;
+    final text = controller.text;
+    final selection = controller.selection;
+    if (!selection.isValid || text.isEmpty) return false;
+
+    final List<PromptEditSpan> leaves;
+    if (selection.isCollapsed) {
+      final single = spanAtCursor(controller);
+      leaves = single == null ? const <PromptEditSpan>[] : [single];
+    } else {
+      leaves = leavesInRange(text, selection.start, selection.end);
+    }
+    if (leaves.isEmpty) return false;
+
+    var updated = text;
+    var changed = false;
+    var selStart = -1;
+    var lastOriginalEnd = -1;
+    // 从后往前替换，前面标签的偏移不受影响。
+    for (final span in leaves.reversed) {
+      if (span.disabled) continue;
+      final current = parseWeightSyntax(span.raw).weight;
+      final next = (current + step).clamp(minWeight, maxWeight);
+      if ((next - current).abs() < 0.00001) continue;
+      final replacement = withWeight(
+        span.raw,
+        next,
+        numericEmphasisEnabled: numericEmphasisEnabled,
+      );
+      if (replacement == span.raw) continue;
+      updated = updated.replaceRange(span.start, span.end, replacement);
+      selStart = span.start;
+      if (lastOriginalEnd < 0) lastOriginalEnd = span.end;
+      changed = true;
+    }
+    if (!changed) return false;
+    // 尾部未改动的长度是固定的，据此反推调整后选区的终点，
+    // 这样多选批量后选区仍完整覆盖这批标签。
+    final tailLength = text.length - lastOriginalEnd;
+    final selEnd = updated.length - tailLength;
     controller.value = TextEditingValue(
-      text: controller.text.replaceRange(span.start, span.end, replacement),
-      selection: TextSelection(
-        baseOffset: span.start,
-        extentOffset: span.start + replacement.length,
-      ),
+      text: updated,
+      selection: TextSelection(baseOffset: selStart, extentOffset: selEnd),
     );
     return true;
+  }
+
+  /// 胖大叔自用改：找出与 [start, end] 相交的所有可编辑叶子标签。
+  static List<PromptEditSpan> leavesInRange(String text, int start, int end) {
+    final result = <PromptEditSpan>[];
+    void visit(PromptEditSpan span) {
+      if (span.end <= start || span.start >= end) return;
+      if (span.children.isEmpty) {
+        if (span.complete) result.add(span);
+        return;
+      }
+      for (final child in span.children) {
+        visit(child);
+      }
+    }
+
+    for (final root in PromptEditDocument.parse(text)) {
+      visit(root);
+    }
+    return result;
   }
 
   /// 胖大叔自用改：与相邻标签交换位置。
@@ -250,16 +299,14 @@ class PromptWeightEditing {
     final text = controller.text;
     final selection = controller.selection;
     if (!selection.isValid || text.isEmpty) return false;
-    final anchorStart = selection.isCollapsed
+    // 选区取中点定位，方便「划到一半」时也能命中。
+    final anchor = selection.isCollapsed
         ? selection.extentOffset
-        : selection.start;
-    final anchorEnd = selection.isCollapsed
-        ? selection.extentOffset
-        : selection.end;
+        : (selection.start + selection.end) ~/ 2;
     final located = _locateSiblings(
       PromptEditDocument.parse(text),
-      anchorStart,
-      anchorEnd,
+      anchor,
+      anchor,
     );
     if (located == null) return false;
 

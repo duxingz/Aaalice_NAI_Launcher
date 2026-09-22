@@ -182,7 +182,8 @@ class _UnifiedPromptInputState extends ConsumerState<UnifiedPromptInput> {
   };
 
   bool _handleHardwareKeyEvent(KeyEvent event) {
-    if (event is! KeyDownEvent) {
+    // 胖大叔自用改：同时接受重复事件 —— 按住 Ctrl+↑/↓ 才能连续加减权重。
+    if (event is! KeyDownEvent && event is! KeyRepeatEvent) {
       return false;
     }
 

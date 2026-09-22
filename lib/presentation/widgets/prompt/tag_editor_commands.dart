@@ -94,7 +94,7 @@ class TagEditorCommands {
       // Rewrite only this wrapper; nested weights and leaf identities survive.
       final shell = PromptWeightEditing.withWeight(
         '${group.span.prefix}x${group.span.suffix}',
-        value ?? weight! + step!,
+        value ?? _clampWeight(weight! + step!),
         numericEmphasisEnabled: _useNumericWeight(group, numeric),
       );
       final split = shell.indexOf('x');
@@ -116,7 +116,7 @@ class TagEditorCommands {
       final plan = session.selectionGrouping;
       final shell = PromptWeightEditing.withWeight(
         'x',
-        value ?? 1 + step!,
+        value ?? _clampWeight(1 + step!),
         numericEmphasisEnabled: numeric && plan.numericEmphasisAllowed,
       );
       if (shell == 'x') return;
@@ -136,13 +136,23 @@ class TagEditorCommands {
           PromptWeightEditing.withWeight(
             tag.span.raw,
             value ??
-                PromptWeightEditing.parseWeightSyntax(tag.span.text).weight +
-                    step!,
+                _clampWeight(
+                  PromptWeightEditing.parseWeightSyntax(
+                        tag.span.text,
+                      ).weight +
+                      step!,
+                ),
             numericEmphasisEnabled: _useNumericWeight(tag, numeric),
           ),
         ),
     ]);
   }
+
+  /// 胖大叔自用改：把权重限制在 [PromptWeightEditing.minWeight] ~
+  /// [PromptWeightEditing.maxWeight]（±10），支持一路减到负权重做抑制。
+  static double _clampWeight(double value) => value
+      .clamp(PromptWeightEditing.minWeight, PromptWeightEditing.maxWeight)
+      .toDouble();
 
   bool _useNumericWeight(PromptEditorTag target, bool supported) {
     if (!supported) return false;

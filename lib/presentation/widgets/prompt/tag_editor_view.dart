@@ -530,7 +530,9 @@ class _TagEditorViewState extends ConsumerState<TagEditorView> {
   }
 
   KeyEventResult _key(FocusNode node, KeyEvent event) {
-    if (event is! KeyDownEvent || !widget.enabled) {
+    // 胖大叔自用改：接受重复事件，按住快捷键可连续调整。
+    if ((event is! KeyDownEvent && event is! KeyRepeatEvent) ||
+        !widget.enabled) {
       return KeyEventResult.ignored;
     }
     final keyboard = HardwareKeyboard.instance;
