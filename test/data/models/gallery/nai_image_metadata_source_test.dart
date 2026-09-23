@@ -53,7 +53,7 @@ void main() {
     });
 
     test('rawJson 缺失或损坏时安全返回假', () {
-      expect(NaiImageMetadata().requestType, isNull);
+      expect(const NaiImageMetadata().requestType, isNull);
       expect(withRaw('').requestType, isNull);
       expect(withRaw('not json').requestType, isNull);
       expect(withRaw('not json').isImg2ImgSource, isFalse);
@@ -61,7 +61,7 @@ void main() {
     });
 
     test('旧字段 isImg2Img 仍算作图生图', () {
-      expect(NaiImageMetadata(isImg2Img: true).isImg2ImgSource, isTrue);
+      expect(const NaiImageMetadata(isImg2Img: true).isImg2ImgSource, isTrue);
     });
   });
 }
