@@ -26,6 +26,7 @@ import '../../../providers/layout_state_provider.dart';
 import '../../../providers/tag_library_page_provider.dart';
 
 import '../../../../data/services/image_metadata_service.dart';
+import '../../../widgets/common/generation_source_badge.dart';
 import '../../../../data/repositories/gallery_folder_repository.dart';
 import '../../../providers/generation/generation_params_selectors.dart';
 import '../../../providers/generation/preview_selection_provider.dart';
@@ -976,7 +977,7 @@ class _HistoryPanelState extends ConsumerState<HistoryPanel> {
     required Widget Function(bool dragPreparationReady) childBuilder,
   }) {
     if (!image.canDrag) {
-      return childBuilder(true);
+      return _withSourceBadge(image, childBuilder(true));
     }
 
     final transform = ref.read(copyDragWatermarkProvider);
@@ -988,7 +989,9 @@ class _HistoryPanelState extends ConsumerState<HistoryPanel> {
     final preparedFile = snapshot.isReady ? snapshot.file : null;
     final dragPreparationReady = preparedFile != null;
 
-    return MouseRegion(
+    return _withSourceBadge(
+      image,
+      MouseRegion(
       onEnter: (_) => _scheduleHoverPreheat(image, stripMetadata),
       onExit: (_) => _hoverPreheatTimer?.cancel(),
       child: DraggableMemoryImage(
@@ -1008,6 +1011,23 @@ class _HistoryPanelState extends ConsumerState<HistoryPanel> {
             : null,
         child: childBuilder(dragPreparationReady),
       ),
+      ),
+    );
+  }
+
+  /// 胖大叔自用改：给历史缩略图叠加「生成来源」文字角标
+  /// （图生图 / 局部重绘 / 放大），没有可识别来源时什么都不显示。
+  Widget _withSourceBadge(GeneratedImage image, Widget child) {
+    return Stack(
+      fit: StackFit.passthrough,
+      children: [
+        child,
+        Positioned(
+          right: 4,
+          bottom: 4,
+          child: GenerationSourceBadge(metadata: image.metadata),
+        ),
+      ],
     );
   }
 

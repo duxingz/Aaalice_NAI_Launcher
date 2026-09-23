@@ -17,7 +17,7 @@ import '../../../core/utils/image_share_sanitizer.dart';
 import '../../../core/utils/localization_extension.dart';
 import '../../../core/watermark/watermark_derivative_registry.dart';
 import '../../../data/models/gallery/local_image_record.dart';
-import '../../../data/models/gallery/nai_image_metadata.dart';
+import '../../common/generation_source_badge.dart';
 import '../../providers/mosaic_settings_provider.dart';
 import '../../providers/share_image_settings_provider.dart';
 import '../../providers/copy_drag_watermark_provider.dart';
@@ -298,24 +298,12 @@ class _LocalImageCard3DState extends ConsumerState<LocalImageCard3D> {
                 ),
               ),
             // 胖大叔自用改：右下角标出这张图的生成来源。
-            if (_sourceBadges(widget.record.metadata).isNotEmpty)
-              Positioned(
-                key: const ValueKey('local-image-card-source-badges'),
-                right: 4,
-                bottom: 4,
-                child: IgnorePointer(
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      for (final badge in _sourceBadges(widget.record.metadata))
-                        Padding(
-                          padding: const EdgeInsets.only(left: 3),
-                          child: badge,
-                        ),
-                    ],
-                  ),
-                ),
-              ),
+            Positioned(
+              key: const ValueKey('local-image-card-source-badges'),
+              right: 4,
+              bottom: 4,
+              child: GenerationSourceBadge(metadata: widget.record.metadata),
+            ),
           ],
         ),
       ),
@@ -560,28 +548,6 @@ class _LocalImageCard3DState extends ConsumerState<LocalImageCard3D> {
     ),
   );
 
-  /// 胖大叔自用改：这张图的生成来源角标（图生图 / 局部重绘 / 放大）。
-  List<Widget> _sourceBadges(NaiImageMetadata? metadata) {
-    if (metadata == null) return const [];
-    final badges = <Widget>[];
-    if (metadata.isImg2ImgSource) {
-      badges.add(
-        const _SourceBadge(icon: Icons.collections_outlined, label: '图生图'),
-      );
-    }
-    if (metadata.isInpaintSource) {
-      badges.add(
-        const _SourceBadge(icon: Icons.brush_outlined, label: '局部重绘'),
-      );
-    }
-    if (metadata.isUpscaledSource) {
-      badges.add(
-        const _SourceBadge(icon: Icons.zoom_out_map_outlined, label: '放大'),
-      );
-    }
-    return badges;
-  }
-
   Widget _buildSelectionIndicator(ColorScheme colorScheme) {
     return Container(
       width: 28,
@@ -591,30 +557,6 @@ class _LocalImageCard3DState extends ConsumerState<LocalImageCard3D> {
         borderRadius: BorderRadius.circular(14),
       ),
       child: Icon(Icons.check, color: colorScheme.onPrimary, size: 18),
-    );
-  }
-}
-
-/// 胖大叔自用改：缩略图右下角的「生成来源」小角标。
-class _SourceBadge extends StatelessWidget {
-  const _SourceBadge({required this.icon, required this.label});
-
-  final IconData icon;
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    return Tooltip(
-      message: label,
-      child: Container(
-        width: 16,
-        height: 16,
-        decoration: BoxDecoration(
-          color: Colors.black.withValues(alpha: 0.55),
-          borderRadius: BorderRadius.circular(4),
-        ),
-        child: Icon(icon, size: 11, color: Colors.white),
-      ),
     );
   }
 }
