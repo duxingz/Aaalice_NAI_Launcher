@@ -202,6 +202,62 @@ class NaiImageMetadata with _$NaiImageMetadata {
   /// 用于导入/展示的模型 ID。Source 是官方图片的模型来源，优先级高于旧缓存中的 model。
   String? get effectiveModel => sourceModel ?? model;
 
+  // ============ 生成来源（胖大叔自用改） ============
+
+  /// NAI 的请求类型，例如 `PromptGenerateRequest`、`Img2ImgRequest`、
+  /// `NativeInfillingRequest`、`UpscaleRequest`。
+  ///
+  /// 这个字段可能直接躺在 rawJson 顶层，也可能嵌在 Comment 里（V4/V5），
+  /// 两处都尝试；取不到返回 null。
+  String? get requestType {
+    final raw = rawJson;
+    if (raw == null || raw.isEmpty) return null;
+    Map<String, dynamic>? data;
+    try {
+      final decoded = jsonDecode(raw);
+      if (decoded is Map) data = Map<String, dynamic>.from(decoded);
+    } catch (_) {
+      return null;
+    }
+    if (data == null) return null;
+
+    final direct = data['request_type'];
+    if (direct is String && direct.isNotEmpty) return direct;
+
+    final comment = data['Comment'] ?? data['comment'];
+    if (comment is String && comment.isNotEmpty) {
+      try {
+        final inner = jsonDecode(comment);
+        if (inner is Map) {
+          final nested = inner['request_type'];
+          if (nested is String && nested.isNotEmpty) return nested;
+        }
+      } catch (_) {
+        // Comment 不是 JSON，忽略。
+      }
+    }
+    return null;
+  }
+
+  /// 是否由「图生图」生成。
+  bool get isImg2ImgSource => isImg2Img || requestType == 'Img2ImgRequest';
+
+  /// 是否由「局部重绘」生成。
+  bool get isInpaintSource => requestType == 'NativeInfillingRequest';
+
+  /// 是否由「放大」生成。
+  ///
+  /// NAI 各版本的放大标记不完全一致，这里宽松匹配：请求类型含 upscale，
+  /// 或元数据里带了非空的 `upscaled_enhance`。
+  bool get isUpscaledSource {
+    final type = requestType?.toLowerCase();
+    if (type != null && type.contains('upscale')) return true;
+    final raw = rawJson;
+    if (raw == null || raw.isEmpty) return false;
+    return RegExp(r'"upscaled_enhance"\s*:\s*[^n]').hasMatch(raw) ||
+        RegExp(r'"upscaled_enhance"\s*:\s*true').hasMatch(raw);
+  }
+
   NaiImageMetadata upgradeFromRawJsonIfNeeded() {
     final sourceResolvedModel = sourceModel;
     final base = sourceResolvedModel != null && model != sourceResolvedModel
