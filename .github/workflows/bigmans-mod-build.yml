@@ -85,6 +85,7 @@ jobs:
             'test/presentation/providers/prompt_token_counter_provider_test.dart',
             'test/data/models/gallery/nai_image_metadata_source_test.dart',
             'test/core/utils/image_save_utils_test.dart',
+            'test/core/utils/image_save_utils_source_test.dart',
             'test/core/utils/nai_prompt_formatter_test.dart',
             'test/core/utils/nai_prompt_parser_test.dart',
             'test/presentation/widgets/prompt/unified/hardware_shortcuts_test.dart',

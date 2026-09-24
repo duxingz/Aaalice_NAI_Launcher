@@ -113,6 +113,257 @@ abstract class AppLocalizations {
   /// **'The order was changed, but the sort preference could not be saved: {error}'**
   String sidebarSort_saveAfterMoveFailed(String error);
 
+  /// No description provided for @bigmanMod_settingsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'胖大叔自用改'**
+  String get bigmanMod_settingsTitle;
+
+  /// No description provided for @bigmanMod_promptSectionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Prompt editing'**
+  String get bigmanMod_promptSectionTitle;
+
+  /// No description provided for @bigmanMod_promptSectionDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Keyboard shortcuts inside the prompt box. Auto-format shares its switch with the toolbar button.'**
+  String get bigmanMod_promptSectionDescription;
+
+  /// No description provided for @bigmanMod_promptWeightShortcut.
+  ///
+  /// In en, this message translates to:
+  /// **'Ctrl+↑/↓ adjust tag weight'**
+  String get bigmanMod_promptWeightShortcut;
+
+  /// No description provided for @bigmanMod_promptWeightShortcutSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Adds or removes 0.05 on the tag at the caret or in the selection. Dropping to 1.0 removes the weight syntax. Range 0.1-3.0.'**
+  String get bigmanMod_promptWeightShortcutSubtitle;
+
+  /// No description provided for @bigmanMod_promptMoveShortcut.
+  ///
+  /// In en, this message translates to:
+  /// **'Ctrl+←/→ move tag position'**
+  String get bigmanMod_promptMoveShortcut;
+
+  /// No description provided for @bigmanMod_promptMoveShortcutSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Swaps with the neighbouring tag. A weight group holding a single tag moves as a whole.'**
+  String get bigmanMod_promptMoveShortcutSubtitle;
+
+  /// No description provided for @bigmanMod_autoFormat.
+  ///
+  /// In en, this message translates to:
+  /// **'Auto-format on blur'**
+  String get bigmanMod_autoFormat;
+
+  /// No description provided for @bigmanMod_autoFormatSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Tidies Chinese commas, spaces and separators when the field loses focus. Linked with the toolbar button.'**
+  String get bigmanMod_autoFormatSubtitle;
+
+  /// No description provided for @bigmanMod_disableSectionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Disabled features'**
+  String get bigmanMod_disableSectionTitle;
+
+  /// No description provided for @bigmanMod_disableSectionDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Turning a feature off keeps its icon visible, but clicking it no longer does anything.'**
+  String get bigmanMod_disableSectionDescription;
+
+  /// No description provided for @bigmanMod_qualityPreset.
+  ///
+  /// In en, this message translates to:
+  /// **'Enable quality tag preset'**
+  String get bigmanMod_qualityPreset;
+
+  /// No description provided for @bigmanMod_qualityPresetSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'When off, official quality tags are no longer injected into requests. The display keeps its current selection.'**
+  String get bigmanMod_qualityPresetSubtitle;
+
+  /// No description provided for @bigmanMod_ucPreset.
+  ///
+  /// In en, this message translates to:
+  /// **'Enable undesired content preset'**
+  String get bigmanMod_ucPreset;
+
+  /// No description provided for @bigmanMod_ucPresetSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'When off, the preset content is no longer injected. The display keeps its current selection.'**
+  String get bigmanMod_ucPresetSubtitle;
+
+  /// No description provided for @bigmanMod_randomPrompt.
+  ///
+  /// In en, this message translates to:
+  /// **'Enable random prompt tools'**
+  String get bigmanMod_randomPrompt;
+
+  /// No description provided for @bigmanMod_randomPromptSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'When off, the random button, the Ctrl+R shortcut and the random-mode toggle stop responding.'**
+  String get bigmanMod_randomPromptSubtitle;
+
+  /// No description provided for @bigmanMod_saveNameSectionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved file name rule'**
+  String get bigmanMod_saveNameSectionTitle;
+
+  /// No description provided for @bigmanMod_saveNameSectionDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Leave the template empty to keep the original time-seed naming.'**
+  String get bigmanMod_saveNameSectionDescription;
+
+  /// No description provided for @bigmanMod_saveNameTemplate.
+  ///
+  /// In en, this message translates to:
+  /// **'Name template'**
+  String get bigmanMod_saveNameTemplate;
+
+  /// No description provided for @bigmanMod_saveNameTemplateHint.
+  ///
+  /// In en, this message translates to:
+  /// **'For example {n} or Bigman_{n}'**
+  String bigmanMod_saveNameTemplateHint(String n);
+
+  /// No description provided for @bigmanMod_saveNameVariables.
+  ///
+  /// In en, this message translates to:
+  /// **'Variables: {n} index · {seed} seed · {date} date · {time} time'**
+  String bigmanMod_saveNameVariables(
+    String n,
+    String seed,
+    String date,
+    String time,
+  );
+
+  /// No description provided for @bigmanMod_saveNameCounterMode.
+  ///
+  /// In en, this message translates to:
+  /// **'Index source'**
+  String get bigmanMod_saveNameCounterMode;
+
+  /// No description provided for @bigmanMod_saveNameCounterGlobal.
+  ///
+  /// In en, this message translates to:
+  /// **'Global counter'**
+  String get bigmanMod_saveNameCounterGlobal;
+
+  /// No description provided for @bigmanMod_saveNameCounterScan.
+  ///
+  /// In en, this message translates to:
+  /// **'Scan folder for the highest index'**
+  String get bigmanMod_saveNameCounterScan;
+
+  /// No description provided for @bigmanMod_saveNamePadding.
+  ///
+  /// In en, this message translates to:
+  /// **'Zero padding'**
+  String get bigmanMod_saveNamePadding;
+
+  /// No description provided for @bigmanMod_saveNamePaddingHint.
+  ///
+  /// In en, this message translates to:
+  /// **'0 means no padding'**
+  String get bigmanMod_saveNamePaddingHint;
+
+  /// No description provided for @bigmanMod_saveNameStart.
+  ///
+  /// In en, this message translates to:
+  /// **'Start index'**
+  String get bigmanMod_saveNameStart;
+
+  /// No description provided for @bigmanMod_autoDateFolder.
+  ///
+  /// In en, this message translates to:
+  /// **'Auto-create date folder'**
+  String get bigmanMod_autoDateFolder;
+
+  /// No description provided for @bigmanMod_autoDateFolderSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'When off, images are saved directly in the target folder without a per-day subfolder.'**
+  String get bigmanMod_autoDateFolderSubtitle;
+
+  /// No description provided for @bigmanMod_badgeImg2Img.
+  ///
+  /// In en, this message translates to:
+  /// **'img2img'**
+  String get bigmanMod_badgeImg2Img;
+
+  /// No description provided for @bigmanMod_badgeInpaint.
+  ///
+  /// In en, this message translates to:
+  /// **'inpaint'**
+  String get bigmanMod_badgeInpaint;
+
+  /// No description provided for @bigmanMod_badgeUpscale.
+  ///
+  /// In en, this message translates to:
+  /// **'upscale'**
+  String get bigmanMod_badgeUpscale;
+
+  /// No description provided for @drop_importOptions.
+  ///
+  /// In en, this message translates to:
+  /// **'Import options'**
+  String get drop_importOptions;
+
+  /// No description provided for @drop_importPrompt.
+  ///
+  /// In en, this message translates to:
+  /// **'Positive prompt'**
+  String get drop_importPrompt;
+
+  /// No description provided for @drop_importNegativePrompt.
+  ///
+  /// In en, this message translates to:
+  /// **'Negative prompt'**
+  String get drop_importNegativePrompt;
+
+  /// No description provided for @drop_importCharacters.
+  ///
+  /// In en, this message translates to:
+  /// **'Character prompts'**
+  String get drop_importCharacters;
+
+  /// No description provided for @drop_importSettings.
+  ///
+  /// In en, this message translates to:
+  /// **'Generation settings'**
+  String get drop_importSettings;
+
+  /// No description provided for @drop_importSeed.
+  ///
+  /// In en, this message translates to:
+  /// **'Seed'**
+  String get drop_importSeed;
+
+  /// No description provided for @drop_img2imgWithPrompts.
+  ///
+  /// In en, this message translates to:
+  /// **'Img2img + prompts'**
+  String get drop_img2imgWithPrompts;
+
+  /// No description provided for @drop_img2imgWithPromptsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Use as the img2img source and import the positive prompt and character prompts'**
+  String get drop_img2imgWithPromptsSubtitle;
+
   /// No description provided for @sidebarSort_original.
   ///
   /// In en, this message translates to:

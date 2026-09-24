@@ -247,15 +247,18 @@ class NaiImageMetadata with _$NaiImageMetadata {
 
   /// 是否由「放大」生成。
   ///
-  /// NAI 各版本的放大标记不完全一致，这里宽松匹配：请求类型含 upscale，
-  /// 或元数据里带了非空的 `upscaled_enhance`。
+  /// 请求类型含 upscale，或 `upscaled_enhance` 真的有值（非 null / false / 0）。
   bool get isUpscaledSource {
     final type = requestType?.toLowerCase();
     if (type != null && type.contains('upscale')) return true;
     final raw = rawJson;
     if (raw == null || raw.isEmpty) return false;
-    return RegExp(r'"upscaled_enhance"\s*:\s*[^n]').hasMatch(raw) ||
-        RegExp(r'"upscaled_enhance"\s*:\s*true').hasMatch(raw);
+    final match = RegExp(
+      r'"upscaled_enhance"\s*:\s*([^,}\s]+)',
+    ).firstMatch(raw);
+    if (match == null) return false;
+    final value = match.group(1)!.toLowerCase();
+    return value != 'null' && value != 'false' && value != '0';
   }
 
   NaiImageMetadata upgradeFromRawJsonIfNeeded() {

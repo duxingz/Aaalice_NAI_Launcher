@@ -139,7 +139,7 @@ final cooccurrenceSettingsProvider =
 );
 
 typedef _$CooccurrenceSettings = Notifier<bool>;
-String _$randomPromptModeHash() => r'b667d7f5ea6f1cdd7f9a2df1424f0cf509dd1926';
+String _$randomPromptModeHash() => r'4869babd5ef3a41198de41569e5050ae5edc9da1';
 
 /// 抽卡模式设置 Notifier（生成时自动随机提示词）
 ///

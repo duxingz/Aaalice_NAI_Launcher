@@ -97,6 +97,16 @@ class ImageSaveUtils {
       },
       if (params.effectiveE2eUpscale)
         'upscale': {'declared_blur_sigma': E2eUpscale.declaredBlurSigma},
+      // 胖大叔自用改：写清这张图是怎么生成的，供缩略图的来源角标判断。
+      // 用官网同名字段，这样「本地历史记录」和「保存后的 PNG」读的是同一份判据。
+      'request_type': params.isInpainting
+          ? 'NativeInfillingRequest'
+          : params.isImg2Img
+          ? 'Img2ImgRequest'
+          : params.effectiveE2eUpscale || params.upscaledEnhance
+          ? 'UpscaleRequest'
+          : 'PromptGenerateRequest',
+      if (params.upscaledEnhance) 'upscaled_enhance': 2,
     };
 
     if (fixedTagUsageSnapshot != null) {
