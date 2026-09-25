@@ -5,11 +5,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/platform/platform_capabilities.dart';
+import '../../../core/services/bigman_prompt_inbox.dart';
 import '../../../core/shortcuts/default_shortcuts.dart';
+import '../../../data/models/character/character_prompt.dart';
 import '../../../core/utils/app_logger.dart';
 import '../../../core/utils/bigman_mod_flags.dart';
 import '../../../core/windowing/workspace_side_panel_contract.dart';
 import '../../../data/models/queue/replication_task.dart';
+import '../../providers/bigman/bigman_mod_settings.dart';
 import '../../providers/character_prompt_provider.dart';
 import '../../providers/image_generation_provider.dart';
 import '../../providers/generation/preview_selection_provider.dart';
@@ -60,6 +63,50 @@ class _DesktopGenerationLayoutState
   // 拖拽状态（拖拽时禁用动画以避免粘滞感）
   bool _isResizingLeft = false;
   bool _isResizingRight = false;
+
+  /// 胖大叔自用改：DSH 提示词收件箱（轮询约定文件，自动填入提示词）。
+  PromptInboxWatcher? _promptInbox;
+
+  @override
+  void initState() {
+    super.initState();
+    _promptInbox =
+        PromptInboxWatcher(
+          setPrompt: (value) => ref
+              .read(generationParamsNotifierProvider.notifier)
+              .updatePrompt(value),
+          setNegativePrompt: (value) => ref
+              .read(generationParamsNotifierProvider.notifier)
+              .updateNegativePrompt(value),
+          setCharacters: (characters) {
+            final notifier = ref.read(
+              characterPromptNotifierProvider.notifier,
+            );
+            notifier.clearAllCharacters();
+            for (final character in characters) {
+              notifier.addCharacter(
+                CharacterGender.female,
+                name: character.name,
+                prompt: character.prompt,
+              );
+            }
+          },
+          isEnabled: () =>
+              ref.read(bigmanModSettingsProvider).promptInboxEnabled,
+          isBusy: () => ref.read(imageGenerationNotifierProvider).isBusy,
+          onApplied: (summary) {
+            if (!mounted) return;
+            AppToast.info(context, '已从 DSH 填入：$summary');
+          },
+        )
+          ..start();
+  }
+
+  @override
+  void dispose() {
+    _promptInbox?.stop();
+    super.dispose();
+  }
 
   /// 切换提示词区域最大化状态
   void _togglePromptMaximize() {

@@ -45,6 +45,8 @@
   "bigmanMod_badgeImg2Img": "重ね",
   "bigmanMod_badgeInpaint": "再描画",
   "bigmanMod_badgeUpscale": "拡大",
+  "bigmanMod_promptInbox": "DSH プロンプト受信箱",
+  "bigmanMod_promptInboxSubtitle": "共有ファイルを監視し、DSH が書いたプロンプトを入力欄へ自動反映します（ネガティブとキャラクター区画を含む）。コピー＆ペーストが不要になります。",
   "drop_importOptions": "取り込みオプション",
   "drop_importPrompt": "ポジティブプロンプト",
   "drop_importNegativePrompt": "ネガティブプロンプト",

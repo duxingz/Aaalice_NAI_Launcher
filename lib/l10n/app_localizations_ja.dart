@@ -134,6 +134,13 @@ class AppLocalizationsJa extends AppLocalizations {
   String get bigmanMod_badgeUpscale => '拡大';
 
   @override
+  String get bigmanMod_promptInbox => 'DSH プロンプト受信箱';
+
+  @override
+  String get bigmanMod_promptInboxSubtitle =>
+      '共有ファイルを監視し、DSH が書いたプロンプトを入力欄へ自動反映します（ネガティブとキャラクター区画を含む）。コピー＆ペーストが不要になります。';
+
+  @override
   String get drop_importOptions => '取り込みオプション';
 
   @override

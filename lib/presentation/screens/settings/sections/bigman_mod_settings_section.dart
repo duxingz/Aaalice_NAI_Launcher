@@ -215,6 +215,12 @@ class _BigmanModSettingsSectionState
                 value: settings.autoDateFolder,
                 onChanged: (value) => notifier.setAutoDateFolder(value),
               ),
+              SwitchListTile(
+                title: Text(l10n.bigmanMod_promptInbox),
+                subtitle: Text(l10n.bigmanMod_promptInboxSubtitle),
+                value: settings.promptInboxEnabled,
+                onChanged: (value) => notifier.setPromptInboxEnabled(value),
+              ),
             ],
           ),
         ),

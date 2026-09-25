@@ -316,6 +316,18 @@ abstract class AppLocalizations {
   /// **'upscale'**
   String get bigmanMod_badgeUpscale;
 
+  /// No description provided for @bigmanMod_promptInbox.
+  ///
+  /// In en, this message translates to:
+  /// **'DSH prompt inbox'**
+  String get bigmanMod_promptInbox;
+
+  /// No description provided for @bigmanMod_promptInboxSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Watches an agreed file and fills prompts written by DSH into the input box (including negative prompt and character sections), so you can skip copy-paste.'**
+  String get bigmanMod_promptInboxSubtitle;
+
   /// No description provided for @drop_importOptions.
   ///
   /// In en, this message translates to:

@@ -92,7 +92,8 @@ jobs:
             'test/presentation/widgets/prompt/unified/copy_alias_expansion_test.dart',
             'test/presentation/widgets/prompt/tag_editor_session_test.dart',
             'test/presentation/screens/generation/widgets/prompt_input_test.dart',
-            'test/presentation/providers/generation_settings_notifiers_test.dart'
+            'test/presentation/providers/generation_settings_notifiers_test.dart',
+            'test/core/services/bigman_prompt_inbox_test.dart'
           )
           foreach ($t in $targets) {
             if (!(Test-Path $t)) { throw "Missing expected test file: $t" }

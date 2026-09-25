@@ -136,6 +136,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get bigmanMod_badgeUpscale => 'upscale';
 
   @override
+  String get bigmanMod_promptInbox => 'DSH prompt inbox';
+
+  @override
+  String get bigmanMod_promptInboxSubtitle =>
+      'Watches an agreed file and fills prompts written by DSH into the input box (including negative prompt and character sections), so you can skip copy-paste.';
+
+  @override
   String get drop_importOptions => 'Import options';
 
   @override

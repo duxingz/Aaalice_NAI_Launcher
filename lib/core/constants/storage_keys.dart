@@ -442,4 +442,5 @@ class StorageKeys {
   static const String bigmanImportCharacters = 'bigman_import_characters';
   static const String bigmanImportSettings = 'bigman_import_settings';
   static const String bigmanImportSeed = 'bigman_import_seed';
+  static const String bigmanPromptInboxEnabled = 'bigman_prompt_inbox_enabled';
 }

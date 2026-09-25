@@ -28,6 +28,7 @@ class BigmanModSettings {
     this.saveNameCounterMode = BigmanSaveNameCounterMode.global,
     this.saveNamePadding = 0,
     this.saveNameStart = 1,
+    this.promptInboxEnabled = true,
   });
 
   /// Ctrl+↑/↓ 调整光标所在标签的权重。
@@ -60,6 +61,10 @@ class BigmanModSettings {
   /// 自定义命名时序号的起始值。
   final int saveNameStart;
 
+  /// 是否启用「DSH 提示词收件箱」：轮询约定文件，把 DSH 写好的提示词
+  /// 自动填进输入框（省掉手动复制粘贴）。桌面上默认开启。
+  final bool promptInboxEnabled;
+
   bool get hasCustomSaveName => saveNameTemplate.trim().isNotEmpty;
 
   BigmanModSettings copyWith({
@@ -73,6 +78,7 @@ class BigmanModSettings {
     BigmanSaveNameCounterMode? saveNameCounterMode,
     int? saveNamePadding,
     int? saveNameStart,
+    bool? promptInboxEnabled,
   }) {
     return BigmanModSettings(
       promptWeightShortcut: promptWeightShortcut ?? this.promptWeightShortcut,
@@ -85,6 +91,7 @@ class BigmanModSettings {
       saveNameCounterMode: saveNameCounterMode ?? this.saveNameCounterMode,
       saveNamePadding: saveNamePadding ?? this.saveNamePadding,
       saveNameStart: saveNameStart ?? this.saveNameStart,
+      promptInboxEnabled: promptInboxEnabled ?? this.promptInboxEnabled,
     );
   }
 }
@@ -144,6 +151,11 @@ class BigmanModSettingsNotifier extends StateNotifier<BigmanModSettings> {
           : BigmanSaveNameCounterMode.global,
       saveNamePadding: _readInt(storage, StorageKeys.bigmanSaveNamePadding, 0),
       saveNameStart: _readInt(storage, StorageKeys.bigmanSaveNameStart, 1),
+      promptInboxEnabled: _readBool(
+        storage,
+        StorageKeys.bigmanPromptInboxEnabled,
+        true,
+      ),
     );
   }
 
@@ -200,6 +212,12 @@ class BigmanModSettingsNotifier extends StateNotifier<BigmanModSettings> {
   Future<void> setSaveNameStart(int value) => _write(
     state.copyWith(saveNameStart: value < 0 ? 0 : value),
     {StorageKeys.bigmanSaveNameStart: value < 0 ? 0 : value},
+  );
+
+  /// 开关「DSH 提示词收件箱」。
+  Future<void> setPromptInboxEnabled(bool value) => _write(
+    state.copyWith(promptInboxEnabled: value),
+    {StorageKeys.bigmanPromptInboxEnabled: value},
   );
 
   /// 读取当前自定义命名的计数值；未初始化时返回 [BigmanModSettings.saveNameStart]。

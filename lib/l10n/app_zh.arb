@@ -45,6 +45,8 @@
   "bigmanMod_badgeImg2Img": "叠图",
   "bigmanMod_badgeInpaint": "重绘",
   "bigmanMod_badgeUpscale": "放大",
+  "bigmanMod_promptInbox": "DSH 提示词收件箱",
+  "bigmanMod_promptInboxSubtitle": "轮询约定文件，把 DSH 写好的提示词自动填进输入框（含负面词与角色分区），省掉手动复制粘贴。",
   "drop_importOptions": "导入选项",
   "drop_importPrompt": "正面提示词",
   "drop_importNegativePrompt": "负面提示词",

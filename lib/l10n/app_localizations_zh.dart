@@ -130,6 +130,13 @@ class AppLocalizationsZh extends AppLocalizations {
   String get bigmanMod_badgeUpscale => '放大';
 
   @override
+  String get bigmanMod_promptInbox => 'DSH 提示词收件箱';
+
+  @override
+  String get bigmanMod_promptInboxSubtitle =>
+      '轮询约定文件，把 DSH 写好的提示词自动填进输入框（含负面词与角色分区），省掉手动复制粘贴。';
+
+  @override
   String get drop_importOptions => '导入选项';
 
   @override
@@ -14839,6 +14846,13 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
 
   @override
   String get bigmanMod_badgeUpscale => '放大';
+
+  @override
+  String get bigmanMod_promptInbox => 'DSH 提示詞收件箱';
+
+  @override
+  String get bigmanMod_promptInboxSubtitle =>
+      '輪詢約定檔案，把 DSH 寫好的提示詞自動填入輸入框（含負面詞與角色分區），省掉手動複製貼上。';
 
   @override
   String get drop_importOptions => '匯入選項';

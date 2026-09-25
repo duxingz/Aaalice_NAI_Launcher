@@ -45,6 +45,8 @@
   "bigmanMod_badgeImg2Img": "img2img",
   "bigmanMod_badgeInpaint": "inpaint",
   "bigmanMod_badgeUpscale": "upscale",
+  "bigmanMod_promptInbox": "DSH prompt inbox",
+  "bigmanMod_promptInboxSubtitle": "Watches an agreed file and fills prompts written by DSH into the input box (including negative prompt and character sections), so you can skip copy-paste.",
   "drop_importOptions": "Import options",
   "drop_importPrompt": "Positive prompt",
   "drop_importNegativePrompt": "Negative prompt",
