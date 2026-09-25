@@ -9,6 +9,7 @@ import '../../../core/models/image_generation_artifact.dart';
 import '../../../core/network/request_builders/nai_image_request_builder.dart';
 import '../../../core/utils/app_logger.dart';
 import '../../../core/utils/focused_inpaint_utils.dart';
+import '../../../core/utils/image_save_utils.dart';
 import '../../../core/utils/inpaint_mask_utils.dart';
 import '../../../core/utils/isolate_pool.dart';
 import '../../../core/utils/nai_api_utils.dart';
@@ -270,10 +271,9 @@ class NaiGenerationResponseProcessor {
           ImageGenerationArtifact(displayImageBytes: imageBytes),
         );
       }
-      return focusedRequest.composeGeneratedImageArtifactAsync(
-        imageBytes,
-        maskArtifacts,
-      );
+      return focusedRequest
+          .composeGeneratedImageArtifactAsync(imageBytes, maskArtifacts)
+          .then((artifact) => _withOriginalMetadata(artifact, imageBytes));
     }
     if (params.isOutpaint) {
       return Future.value(
@@ -289,13 +289,38 @@ class NaiGenerationResponseProcessor {
       );
     }
 
-    return ComputeGate().runIsolate(() {
-      return InpaintMaskUtils.composeGeneratedImageArtifact(
-        normalizedSourceImage: sourceImage,
-        compositeMaskImage: maskArtifacts.compositeMaskBytes,
-        generatedImage: imageBytes,
+    return ComputeGate()
+        .runIsolate(() {
+          return InpaintMaskUtils.composeGeneratedImageArtifact(
+            normalizedSourceImage: sourceImage,
+            compositeMaskImage: maskArtifacts.compositeMaskBytes,
+            generatedImage: imageBytes,
+          );
+        })
+        .then((artifact) => _withOriginalMetadata(artifact, imageBytes));
+  }
+
+  /// 胖大叔自用改：局部重绘的图在客户端重新合成过，像素变了但元数据应该
+  /// 保留服务器返回的原版。这里把原始元数据搬回合成后的图，避免重绘图
+  /// 保存后读不到参数（合成用的 PNG 编码器不写文本块）。
+  Future<ImageGenerationArtifact> _withOriginalMetadata(
+    ImageGenerationArtifact artifact,
+    Uint8List originalBytes,
+  ) async {
+    try {
+      final bytes = await ImageSaveUtils.transplantNaiMetadata(
+        sourceBytes: originalBytes,
+        targetBytes: artifact.displayImageBytes,
       );
-    });
+      if (identical(bytes, artifact.displayImageBytes)) return artifact;
+      return ImageGenerationArtifact(
+        displayImageBytes: bytes,
+        transparentPatchBytes: artifact.transparentPatchBytes,
+      );
+    } catch (_) {
+      // 搬运失败不影响出图，退回原 artifact。
+      return artifact;
+    }
   }
 
   Map<String, dynamic>? _decodeMessage(Uint8List bytes) {

@@ -277,6 +277,29 @@ class ImageSaveUtils {
     );
   }
 
+  /// 胖大叔自用改：把 [sourceBytes] 里服务器原始元数据原样搬到 [targetBytes]。
+  ///
+  /// 局部重绘时客户端要重新合成像素（把重绘块贴回原图），而合成用的 PNG
+  /// 编码器不写文本块，服务器返回的元数据会在那一步丢掉。这里把原始元数据
+  /// 重新嵌回合成后的图，让重绘图的元数据与普通生成完全一致。
+  static Future<Uint8List> transplantNaiMetadata({
+    required Uint8List sourceBytes,
+    required Uint8List targetBytes,
+    bool useStealth = false,
+  }) async {
+    final source = _extractEmbeddedPngMetadata(sourceBytes);
+    final commentJson = source?.commentJson;
+    if (commentJson == null) return targetBytes;
+    return _embedNaiAlignedMetadata(
+      imageBytes: targetBytes,
+      commentJson: commentJson,
+      description: source?.description ?? '',
+      source: source?.source ?? '',
+      software: source?.software ?? 'NovelAI',
+      useStealth: useStealth,
+    );
+  }
+
   /// Adds Launcher fixed-tag provenance without replacing existing NAI fields.
   static Future<Uint8List> mergeFixedTagUsageMetadata({
     required Uint8List imageBytes,
