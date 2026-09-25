@@ -37,6 +37,19 @@ class ImageSaveUtils {
   /// [charCaptions] - 角色提示词列表（V4多角色）
   /// [charNegCaptions] - 角色负面提示词列表
   /// [useCoords] - 是否使用坐标模式
+  /// 胖大叔自用改：这张图是怎么生成的（与 NAI 官网的 `request_type` 同名）。
+  ///
+  /// 写进 PNG 元数据用它，填 `GeneratedImage.requestType` 也用它 ——
+  /// 单一事实来源，避免「图库能判、历史记录判不出」这种不一致。
+  static String requestTypeFor(ImageParams params) {
+    if (params.isInpainting) return 'NativeInfillingRequest';
+    if (params.isImg2Img) return 'Img2ImgRequest';
+    if (params.effectiveE2eUpscale || params.upscaledEnhance) {
+      return 'UpscaleRequest';
+    }
+    return 'PromptGenerateRequest';
+  }
+
   static Map<String, dynamic> buildCommentJson({
     required ImageParams params,
     required int actualSeed,
@@ -99,13 +112,7 @@ class ImageSaveUtils {
         'upscale': {'declared_blur_sigma': E2eUpscale.declaredBlurSigma},
       // 胖大叔自用改：写清这张图是怎么生成的，供缩略图的来源角标判断。
       // 用官网同名字段，这样「本地历史记录」和「保存后的 PNG」读的是同一份判据。
-      'request_type': params.isInpainting
-          ? 'NativeInfillingRequest'
-          : params.isImg2Img
-          ? 'Img2ImgRequest'
-          : params.effectiveE2eUpscale || params.upscaledEnhance
-          ? 'UpscaleRequest'
-          : 'PromptGenerateRequest',
+      'request_type': requestTypeFor(params),
       if (params.upscaledEnhance) 'upscaled_enhance': 2,
     };
 

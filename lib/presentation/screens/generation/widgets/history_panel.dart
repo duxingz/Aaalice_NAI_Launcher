@@ -1025,7 +1025,10 @@ class _HistoryPanelState extends ConsumerState<HistoryPanel> {
         Positioned(
           right: 4,
           bottom: 4,
-          child: GenerationSourceBadge(metadata: image.metadata),
+          child: GenerationSourceBadge(
+            metadata: image.metadata,
+            requestType: image.requestType,
+          ),
         ),
       ],
     );

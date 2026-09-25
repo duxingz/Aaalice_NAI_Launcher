@@ -1,5 +1,6 @@
 import 'dart:typed_data';
 
+import '../../../core/utils/image_save_utils.dart';
 import '../../../data/datasources/remote/nai_image_generation_api_service.dart';
 import '../../../data/models/image/image_params.dart';
 import '../../../data/models/image/image_postprocess_phase.dart';
@@ -202,6 +203,8 @@ class ImageGenerationService {
                     image,
                     width: params.width,
                     height: params.height,
+                    // 胖大叔自用改：生成时记下来源，历史记录缩略图才判得出角标。
+                    requestType: ImageSaveUtils.requestTypeFor(params),
                   ),
                 )
                 .toList();

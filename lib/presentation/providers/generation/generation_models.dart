@@ -103,6 +103,12 @@ class GeneratedImage {
   /// 当图像被保存到磁盘后，此字段会被填充
   final String? filePath;
 
+  /// 胖大叔自用改：这张图是怎么生成的（与 NAI 的 `request_type` 同名）。
+  ///
+  /// 历史记录里的图是内存态、`metadata` 为 null，角标判不出来；这里在生成
+  /// 时就记下来源，让历史缩略图与本地画廊用同一套判据。旧数据为 null。
+  final String? requestType;
+
   GeneratedImage({
     required this.id,
     required this.bytes,
@@ -116,6 +122,7 @@ class GeneratedImage {
     this.comparisonSource,
     this.preserveOriginalBytesOnSave = false,
     this.filePath,
+    this.requestType,
   }) : createdAt = createdAt ?? DateTime.now();
 
   /// 创建新的生成图像（自动生成ID）
@@ -129,6 +136,7 @@ class GeneratedImage {
     String? postprocessError,
     ImageComparisonSource? comparisonSource,
     bool preserveOriginalBytesOnSave = false,
+    String? requestType,
   }) {
     final encodedSize = NaiResolutionAdapter.readImageSize(bytes);
     return GeneratedImage(
@@ -141,6 +149,7 @@ class GeneratedImage {
       fixedTagUsageSnapshot: fixedTagUsageSnapshot,
       postprocessError: postprocessError,
       comparisonSource: comparisonSource,
+      requestType: requestType,
       preserveOriginalBytesOnSave: preserveOriginalBytesOnSave,
     );
   }
@@ -160,6 +169,7 @@ class GeneratedImage {
       preserveOriginalBytesOnSave: preserveOriginalBytesOnSave,
       filePath: path,
       postprocessError: postprocessError,
+      requestType: requestType,
     );
   }
 

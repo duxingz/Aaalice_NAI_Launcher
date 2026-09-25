@@ -9,26 +9,45 @@ import '../../../data/models/gallery/nai_image_metadata.dart';
 /// 依据 NAI 元数据里的 `request_type` 判断这张图是怎么来的：
 /// 图生图 / 局部重绘 / 放大。三者可以同时出现。
 class GenerationSourceBadge extends StatelessWidget {
-  const GenerationSourceBadge({super.key, required this.metadata});
+  const GenerationSourceBadge({
+    super.key,
+    this.metadata,
+    this.requestType,
+  });
 
   final NaiImageMetadata? metadata;
+
+  /// 历史记录里的图是内存态、[metadata] 为 null，但生成时记下了来源。
+  /// 两个来源二选一，优先用显式传入的 [requestType]。
+  final String? requestType;
 
   /// 该图需要显示的角标文字；没有可识别来源时返回空列表。
   static List<String> labelsFor(
     NaiImageMetadata? metadata,
-    AppLocalizations l10n,
-  ) {
-    if (metadata == null) return const [];
+    AppLocalizations l10n, {
+    String? requestType,
+  }) {
+    final type = requestType ?? metadata?.requestType;
     final labels = <String>[];
-    if (metadata.isImg2ImgSource) labels.add(l10n.bigmanMod_badgeImg2Img);
-    if (metadata.isInpaintSource) labels.add(l10n.bigmanMod_badgeInpaint);
-    if (metadata.isUpscaledSource) labels.add(l10n.bigmanMod_badgeUpscale);
+    final isImg2Img =
+        metadata?.isImg2ImgSource == true || type == 'Img2ImgRequest';
+    final isInpaint = type == 'NativeInfillingRequest';
+    final isUpscaled =
+        metadata?.isUpscaledSource == true ||
+        (type != null && type.toLowerCase().contains('upscale'));
+    if (isImg2Img) labels.add(l10n.bigmanMod_badgeImg2Img);
+    if (isInpaint) labels.add(l10n.bigmanMod_badgeInpaint);
+    if (isUpscaled) labels.add(l10n.bigmanMod_badgeUpscale);
     return labels;
   }
 
   @override
   Widget build(BuildContext context) {
-    final labels = labelsFor(metadata, context.l10n);
+    final labels = labelsFor(
+      metadata,
+      context.l10n,
+      requestType: requestType,
+    );
     if (labels.isEmpty) return const SizedBox.shrink();
     return IgnorePointer(
       child: Row(
