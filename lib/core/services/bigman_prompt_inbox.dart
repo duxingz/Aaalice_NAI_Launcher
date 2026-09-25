@@ -166,6 +166,8 @@ class PromptInboxWatcher {
     required this.isBusy,
     this.path = BigmanPromptInbox.defaultPath,
     this.onApplied,
+    this.snapshotCurrent,
+    this.onBackup,
   });
 
   final String path;
@@ -177,6 +179,12 @@ class PromptInboxWatcher {
   /// 正在生成时不要打断，延后到下一轮再填。
   final bool Function() isBusy;
   final void Function(String summary)? onApplied;
+
+  /// 返回当前各区的值（用于覆盖前备份）；返回 null 表示拿不到。
+  final String? Function()? snapshotCurrent;
+
+  /// 备份成功后的通知（参数是备份文件路径）。
+  final void Function(String backupPath)? onBackup;
 
   Timer? _timer;
   String? _lastDigest;
@@ -196,6 +204,35 @@ class PromptInboxWatcher {
     _pending = null;
   }
 
+  /// 覆盖前先备份旧值，避免误覆盖后找不回来。
+  ///
+  /// 只备份「本次会被改动的区」，文件名带时间戳，落在收件箱同目录。
+  Future<void> _backupBeforeApply(PromptInboxPayload payload) async {
+    try {
+      final wouldOverwrite =
+          (payload.positive?.trim().isNotEmpty ?? false) ||
+          (payload.negative?.trim().isNotEmpty ?? false) ||
+          payload.characters.isNotEmpty;
+      if (!wouldOverwrite) return;
+      final previous = snapshotCurrent?.call();
+      if (previous == null || previous.trim().isEmpty) return;
+      final dir = File(path).parent;
+      if (!await dir.exists()) await dir.create(recursive: true);
+      final stamp = DateTime.now()
+          .toIso8601String()
+          .replaceAll(':', '')
+          .replaceAll('-', '')
+          .split('.')
+          .first;
+      final backup = File('${dir.path}${Platform.pathSeparator}'
+          'backup-before-overwrite-$stamp.txt');
+      await backup.writeAsString(previous, flush: true);
+      onBackup?.call(backup.path);
+    } catch (_) {
+      // 备份失败不阻断填写。
+    }
+  }
+
   Future<void> _tick() async {
     if (_running) return;
     _running = true;
@@ -207,6 +244,7 @@ class PromptInboxWatcher {
       if (digest == _lastDigest) {
         // 内容没变：如果上一轮因为正在生成被押后，这里再试一次。
         if (_pending != null && !isBusy()) {
+          await _backupBeforeApply(_pending!);
           _apply(_pending!);
           _pending = null;
         }
@@ -219,6 +257,7 @@ class PromptInboxWatcher {
         _pending = payload;
         return;
       }
+      await _backupBeforeApply(payload);
       _apply(payload);
     } finally {
       _running = false;

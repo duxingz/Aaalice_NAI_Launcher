@@ -78,6 +78,24 @@ class _GenerationScreenState extends ConsumerState<GenerationScreen> {
             if (!mounted) return;
             AppToast.info(context, '已从 DSH 填入：$summary');
           },
+          // 覆盖前备份：把当前各区拼成同格式文本存盘，误覆盖后能找回。
+          snapshotCurrent: () {
+            final params = ref.read(generationParamsNotifierProvider);
+            final characters = ref
+                .read(characterPromptNotifierProvider)
+                .characters;
+            final buffer = StringBuffer()
+              ..writeln('---POSITIVE---')
+              ..writeln(params.prompt)
+              ..writeln('---NEGATIVE---')
+              ..writeln(params.negativePrompt);
+            for (final character in characters) {
+              buffer
+                ..writeln('---CHARACTER:${character.name}---')
+                ..writeln(character.prompt);
+            }
+            return buffer.toString();
+          },
         )
           ..start();
   }
