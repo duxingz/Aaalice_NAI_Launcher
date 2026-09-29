@@ -209,6 +209,7 @@ const portableSettingKeys = <String>{
   StorageKeys.defaultScale,
   StorageKeys.defaultWidth,
   StorageKeys.defaultHeight,
+  StorageKeys.modelParamProfiles,
   StorageKeys.selectedResolutionPresetId,
   StorageKeys.autoSaveImages,
   StorageKeys.imageStraightAlpha,

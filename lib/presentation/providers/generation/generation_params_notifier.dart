@@ -21,6 +21,7 @@ import '../quality_preset_provider.dart';
 import '../subscription_provider.dart';
 import '../uc_preset_provider.dart';
 import 'generation_params_persistence_service.dart';
+import 'model_param_profiles.dart';
 import 'vibe_reference_service.dart';
 
 part 'generation_params_notifier.g.dart';
@@ -162,18 +163,41 @@ class GenerationParamsNotifier extends _$GenerationParamsNotifier {
 
   /// 更新模型
   ///
-  /// [followDefaults] 为 true 时，若 CFG 与步数仍停留在旧模型的出厂默认值，
-  /// 会一并切到新模型的默认值；用户手动调过的参数不会被覆盖。元数据导入等
-  /// 需要还原历史参数的场景应传 false。
+  /// [followDefaults] 为 true 时按「分模型记忆」走：先把当前这套参数存进
+  /// 正要离开的模型桶，再取出目标模型的桶。桶里有记录就直接用那套（切回
+  /// V4.5 时拿回上次跑 V4.5 的参数，切回 V5 时拿回上次跑 V5 的参数）；
+  /// 桶是空的（第一次用这个模型）才退回原来的出厂默认跟随——若 CFG 与步数
+  /// 仍停留在旧模型的出厂默认值，会一并切到新模型的默认值。
+  ///
+  /// 同一代之间切换（V5 Full ↔ V5 Curated）不进记忆：参数本来就是同一套，
+  /// 去读桶里那份「上次离开时」的旧值反而会把刚调好的参数顶掉。
+  ///
+  /// 元数据导入等需要还原历史参数的场景必须传 `followDefaults: false`，
+  /// 它们既不读也不写记忆，行为与加入记忆前完全一致。
   void updateModel(
     String model, {
     bool persist = true,
     bool followDefaults = true,
   }) {
     final previousModel = state.model;
+    final bucket = modelParamProfileBucket(model);
+    final previousBucket = modelParamProfileBucket(previousModel);
+
+    // 记忆只在用户主动换模型、且确实换了桶时参与。
+    final useProfiles =
+        persist && followDefaults && bucket != previousBucket;
+    final profiles = useProfiles
+        ? ModelParamProfiles.decode(_storage.getModelParamProfilesJson())
+        : ModelParamProfiles.empty;
+    final recalled = profiles[bucket];
+    // 离开时的快照必须在 state 被改写前取。
+    final outgoingProfile = useProfiles
+        ? ModelParamProfile.fromParams(state)
+        : null;
+
     var next = state.copyWith(model: model);
 
-    final followUps = followDefaults
+    final followUps = followDefaults && recalled == null
         ? resolveModelSwitchFollowUps(
             from: ModelCapabilityRegistry.of(previousModel),
             to: ModelCapabilityRegistry.of(model),
@@ -184,6 +208,9 @@ class GenerationParamsNotifier extends _$GenerationParamsNotifier {
           )
         : const ModelSwitchFollowUps();
 
+    if (recalled != null) {
+      next = recalled.applyTo(next);
+    }
     if (followUps.scale != null) {
       next = next.copyWith(scale: followUps.scale!);
     }
@@ -213,6 +240,34 @@ class GenerationParamsNotifier extends _$GenerationParamsNotifier {
         _storage.setLastVarietyPlus(followUps.varietyPlus!);
       }
     }
+
+    if (outgoingProfile != null) {
+      // 记下离开的模型这一套，并保留目标模型原有的记忆。
+      final updated = profiles.withBucket(previousBucket, outgoingProfile);
+      unawaited(_storage.setModelParamProfilesJson(updated.encode()));
+      if (recalled != null) {
+        // 取出来的这套同时要写成「当前参数」，否则重启后 buildDefaults()
+        // 读到的仍是另一个模型留下的单值，界面和存档会对不上。
+        _persistCurrentParams(next);
+      }
+    }
+  }
+
+  /// 把 [params] 里跟模型走的参数写回各自的单值键。
+  void _persistCurrentParams(ImageParams params) {
+    final storage = _storage;
+    storage.setDefaultSampler(params.sampler);
+    storage.setDefaultSteps(params.steps);
+    storage.setDefaultScale(params.scale);
+    storage.setDefaultWidth(params.width);
+    storage.setDefaultHeight(params.height);
+    storage.setLastSmea(params.smea);
+    storage.setLastSmeaDyn(params.smeaDyn);
+    storage.setLastCfgRescale(params.cfgRescale);
+    storage.setLastNoiseSchedule(params.noiseSchedule);
+    storage.setLastVarietyPlus(params.varietyPlus);
+    storage.setLastTransparentBackground(params.transparentBackground);
+    storage.setLastE2eUpscale(params.e2eUpscale);
   }
 
   /// 更新尺寸

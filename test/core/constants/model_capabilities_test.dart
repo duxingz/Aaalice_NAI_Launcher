@@ -601,4 +601,48 @@ void main() {
       expect(followUps.varietyPlus, isNull);
     });
   });
+
+  group('modelParamProfileBucket', () {
+    test('merges Curated and Full of the same generation', () {
+      expect(
+        modelParamProfileBucket(ImageModels.animeDiffusionV45Full),
+        modelParamProfileBucket(ImageModels.animeDiffusionV45Curated),
+      );
+      expect(
+        modelParamProfileBucket(ImageModels.animeDiffusionV5Full),
+        modelParamProfileBucket(ImageModels.animeDiffusionV5Curated),
+      );
+    });
+
+    test('keeps V4.5 and V5 apart', () {
+      expect(modelParamProfileBucket(ImageModels.animeDiffusionV45Full), 'v45');
+      expect(modelParamProfileBucket(ImageModels.animeDiffusionV5Full), 'v5');
+      expect(modelParamProfileBucket(ImageModels.animeDiffusionV5Curated), 'v5');
+    });
+
+    test('maps inpainting variants and the staging key to their family', () {
+      expect(
+        modelParamProfileBucket(ImageModels.animeDiffusionV45FullInpainting),
+        'v45',
+      );
+      expect(
+        modelParamProfileBucket(ImageModels.animeDiffusionV5CuratedInpainting),
+        'v5',
+      );
+      expect(modelParamProfileBucket(ImageModels.v5StagingKey), 'v5');
+    });
+
+    test('maps the older families', () {
+      expect(modelParamProfileBucket(ImageModels.animeDiffusionV4Full), 'v4');
+      expect(modelParamProfileBucket(ImageModels.animeDiffusionV3), 'v3');
+      expect(modelParamProfileBucket(ImageModels.animeV2), 'v2');
+      expect(modelParamProfileBucket(ImageModels.animeFull), 'legacy');
+      expect(modelParamProfileBucket(ImageModels.furryDiffusionV3), 'furryV3');
+      expect(modelParamProfileBucket(ImageModels.furry), 'furry');
+    });
+
+    test('falls back to legacy for unknown ids', () {
+      expect(modelParamProfileBucket('some-unknown-model'), 'legacy');
+    });
+  });
 }

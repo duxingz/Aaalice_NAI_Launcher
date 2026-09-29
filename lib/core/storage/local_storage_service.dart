@@ -206,6 +206,18 @@ class LocalStorageService {
     await setSetting(StorageKeys.defaultHeight, height);
   }
 
+  /// 获取按模型大版本记忆的生成参数（JSON）。
+  ///
+  /// 结构由 `ModelParamProfiles` 解释，存储层只当字符串搬运。
+  String? getModelParamProfilesJson() {
+    return getSetting<String>(StorageKeys.modelParamProfiles);
+  }
+
+  /// 保存按模型大版本记忆的生成参数
+  Future<void> setModelParamProfilesJson(String json) async {
+    await setSetting(StorageKeys.modelParamProfiles, json);
+  }
+
   /// 获取选中的分辨率预设 ID
   String? getSelectedResolutionPresetId() {
     return getSetting<String>(StorageKeys.selectedResolutionPresetId);

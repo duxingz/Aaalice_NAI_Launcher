@@ -17,6 +17,7 @@ import 'package:nai_launcher/data/models/vibe/vibe_reference.dart';
 import 'package:nai_launcher/data/services/vibe_library_storage_service.dart';
 import 'package:nai_launcher/presentation/providers/auth_provider.dart';
 import 'package:nai_launcher/presentation/providers/generation/generation_params_notifier.dart';
+import 'package:nai_launcher/presentation/providers/generation/model_param_profiles.dart';
 import 'package:nai_launcher/presentation/providers/subscription_provider.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -1003,7 +1004,99 @@ void main() {
       expect(params.varietyPlus, isFalse);
     });
 
-    test('should keep an adjusted V4.5 scale when switching to V5', () async {
+    test('should recall each model own params instead of carrying them over', () {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+
+      final notifier = container.read(
+        generationParamsNotifierProvider.notifier,
+      );
+      // V5 出厂默认 → V4.5：这一步会把 V5 那套（4.0 / 28）记进 v5 桶。
+      notifier.updateModel(ImageModels.animeDiffusionV45Full);
+      // 在 V4.5 上把 CFG 调成 7.5。
+      notifier.updateScale(7.5);
+
+      // 切到 V5：拿回 V5 自己上次那套，而不是把 V4.5 的 7.5 带过去。
+      notifier.updateModel(ImageModels.animeDiffusionV5Full);
+      expect(container.read(generationParamsNotifierProvider).scale, 4.0);
+      expect(container.read(generationParamsNotifierProvider).steps, 28);
+
+      // 切回 V4.5：7.5 原样回来。
+      notifier.updateModel(ImageModels.animeDiffusionV45Full);
+      expect(container.read(generationParamsNotifierProvider).scale, 7.5);
+    });
+
+    test('should remember sampler and size per model family', () {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+
+      final notifier = container.read(
+        generationParamsNotifierProvider.notifier,
+      );
+      notifier.updateModel(ImageModels.animeDiffusionV45Full);
+      notifier.updateSampler(Samplers.kDpmpp2sAncestral);
+      notifier.updateSize(1216, 832);
+
+      notifier.updateModel(ImageModels.animeDiffusionV5Full);
+      // V5 桶里还是它自己的出厂值。
+      expect(
+        container.read(generationParamsNotifierProvider).sampler,
+        Samplers.kEulerAncestral,
+      );
+      expect(container.read(generationParamsNotifierProvider).width, 832);
+      expect(container.read(generationParamsNotifierProvider).height, 1216);
+
+      notifier.updateModel(ImageModels.animeDiffusionV45Full);
+      final recalled = container.read(generationParamsNotifierProvider);
+      expect(recalled.sampler, Samplers.kDpmpp2sAncestral);
+      expect(recalled.width, 1216);
+      expect(recalled.height, 832);
+    });
+
+    test('should share one bucket between Curated and Full of a family', () {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+
+      final notifier = container.read(
+        generationParamsNotifierProvider.notifier,
+      );
+      notifier.updateModel(ImageModels.animeDiffusionV45Full);
+      notifier.updateScale(6.8);
+
+      // 同代 Curated 与 Full 共用一个桶，参数不该被重置。
+      notifier.updateModel(ImageModels.animeDiffusionV45Curated);
+      expect(container.read(generationParamsNotifierProvider).scale, 6.8);
+      expect(
+        container.read(generationParamsNotifierProvider).model,
+        ImageModels.animeDiffusionV45Curated,
+      );
+    });
+
+    test('should not let a stale bucket overwrite a same-family switch', () {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+
+      final notifier = container.read(
+        generationParamsNotifierProvider.notifier,
+      );
+      // 先把 v45 桶填上：离开 V4.5 再回来，桶里存的是当时的 5.0。
+      notifier.updateModel(ImageModels.animeDiffusionV45Full);
+      notifier.updateModel(ImageModels.animeDiffusionV5Full);
+      notifier.updateModel(ImageModels.animeDiffusionV45Full);
+      expect(container.read(generationParamsNotifierProvider).scale, 5.0);
+
+      // 在 V4.5 上把 CFG 调成 6.8，再切到同代的 Curated。
+      notifier.updateScale(6.8);
+      notifier.updateModel(ImageModels.animeDiffusionV45Curated);
+      expect(container.read(generationParamsNotifierProvider).scale, 6.8);
+
+      // 真正换到另一代再回来时，桶里存的仍是刚才那套 6.8。
+      notifier.updateModel(ImageModels.animeDiffusionV5Full);
+      notifier.updateModel(ImageModels.animeDiffusionV45Curated);
+      expect(container.read(generationParamsNotifierProvider).scale, 6.8);
+    });
+
+    test('should write recalled params back as the current defaults', () async {
       final container = ProviderContainer();
       addTearDown(container.dispose);
 
@@ -1012,10 +1105,46 @@ void main() {
       );
       notifier.updateModel(ImageModels.animeDiffusionV45Full);
       notifier.updateScale(7.5);
+      notifier.updateModel(ImageModels.animeDiffusionV5Full);
+      // 切到 V5 时取回的是 V5 那套，必须同时落到单值键上，
+      // 否则重启后 buildDefaults() 读到的还是 V4.5 留下的 7.5。
+      notifier.updateModel(ImageModels.animeDiffusionV45Full);
 
-      notifier.updateModel(ImageModels.v5StagingKey);
+      final storage = LocalStorageService();
+      expect(storage.getDefaultScale(), 7.5);
+      expect(storage.getDefaultModel(), ImageModels.animeDiffusionV45Full);
+    });
 
+    test('should keep the profile memory untouched by metadata imports', () {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+
+      final notifier = container.read(
+        generationParamsNotifierProvider.notifier,
+      );
+      // V5 出厂默认 → V4.5：记下 v5 桶（4.0 / 28），并把画面参数调成 7.5。
+      notifier.updateModel(ImageModels.animeDiffusionV45Full);
+      notifier.updateScale(7.5);
+
+      final storage = LocalStorageService();
+      final before = ModelParamProfiles.decode(
+        storage.getModelParamProfilesJson(),
+      );
+      expect(before['v5']?.scale, 4.0);
+
+      // 导入一张 V5 图：只还原历史参数，既不读也不写记忆。
+      notifier.updateModel(
+        ImageModels.animeDiffusionV5Full,
+        followDefaults: false,
+      );
+      // 没有读记忆 —— 否则 CFG 会被 v5 桶里的 4.0 顶掉。
       expect(container.read(generationParamsNotifierProvider).scale, 7.5);
+      // 也没有写记忆 —— v5 桶仍是切走时那套。
+      final after = ModelParamProfiles.decode(
+        storage.getModelParamProfilesJson(),
+      );
+      expect(after['v5']?.scale, 4.0);
+      expect(after['v45'], isNull);
     });
 
     test('should skip the follow-up for metadata imports', () async {

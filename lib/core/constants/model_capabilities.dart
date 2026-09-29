@@ -464,3 +464,23 @@ ModelSwitchFollowUps resolveModelSwitchFollowUps({
     varietyPlus: dropsVarietyPlus ? false : null,
   );
 }
+
+/// 生成参数「按模型记忆」时使用的桶名。
+///
+/// 只按大版本归并：V4.5 Curated 与 V4.5 Full 共用一个桶，V5 的两个变体同理，
+/// 因为同一代模型的参数含义一致，用户在 Curated/Full 之间切换时不该换一套参数。
+/// inpainting 变体与测试期别名都通过 [ImageModels.migrateLegacyModel] 归一后
+/// 落回所属大版本。
+///
+/// 判断顺序必须从长到短：`nai-diffusion-4-5-full` 同时包含 `diffusion-4`。
+String modelParamProfileBucket(String model) {
+  final id = ImageModels.migrateLegacyModel(model);
+  if (id.contains('furry-3')) return 'furryV3';
+  if (id.contains('furry')) return 'furry';
+  if (id.contains('diffusion-5')) return 'v5';
+  if (id.contains('diffusion-4-5')) return 'v45';
+  if (id.contains('diffusion-4')) return 'v4';
+  if (id.contains('diffusion-3')) return 'v3';
+  if (id.contains('diffusion-2')) return 'v2';
+  return 'legacy';
+}

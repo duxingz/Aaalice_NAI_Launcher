@@ -122,6 +122,7 @@ class StorageKeys {
   static const String defaultScale = 'default_scale';
   static const String defaultWidth = 'default_width';
   static const String defaultHeight = 'default_height';
+  static const String modelParamProfiles = 'model_param_profiles';
   static const String selectedResolutionPresetId =
       'selected_resolution_preset_id';
   static const String imageSavePath = 'image_save_path';
