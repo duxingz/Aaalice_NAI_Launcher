@@ -29,7 +29,8 @@ void main() {
         );
 
     final params = container.read(generationParamsNotifierProvider);
-    expect(params.prompt, 'blue_archive, 1girl');
+    // 自动格式化会按既定格式规则把下划线换成空格，这里断言的是搬过来的内容本身。
+    expect(params.prompt, 'blue archive, 1girl');
     expect(params.negativePrompt, 'lowres');
     expect(container.read(pendingPromptNotifierProvider).prompt, isNull);
   });
