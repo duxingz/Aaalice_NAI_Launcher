@@ -44,6 +44,13 @@ class ToolManager extends ChangeNotifier {
   bool _pendingToolNotification = false;
   String? _pendingToolId;
 
+  /// 是否暂停持久化画笔设置。
+  ///
+  /// 局部重绘会临时把笔刷改成适合画蒙版的参数，这套参数只属于本次会话，
+  /// 一旦落盘就会永久顶掉用户自己调好的笔刷，因此蒙版模式期间挂起画笔写入。
+  /// 只拦画笔：橡皮、魔棒等其它工具在这期间照常保存。
+  bool _brushPersistSuspended = false;
+
   bool get _isBatching => _batchDepth > 0;
 
   /// 构造函数
@@ -60,10 +67,19 @@ class ToolManager extends ChangeNotifier {
   /// 异步加载持久化设置
   Future<void> _loadSettingsAsync() async {
     await settingsManager.load();
-    // 恢复当前工具的设置
-    if (_currentTool != null) {
-      _restoreToolSettings(_currentTool!);
+    // 恢复所有工具的设置。
+    //
+    // 不能只恢复此刻的 _currentTool：加载是异步的，界面可能在它完成前就切走了
+    // 工具（例如进入局部重绘时切到选区），那样被切走的工具这一整轮都拿不到
+    // 已保存的参数，随后还会以默认值被写回。
+    for (final tool in _tools) {
+      _restoreToolSettings(tool);
     }
+  }
+
+  /// 挂起/恢复画笔设置的持久化写入。
+  void setBrushSettingsPersistSuspended(bool value) {
+    _brushPersistSuspended = value;
   }
 
   /// 获取所有工具（只读）
@@ -90,6 +106,9 @@ class ToolManager extends ChangeNotifier {
 
   /// 保存工具设置
   void _saveToolSettings(EditorTool tool) {
+    // 蒙版模式期间不落盘画笔，避免临时覆盖写坏用户自己的笔刷参数。
+    if (_brushPersistSuspended && tool is BrushTool) return;
+
     if (tool is BrushTool) {
       settingsManager.setSetting(tool.id, 'settings', tool.settings.toJson());
       settingsManager.setSetting(

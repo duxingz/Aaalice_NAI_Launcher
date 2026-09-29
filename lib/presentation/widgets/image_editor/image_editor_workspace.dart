@@ -344,6 +344,12 @@ class ImageEditorWorkspaceState extends State<ImageEditorWorkspace> {
       session: _controller,
       editorState: _state,
     );
+    // 局部重绘会用蒙版专用的临时笔刷参数，且这些参数不落盘：
+    // 否则关闭编辑器时会把 55% 不透明度 / 100% 硬度写回存储，
+    // 永久顶掉用户自己调好的笔刷（用户报告的「进图生图丢笔刷」）。
+    if (_isInpaintMode) {
+      _state.setBrushSettingsPersistenceSuspended(true);
+    }
     _magicWandController = MagicWandController(
       session: _controller,
       editorState: _state,
@@ -417,6 +423,8 @@ class ImageEditorWorkspaceState extends State<ImageEditorWorkspace> {
     });
 
     if (_isInpaintMode) {
+      // 蒙版专用观感：蓝色 + 半透明（方便看清底图）+ 硬边。
+      // 这三项只在本次会话有效，不写回存储，见 initState 的挂起说明。
       _state.setForegroundColor(const Color(0xFF60AAFF));
       _state.setBrushOpacity(0.55);
       _state.setBrushHardness(1.0);

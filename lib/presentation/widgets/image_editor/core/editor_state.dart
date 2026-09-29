@@ -208,6 +208,14 @@ class EditorState extends ChangeNotifier {
     }
   }
 
+  /// 挂起/恢复画笔设置的持久化。
+  ///
+  /// 局部重绘会临时覆盖笔刷参数（蒙版专用），必须在进入该模式时挂起写入，
+  /// 否则这套临时值会覆盖并永久保存用户自己的笔刷设置。
+  void setBrushSettingsPersistenceSuspended(bool suspended) {
+    toolManager.setBrushSettingsPersistSuspended(suspended);
+  }
+
   /// 切回上一个工具
   void switchToPreviousTool() {
     currentTool?.onDeactivateFast(this);
