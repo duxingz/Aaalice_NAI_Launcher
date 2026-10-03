@@ -1,5 +1,8 @@
+import 'dart:io';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:nai_launcher/core/utils/bigman_save_name.dart';
+import 'package:path/path.dart' as p;
 
 void main() {
   BigmanSaveNameConfig config({
@@ -58,6 +61,44 @@ void main() {
   group('BigmanSaveName.read', () {
     test('存储未就绪时返回 null，保持上游命名行为', () {
       expect(BigmanSaveName.read(), isNull);
+    });
+  });
+
+  group('扫描序号的上限按总条目计数（胖大叔自用改）', () {
+    // 从前上限只数 PNG：保存根目录指向混放目录（图片和其它文件在一起、
+    // 或网盘同步目录）时，上限永远不触发，每次保存都要把整棵树走一遍，
+    // 表现就是「点保存后卡住」。
+    late Directory dir;
+
+    setUp(() async {
+      dir = await Directory.systemTemp.createTemp('bigman_scan_cap_');
+    });
+
+    tearDown(() async {
+      if (await dir.exists()) await dir.delete(recursive: true);
+    });
+
+    test('预算耗尽后连 PNG 都不再检查', () async {
+      // 目录里只有一个条目，而且它正是能吃满编号的 PNG。
+      await File(p.join(dir.path, '5.png')).writeAsBytes(const [0]);
+
+      // 上限 0 → 第一个条目就把预算用光，PNG 不会被读取。
+      // 旧实现只数 PNG，这条会得到 6；按总条目计数才会得到起始序号。
+      final capped = await config(scanMode: true).resolveNextIndex(
+        dir.path,
+        entryLimit: 0,
+      );
+      expect(capped, 1);
+
+      // 预算充足时同一个目录能取到最大编号，证明 PNG 是可被识别的。
+      final full = await config(scanMode: true).resolveNextIndex(dir.path);
+      expect(full, 6);
+    });
+
+    test('目录不存在时退回起始序号', () async {
+      final missing = p.join(dir.path, 'nope');
+      final value = await config(scanMode: true).resolveNextIndex(missing);
+      expect(value, 1);
     });
   });
 }

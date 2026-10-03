@@ -219,13 +219,24 @@ class GlobalDropActionCoordinator {
           bytes: await VibeExportUtils.portableEntryBytes(vibe),
         ),
       ];
-    } catch (error) {
+    } catch (error, stack) {
+      // 拖进来的东西读不出内容（从浏览器/别的程序拖来的图很常见）属于
+      // **用户输入问题**，不是程序错误。这里提示并安静收尾，绝不 rethrow：
+      // 抛回原生拖放层会被记成未处理异常（用户本机留下过这种转储），
+      // 而且会让拖放会话以异常状态结束。
+      AppLogger.w(
+        'Dropped content could not be read: $error',
+        'DropHandler',
+      );
+      if (kDebugMode) {
+        AppLogger.d('Dropped content read stack: $stack', 'DropHandler');
+      }
       if (context.mounted) {
         _showError(
           '${context.l10n.toast_unreadableDroppedImageSource}: $error',
         );
       }
-      rethrow;
+      return const <DroppedFileData>[];
     }
   }
 

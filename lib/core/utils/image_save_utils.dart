@@ -620,6 +620,12 @@ class ImageSaveUtils {
         source.contains('novelai');
   }
 
+  /// 写 NAI 元数据的预算。
+  ///
+  /// 正常是毫秒级。给预算是因为它走全局计算闸门，且保存是用户等着的动作：
+  /// 宁可这一次少写元数据，也不能让保存永久卡住。
+  static const Duration _metadataWriteTimeout = Duration(seconds: 60);
+
   /// 对齐 NAI 官网格式写入 PNG 文本块：
   /// - Comment: 纯参数 JSON（根级含 prompt/seed/...）
   /// - Description/Software/Source: 独立 tEXt 字段
@@ -631,19 +637,29 @@ class ImageSaveUtils {
     required String source,
     bool useStealth = false,
   }) async {
-    final result = await ComputeGate().runCompute(
-      _writeAlignedMetadata,
-      _MetadataWriteRequest(
-        bytes: TransferableTypedData.fromList([imageBytes]),
-        commentJson: commentJson,
-        description: description,
-        software: software,
-        source: source,
-        useStealth: useStealth,
-      ),
-      debugLabel: 'save-image-metadata',
-    );
-    return result.materialize().asUint8List();
+    try {
+      final result = await ComputeGate().runCompute(
+        _writeAlignedMetadata,
+        _MetadataWriteRequest(
+          bytes: TransferableTypedData.fromList([imageBytes]),
+          commentJson: commentJson,
+          description: description,
+          software: software,
+          source: source,
+          useStealth: useStealth,
+        ),
+        debugLabel: 'save-image-metadata',
+        timeout: _metadataWriteTimeout,
+      );
+      return result.materialize().asUint8List();
+    } on ComputeGateTimeout catch (error) {
+      // 兜底：闸门卡住时放弃这次元数据写入，返回原图字节，保存照常完成。
+      AppLogger.w(
+        'Skipped NAI metadata embedding to keep the save responsive: $error',
+        'ImageSaveUtils',
+      );
+      return imageBytes;
+    }
   }
 
   static _NormalizedPrebuiltMetadata _normalizePrebuiltMetadata(

@@ -154,6 +154,13 @@ class ImageMetadataService {
   static const Duration _defaultParseTimeout = Duration(seconds: 5);
   static const Duration _highPriorityTimeout = Duration(seconds: 3);
 
+  /// 拖图（字节路径）解析的预算。
+  ///
+  /// 这条路径过去是全项目**唯一没有超时**的重解析入口，而它干的活最重
+  /// （stealth 元数据需要完整像素解码）。拖进来的又是任意来源的图，一旦
+  /// 卡住，拖图对话框就永远不弹、处理中遮罩永久盖住界面，只能重启进程。
+  static const Duration _droppedBytesParseTimeout = Duration(seconds: 20);
+
   /// 初始化服务
   Future<void> initialize() async {
     await _cacheManager.initialize();
@@ -434,6 +441,7 @@ class ImageMetadataService {
         UnifiedMetadataParser.parseFromImage,
         bytes,
         debugLabel: 'image_metadata_from_bytes',
+        timeout: _droppedBytesParseTimeout,
       );
       final metadata = result.success ? result.metadata : null;
       if (metadata != null && metadata.hasData) {

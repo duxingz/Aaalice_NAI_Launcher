@@ -12,11 +12,16 @@ import '../constants/storage_keys.dart';
 class BigmanSaveName {
   BigmanSaveName._();
 
-  /// 扫描模式的遍历上限，避免超大图库把保存拖慢。
+  /// 扫描模式的遍历上限，按**总条目数**计（不是只数 PNG）。
+  ///
+  /// 必须按总条目计数：`list(recursive: true)` 会走完整个子树，只数 PNG 的话，
+  /// 混放目录（保存根目录指向「图片和其它文件混在一起」的文件夹、桌面或网盘
+  /// 同步目录）里 PNG 很少却有大量其它文件，上限永远不触发，每次保存都要把
+  /// 整棵树走一遍 —— 表现就是「点保存后卡住」。
   ///
   /// ponytail: 上限内是文件系统顺序，超出后可能低估最大编号；真要处理
   /// 十万级图库时应改为按目录名倒序只扫最近若干天。
-  static const int maxScanFiles = 20000;
+  static const int maxScanEntries = 50000;
 
   static Box? settingsBox() {
     try {
@@ -110,14 +115,21 @@ class BigmanSaveNameConfig {
   }
 
   /// 取下一次要使用的序号。
-  Future<int> resolveNextIndex(String rootPath) async {
+  ///
+  /// [entryLimit] 是扫描模式的安全上限（遍历的总条目数），默认
+  /// [BigmanSaveName.maxScanEntries]；给个可调入口是为了能对「上限是否按总条目
+  /// 计数」写回归测试。
+  Future<int> resolveNextIndex(
+    String rootPath, {
+    int entryLimit = BigmanSaveName.maxScanEntries,
+  }) async {
     if (!scanMode) {
       final box = BigmanSaveName.settingsBox();
       final current = (box?.get(StorageKeys.bigmanSaveNameCounterValue) as int?);
       final value = current ?? start;
       return value < start ? start : value;
     }
-    final maxUsed = await _scanMaxIndex(rootPath);
+    final maxUsed = await _scanMaxIndex(rootPath, entryLimit);
     return maxUsed < start - 1 ? start : maxUsed + 1;
   }
 
@@ -128,7 +140,7 @@ class BigmanSaveNameConfig {
     await box.put(StorageKeys.bigmanSaveNameCounterValue, usedIndex + 1);
   }
 
-  Future<int> _scanMaxIndex(String rootPath) async {
+  Future<int> _scanMaxIndex(String rootPath, int entryLimit) async {
     final root = Directory(rootPath);
     if (!await root.exists()) return start - 1;
     final pattern = _namePattern();
@@ -137,10 +149,11 @@ class BigmanSaveNameConfig {
     var visited = 0;
     try {
       await for (final entity in root.list(recursive: true, followLinks: false)) {
+        // 先计数再筛选：遍历代价由「看过的条目数」决定，与是不是 PNG 无关。
+        visited++;
+        if (visited > entryLimit) break;
         if (entity is! File) continue;
         if (p.extension(entity.path).toLowerCase() != '.png') continue;
-        visited++;
-        if (visited > BigmanSaveName.maxScanFiles) break;
         final match = pattern.firstMatch(
           p.basenameWithoutExtension(entity.path),
         );

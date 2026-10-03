@@ -7,6 +7,7 @@ import 'package:super_drag_and_drop/super_drag_and_drop.dart';
 
 import '../../core/agent/resources/agent_chat_resource_drag_format.dart';
 import '../../core/agent/resources/agent_chat_resource_reference.dart';
+import '../../core/utils/app_logger.dart';
 import '../../data/models/precise_ref/precise_ref_library_entry.dart';
 import '../../data/models/vibe/vibe_library_entry.dart';
 import '../../data/services/precise_ref_library_storage_service.dart';
@@ -181,7 +182,10 @@ Future<CardDroppedResource> _readExternal(
   CardDropPolicy policy,
 ) async {
   final reader = item.dataReader;
-  if (reader == null) throw StateError('Drop reader is unavailable');
+  if (reader == null) {
+    _logUnreadableDrop(item, 'Drop reader is unavailable');
+    throw StateError('Drop reader is unavailable');
+  }
   final file = await DroppedFileReader.read(
     reader,
     allowVibeFiles: policy.allowVibes,
@@ -189,7 +193,31 @@ Future<CardDroppedResource> _readExternal(
     logTag: 'CardDrop',
   );
   if (file == null || file.bytes.isEmpty) {
+    _logUnreadableDrop(
+      item,
+      file == null ? 'no readable bytes' : 'empty payload',
+    );
     throw StateError('Drop item has no readable contents');
   }
   return CardDroppedResource(file: file);
+}
+
+/// 记录拖入内容读不出来的原因与可用格式。
+///
+/// 「别的程序拖过来的图读不出内容」是最难复现的一类反馈：对方说不清拖的是
+/// 什么，本机也看不到现场。把可用平台格式与来源类型记进日志后，下次开一次
+/// 文件日志就能定位。日志本身绝不抛异常、绝不影响拖放。
+void _logUnreadableDrop(DropItem item, String reason) {
+  try {
+    final formats = item.platformFormats
+        .map((format) => format.toString())
+        .join(', ');
+    AppLogger.w(
+      'Dropped item could not be read ($reason); '
+      'platformFormats=[$formats]; localData=${item.localData.runtimeType}',
+      'CardDrop',
+    );
+  } catch (_) {
+    // 诊断日志失败不影响拖放流程。
+  }
 }

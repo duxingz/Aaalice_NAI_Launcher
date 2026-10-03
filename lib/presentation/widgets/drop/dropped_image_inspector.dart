@@ -172,10 +172,13 @@ Future<DroppedImageMetadataDetection> detectDroppedImageMetadata(
     }
 
     if ((metadata == null || !metadata.hasData) && inspectNonPngStealth) {
+      // 这条分支是「完整像素解码」，是全项目最重的入口之一，而它跑在拖图
+      // 的关键路径上：必须给预算，否则对话框永远不弹。
       metadata = await ComputeGate().runCompute(
         _parseStealthMetadataFromImageBytes,
         bytes,
         debugLabel: 'dropped_image_stealth_metadata',
+        timeout: const Duration(seconds: 20),
       );
     }
     if (metadata != null && metadata.hasData) {
