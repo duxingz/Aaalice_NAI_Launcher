@@ -97,7 +97,9 @@ jobs:
             'test/core/constants/model_capabilities_test.dart',
             'test/presentation/providers/generation/model_param_profiles_test.dart',
             'test/presentation/providers/generation/generation_params_notifier_test.dart',
-            'test/presentation/widgets/image_editor/tool_manager_settings_persistence_test.dart'
+            'test/presentation/widgets/image_editor/tool_manager_settings_persistence_test.dart',
+            'test/core/utils/isolate_pool_test.dart',
+            'test/presentation/widgets/prompt/prompt_weight_editing_test.dart'
           )
           foreach ($t in $targets) {
             if (!(Test-Path $t)) { throw "Missing expected test file: $t" }
