@@ -140,8 +140,20 @@ abstract class AppLocalizations {
   /// No description provided for @bigmanMod_promptWeightShortcutSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Adds or removes 0.05 on the tag at the caret or in the selection. Dropping to 1.0 removes the weight syntax. Range 0.1-3.0.'**
+  /// **'Adds or removes 0.05 on the tag at the caret or in the selection. Dropping to 1.0 removes the weight syntax. Range -10 to 10, so weights can go negative for suppression.'**
   String get bigmanMod_promptWeightShortcutSubtitle;
+
+  /// No description provided for @bigmanMod_mergeMultiSelectWeight.
+  ///
+  /// In en, this message translates to:
+  /// **'Merge a multi-selection into one weight block'**
+  String get bigmanMod_mergeMultiSelectWeight;
+
+  /// No description provided for @bigmanMod_mergeMultiSelectWeightSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'When on, adjusting a multi-selection writes a single block such as 0.95::a, b, c::. When off, the previous behaviour is kept and every tag gets its own weight. Dropping trailing zeros and adding the guard comma after a trailing digit always apply.'**
+  String get bigmanMod_mergeMultiSelectWeightSubtitle;
 
   /// No description provided for @bigmanMod_promptMoveShortcut.
   ///

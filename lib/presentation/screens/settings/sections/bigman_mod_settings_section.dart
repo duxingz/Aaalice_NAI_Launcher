@@ -71,6 +71,13 @@ class _BigmanModSettingsSectionState
                     notifier.setPromptWeightShortcut(value),
               ),
               SwitchListTile(
+                title: Text(l10n.bigmanMod_mergeMultiSelectWeight),
+                subtitle: Text(l10n.bigmanMod_mergeMultiSelectWeightSubtitle),
+                value: settings.mergeMultiSelectWeight,
+                onChanged: (value) =>
+                    notifier.setMergeMultiSelectWeight(value),
+              ),
+              SwitchListTile(
                 title: Text(l10n.bigmanMod_promptMoveShortcut),
                 subtitle: Text(l10n.bigmanMod_promptMoveShortcutSubtitle),
                 value: settings.promptMoveShortcut,

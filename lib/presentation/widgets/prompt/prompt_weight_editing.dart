@@ -2,6 +2,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
+import '../../../core/utils/bigman_mod_flags.dart';
 import '../../../core/utils/character_prompt_block_parser.dart';
 import '../../../core/utils/prompt_edit_document.dart';
 import 'nai_syntax_controller.dart';
@@ -94,7 +95,9 @@ class PromptWeightEditing {
       final weightValue = double.tryParse(naiWeightMatch.group(1)!);
       if (weightValue != null) {
         weight = weightValue;
-        baseText = naiWeightMatch.group(2)!.trim();
+        // 末尾的「保护性逗号」属于**写回时才生成**的定界符，不进解析状态：
+        // 否则它会被当成内容的一部分，反复调整会越积越多。
+        baseText = stripTrailingNumericGuard(naiWeightMatch.group(2)!);
         return PromptWeightValue(baseText: baseText, weight: weight);
       }
     }
@@ -164,7 +167,9 @@ class PromptWeightEditing {
       text = parsed.baseText;
     } else if (numericEmphasisEnabled || value <= 0) {
       // 负权重只能用数字语法：{} / [] 表达不了负数，log 也取不到负值。
-      text = '${value.toStringAsFixed(2)}::${parsed.baseText}::';
+      text =
+          '${formatWeight(value)}::'
+          '${withTrailingNumericGuard(parsed.baseText)}::';
     } else {
       final depth = (math.log(value).abs() / math.log(1.05)).round();
       final opening = value > 1 ? '{' : '[';
@@ -174,10 +179,50 @@ class PromptWeightEditing {
     return disabled ? PromptEditDocument.disable(text) : text;
   }
 
+  /// 权重数值的标准写法：两位精度，**去掉结尾多余的 0**。
+  ///
+  /// `0.90` → `0.9`、`0.80` → `0.8`、`2.00` → `2`；`0.95`、`-0.05` 原样。
+  static String formatWeight(double value) {
+    var text = value.toStringAsFixed(2);
+    if (text.contains('.')) {
+      text = text.replaceFirst(RegExp(r'0+$'), '');
+      if (text.endsWith('.')) {
+        text = text.substring(0, text.length - 1);
+      }
+    }
+    return text;
+  }
+
+  /// 去掉权重块内容末尾的「保护性逗号」（含其后的空白）。
+  ///
+  /// 与 [withTrailingNumericGuard] 配对使用：写回时补上，解析时剥掉，
+  /// 这样反复调整权重不会让逗号越积越多。
+  static String stripTrailingNumericGuard(String text) {
+    var result = text.trim();
+    while (result.endsWith(',')) {
+      result = result.substring(0, result.length - 1).trimRight();
+    }
+    return result;
+  }
+
+  /// 内容以数字结尾时补一个「保护性逗号」。
+  ///
+  /// 标签以数字结尾时（如 `shikisokuzeku76`），收尾的 `::` 会和数字粘在一起
+  /// 让权重语法歧义；用户实测 `0.80::shikisokuzeku76, ::` 才是能用的形式。
+  static String withTrailingNumericGuard(String body) {
+    final trimmedRight = body.trimRight();
+    if (trimmedRight.isEmpty) return body;
+    if (!RegExp(r'\d$').hasMatch(trimmedRight)) return body;
+    return '$trimmedRight, ';
+  }
+
   /// 胖大叔自用改：定位光标（或选区中点）所在的标签。
   ///
   /// 有选区时取**中点**定位 —— 这样「划到标签一半」也能命中，
   /// 不再要求选区精确等于整个标签（对齐 NovelAI Prompt Helper 的做法）。
+  ///
+  /// 命中权重块内部的标签时返回**整个块**而不是内层标签：块是一个整体，
+  /// 只改内层标签会套出嵌套的权重语法（NAI 那边解析会混乱）。
   /// 返回 null 表示当前位置没有可操作的标签。
   static PromptEditSpan? spanAtCursor(TextEditingController controller) {
     final text = controller.text;
@@ -188,6 +233,8 @@ class PromptWeightEditing {
         ? selection.extentOffset
         : (selection.start + selection.end) ~/ 2;
     if (offset < 0 || offset > text.length) return null;
+    final shell = _enclosingWeightShell(text, offset, offset);
+    if (shell != null) return shell;
     for (final root in PromptEditDocument.parse(text)) {
       final hit = _locateLeaf(root, offset);
       if (hit != null) return hit;
@@ -214,8 +261,11 @@ class PromptWeightEditing {
 
   /// 胖大叔自用改：调整光标（或选区）内标签的权重。
   ///
-  /// - 无选区：调光标所在的那一个标签
-  /// - 有选区：调与选区**相交的每一个**标签（多选批量）
+  /// - 无选区：调光标所在的那一个标签（命中权重块时调**整个块**）
+  /// - 有选区且命中多个标签：
+  ///   - [mergeMultiSelectWeight] 为 true（默认，读自用改开关）：把整段当作
+  ///     **一个权重块** → `0.95::1boy, 1girl, pov::`
+  ///   - 关掉开关：保持旧行为，逐个标签各自套权重
   ///
   /// 步进由调用方给出；权重回到 1.0 时 [withWeight] 会自动去掉权重语法。
   /// 返回 false 表示没有可调整的标签，调用方应把按键交回默认处理。
@@ -223,10 +273,14 @@ class PromptWeightEditing {
     TextEditingController controller,
     double step, {
     bool numericEmphasisEnabled = true,
+    bool? mergeMultiSelectWeight,
   }) {
     final text = controller.text;
     final selection = controller.selection;
     if (!selection.isValid || text.isEmpty) return false;
+
+    final mergeSelection =
+        mergeMultiSelectWeight ?? BigmanModFlags.mergeMultiSelectWeight();
 
     final List<PromptEditSpan> leaves;
     if (selection.isCollapsed) {
@@ -234,6 +288,14 @@ class PromptWeightEditing {
       leaves = single == null ? const <PromptEditSpan>[] : [single];
     } else {
       leaves = leavesInRange(text, selection.start, selection.end);
+      if (leaves.length >= 2 && mergeSelection) {
+        return _adjustWeightAsBlock(
+          controller,
+          leaves,
+          step,
+          numericEmphasisEnabled: numericEmphasisEnabled,
+        );
+      }
     }
     if (leaves.isEmpty) return false;
 
@@ -363,5 +425,149 @@ class PromptWeightEditing {
       return (siblings: spans, index: index);
     }
     return null;
+  }
+
+  /// 是否为「数字权重壳」（`0.95::` 这种前缀）。
+  ///
+  /// 只认数字壳：`{`、`[`、`negative(`、`||…||` 都不是权重块。
+  static bool _isNumericWeightShell(PromptEditSpan span) =>
+      RegExp(r'^-?(?:\d+(?:\.\d*)?|\.\d+)::$').hasMatch(span.prefix);
+
+  /// 找出完整覆盖 [start, end] 的最内层数字权重壳；没有则返回 null。
+  static PromptEditSpan? _enclosingWeightShell(
+    String text,
+    int start,
+    int end,
+  ) {
+    PromptEditSpan? found;
+    void visit(PromptEditSpan span) {
+      if (span.editStart > start || span.editEnd < end) return;
+      if (_isNumericWeightShell(span)) found = span;
+      for (final child in span.children) {
+        visit(child);
+      }
+    }
+
+    for (final root in PromptEditDocument.parse(text)) {
+      visit(root);
+    }
+    return found;
+  }
+
+  /// 把整段选中的标签当作**一个权重块**调整。
+  ///
+  /// 目标形态 `0.95::1boy, 1girl, pov::`；段内原本各自带权重的标签会被并入块
+  /// （用户裁决：统一成块的权重）。段本身就是权重块时只替换那个数字，不嵌套。
+  static bool _adjustWeightAsBlock(
+    TextEditingController controller,
+    List<PromptEditSpan> leaves,
+    double step, {
+    required bool numericEmphasisEnabled,
+  }) {
+    final text = controller.text;
+    final first = leaves.first;
+    final last = leaves.last;
+    // 选区可能只覆盖某个权重块的一部分（例如「块 + 相邻标签」一起选中）。
+    // 这时必须把被部分覆盖的块壳也纳入替换范围，否则壳会留在替换范围外，
+    // 生成 `0.9::0.95::…::` 这种嵌套。
+    final firstShell = _enclosingWeightShell(text, first.start, first.end);
+    final lastShell = _enclosingWeightShell(text, last.start, last.end);
+    final wholeShell =
+        firstShell != null &&
+        lastShell != null &&
+        firstShell.start == lastShell.start &&
+        firstShell.end == lastShell.end;
+
+    final outerStart = firstShell?.start ?? first.start;
+    final outerEnd = lastShell?.end ?? last.end;
+    final contentStart = firstShell?.editStart ?? first.start;
+    final contentEnd = lastShell?.editEnd ?? last.end;
+    // 整段本来就是一个块时用块里的当前权重；否则按裸内容从 1.0 起算
+    // （与标签编辑模式的多选基准一致）。
+    final current = wholeShell ? parseWeightSyntax(firstShell.raw).weight : 1.0;
+    final next = (current + step).clamp(minWeight, maxWeight);
+    if ((next - current).abs() < 0.00001) return false;
+
+    // 段尾可能残留上一个块的保护逗号（`…dog76, ::` 的 `, ` 落在最后一个叶子
+    // 之后），先剥掉，交给 withWeight 按规则重新生成，保证输出是规范形态。
+    final body = stripTrailingNumericGuard(
+      _flattenRun(text, leaves, contentStart, contentEnd),
+    );
+    final replacement = withWeight(
+      body,
+      next,
+      numericEmphasisEnabled: numericEmphasisEnabled,
+    );
+    final updated = text.replaceRange(outerStart, outerEnd, replacement);
+    if (updated == text) return false;
+    controller.value = TextEditingValue(
+      text: updated,
+      selection: TextSelection(
+        baseOffset: outerStart,
+        extentOffset: outerStart + replacement.length,
+      ),
+    );
+    return true;
+  }
+
+  /// 压平 [runStart, runEnd)：保留标签之间的分隔符，剥掉数字权重壳的定界符，
+  /// 每个叶子只留内容。
+  ///
+  /// 这是「整段套一个块」的前提：段里原本各自带权重的标签若不去壳，再套一层
+  /// 就会变成嵌套的权重语法，NAI 那边解析会混乱。
+  static String _flattenRun(
+    String text,
+    List<PromptEditSpan> leaves,
+    int runStart,
+    int runEnd,
+  ) {
+    // 要删掉的权重定界符（外壳的 `0.95::` 与其收尾 `::`）。
+    final cuts = <(int, int)>[];
+    void collect(PromptEditSpan span) {
+      if (span.end <= runStart || span.start >= runEnd) return;
+      if (_isNumericWeightShell(span)) {
+        cuts.add((span.start, span.editStart));
+        if (span.editEnd < span.end) cuts.add((span.editEnd, span.end));
+      }
+      for (final child in span.children) {
+        collect(child);
+      }
+    }
+
+    for (final root in PromptEditDocument.parse(text)) {
+      collect(root);
+    }
+    cuts.sort((a, b) => a.$1.compareTo(b.$1));
+
+    final leafByStart = <int, PromptEditSpan>{
+      for (final leaf in leaves)
+        if (leaf.start >= runStart && leaf.end <= runEnd) leaf.start: leaf,
+    };
+
+    final buffer = StringBuffer();
+    var cursor = runStart;
+    var cutIndex = 0;
+    while (cursor < runEnd) {
+      // 整叶优先：叶子若还含着自己的权重壳（`1.5::dog::`），由它整体替换，
+      // 壳前后的定界符不再单独处理。
+      final leaf = leafByStart[cursor];
+      if (leaf != null) {
+        buffer.write(parseWeightSyntax(leaf.raw).baseText);
+        cursor = leaf.end;
+        while (cutIndex < cuts.length && cuts[cutIndex].$1 < cursor) {
+          cutIndex++;
+        }
+        continue;
+      }
+      if (cutIndex < cuts.length && cuts[cutIndex].$1 <= cursor) {
+        final cut = cuts[cutIndex];
+        if (cut.$2 > cursor) cursor = cut.$2;
+        cutIndex++;
+        continue;
+      }
+      buffer.write(text[cursor]);
+      cursor++;
+    }
+    return buffer.toString();
   }
 }

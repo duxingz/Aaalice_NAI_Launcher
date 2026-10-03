@@ -29,6 +29,7 @@ class BigmanModSettings {
     this.saveNamePadding = 0,
     this.saveNameStart = 1,
     this.promptInboxEnabled = true,
+    this.mergeMultiSelectWeight = true,
   });
 
   /// Ctrl+↑/↓ 调整光标所在标签的权重。
@@ -65,6 +66,12 @@ class BigmanModSettings {
   /// 自动填进输入框（省掉手动复制粘贴）。桌面上默认开启。
   final bool promptInboxEnabled;
 
+  /// 多选调权重时是否把整段合并成**一个权重块**（`0.95::1boy, 1girl, pov::`）。
+  ///
+  /// 默认开启＝新的合并行为；关闭后回到旧行为：选中的每个标签各自套权重
+  /// （`0.95::1boy::, 0.95::1girl::`）。
+  final bool mergeMultiSelectWeight;
+
   bool get hasCustomSaveName => saveNameTemplate.trim().isNotEmpty;
 
   BigmanModSettings copyWith({
@@ -79,6 +86,7 @@ class BigmanModSettings {
     int? saveNamePadding,
     int? saveNameStart,
     bool? promptInboxEnabled,
+    bool? mergeMultiSelectWeight,
   }) {
     return BigmanModSettings(
       promptWeightShortcut: promptWeightShortcut ?? this.promptWeightShortcut,
@@ -92,6 +100,8 @@ class BigmanModSettings {
       saveNamePadding: saveNamePadding ?? this.saveNamePadding,
       saveNameStart: saveNameStart ?? this.saveNameStart,
       promptInboxEnabled: promptInboxEnabled ?? this.promptInboxEnabled,
+      mergeMultiSelectWeight:
+          mergeMultiSelectWeight ?? this.mergeMultiSelectWeight,
     );
   }
 }
@@ -156,6 +166,11 @@ class BigmanModSettingsNotifier extends StateNotifier<BigmanModSettings> {
         StorageKeys.bigmanPromptInboxEnabled,
         true,
       ),
+      mergeMultiSelectWeight: _readBool(
+        storage,
+        StorageKeys.bigmanMergeMultiSelectWeight,
+        true,
+      ),
     );
   }
 
@@ -218,6 +233,12 @@ class BigmanModSettingsNotifier extends StateNotifier<BigmanModSettings> {
   Future<void> setPromptInboxEnabled(bool value) => _write(
     state.copyWith(promptInboxEnabled: value),
     {StorageKeys.bigmanPromptInboxEnabled: value},
+  );
+
+  /// 开关「多选调权重合并成一个块」。
+  Future<void> setMergeMultiSelectWeight(bool value) => _write(
+    state.copyWith(mergeMultiSelectWeight: value),
+    {StorageKeys.bigmanMergeMultiSelectWeight: value},
   );
 
   /// 读取当前自定义命名的计数值；未初始化时返回 [BigmanModSettings.saveNameStart]。

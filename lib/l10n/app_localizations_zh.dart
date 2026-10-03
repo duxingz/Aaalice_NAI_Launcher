@@ -31,7 +31,14 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get bigmanMod_promptWeightShortcutSubtitle =>
-      '光标所在或选中的标签每次增减 0.05；降到 1.0 时自动去掉权重语法，权重范围 0.1~3.0。';
+      '光标所在或选中的标签每次增减 0.05；降到 1.0 时自动去掉权重语法，权重范围 −10 ~ 10（可一路减到负权重做抑制）。';
+
+  @override
+  String get bigmanMod_mergeMultiSelectWeight => '多选调权重时合并成一个权重块';
+
+  @override
+  String get bigmanMod_mergeMultiSelectWeightSubtitle =>
+      '开启后，选中多个标签调权重会写成一个块 0.95::a, b, c::；关闭则保留旧行为，每个标签各自套权重。去尾零与「数字结尾补保护逗号」始终生效。';
 
   @override
   String get bigmanMod_promptMoveShortcut => 'Ctrl+←/→ 移动标签位置';
@@ -14749,7 +14756,14 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
 
   @override
   String get bigmanMod_promptWeightShortcutSubtitle =>
-      '游標所在或選取的標籤每次增減 0.05；降到 1.0 時自動移除權重語法，權重範圍 0.1~3.0。';
+      '游標所在或選取的標籤每次增減 0.05；降到 1.0 時自動移除權重語法，權重範圍 −10 ~ 10（可一路減到負權重做抑制）。';
+
+  @override
+  String get bigmanMod_mergeMultiSelectWeight => '多選調權重時合併成一個權重塊';
+
+  @override
+  String get bigmanMod_mergeMultiSelectWeightSubtitle =>
+      '開啟後，選取多個標籤調權重會寫成一個塊 0.95::a, b, c::；關閉則保留舊行為，每個標籤各自套權重。去尾零與「數字結尾補保護逗號」始終生效。';
 
   @override
   String get bigmanMod_promptMoveShortcut => 'Ctrl+←/→ 移動標籤位置';

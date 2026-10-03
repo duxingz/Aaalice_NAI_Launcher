@@ -31,7 +31,14 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get bigmanMod_promptWeightShortcutSubtitle =>
-      'カーソル位置または選択中のタグを 0.05 ずつ増減します。1.0 に戻ると重み構文を削除します。範囲は 0.1〜3.0。';
+      'カーソル位置または選択中のタグを 0.05 ずつ増減します。1.0 に戻ると重み構文を削除します。範囲は −10〜10 で、負の重みによる抑制も可能です。';
+
+  @override
+  String get bigmanMod_mergeMultiSelectWeight => '複数選択の重みを 1 つのブロックにまとめる';
+
+  @override
+  String get bigmanMod_mergeMultiSelectWeightSubtitle =>
+      'オンにすると、複数選択の重み調整は 0.95::a, b, c:: のような 1 つのブロックになります。オフにすると従来どおりタグごとに個別の重みになります。末尾の 0 の削除と、数字で終わる場合の保護カンマは常に有効です。';
 
   @override
   String get bigmanMod_promptMoveShortcut => 'Ctrl+←/→ タグの位置を移動';

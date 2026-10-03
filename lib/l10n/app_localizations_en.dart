@@ -31,7 +31,15 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get bigmanMod_promptWeightShortcutSubtitle =>
-      'Adds or removes 0.05 on the tag at the caret or in the selection. Dropping to 1.0 removes the weight syntax. Range 0.1-3.0.';
+      'Adds or removes 0.05 on the tag at the caret or in the selection. Dropping to 1.0 removes the weight syntax. Range -10 to 10, so weights can go negative for suppression.';
+
+  @override
+  String get bigmanMod_mergeMultiSelectWeight =>
+      'Merge a multi-selection into one weight block';
+
+  @override
+  String get bigmanMod_mergeMultiSelectWeightSubtitle =>
+      'When on, adjusting a multi-selection writes a single block such as 0.95::a, b, c::. When off, the previous behaviour is kept and every tag gets its own weight. Dropping trailing zeros and adding the guard comma after a trailing digit always apply.';
 
   @override
   String get bigmanMod_promptMoveShortcut => 'Ctrl+←/→ move tag position';

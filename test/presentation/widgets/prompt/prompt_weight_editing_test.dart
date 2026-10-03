@@ -15,6 +15,8 @@ void main() {
           ..selection = TextSelection(baseOffset: 0, extentOffset: body.length);
         addTearDown(controller.dispose);
 
+        // 权重数值的规范写法（去尾零）由 PromptWeightEditing.formatWeight 负责，
+        // 这里直接沿用，避免测试里再抄一份格式规则。
         for (final expected in [0.95, 0.90, 0.95, 1.0, 1.05, 1.10, 1.05]) {
           final current = PromptWeightEditing.parseSelection(controller).weight;
           final step = expected > current ? 0.05 : -0.05;
@@ -24,7 +26,9 @@ void main() {
           );
           expect(
             controller.text,
-            expected == 1 ? body : '${expected.toStringAsFixed(2)}::$body::',
+            expected == 1
+                ? body
+                : '${PromptWeightEditing.formatWeight(expected)}::$body::',
           );
           expect(
             PromptWeightEditing.parseSelection(controller).weight,

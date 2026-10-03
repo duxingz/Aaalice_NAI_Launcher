@@ -30,4 +30,11 @@ class BigmanModFlags {
   /// 随机提示词工具是否启用；默认关闭。
   static bool randomPromptEnabled() =>
       _readBool(StorageKeys.bigmanRandomPromptEnabled) ?? false;
+
+  /// 多选调权重时是否把整段合并成**一个权重块**（`0.95::a, b, c::`）。
+  ///
+  /// 默认开启＝新的合并行为；关闭后回到旧行为：选中的每个标签各自套权重
+  /// （`0.95::a::, 0.95::b::`）。每次按键都会重新读取，改设置立即生效。
+  static bool mergeMultiSelectWeight() =>
+      _readBool(StorageKeys.bigmanMergeMultiSelectWeight) ?? true;
 }

@@ -4,6 +4,7 @@ import 'package:nai_launcher/core/utils/prompt_edit_document.dart';
 import 'package:nai_launcher/presentation/widgets/prompt/tag_editor_commands.dart';
 import 'package:nai_launcher/presentation/widgets/prompt/tag_editor_session.dart';
 import 'package:nai_launcher/presentation/widgets/prompt/nai_syntax_controller.dart';
+import 'package:nai_launcher/presentation/widgets/prompt/prompt_weight_editing.dart';
 
 void main() {
   late TextEditingController source;
@@ -56,7 +57,8 @@ void main() {
     expect(source.text, '1.25::cat, 0.80::dog::::, bird');
     expect(session.selected, ids.toSet());
     commands.adjustWeight(step: 0.05);
-    expect(source.text, '1.30::cat, 0.80::dog::::, bird');
+    // 权重数值去尾零：1.30 写成 1.3；块内原有的 0.80 是内容，原样保留。
+    expect(source.text, '1.3::cat, 0.80::dog::::, bird');
     session.undo();
     expect(source.text, '1.25::cat, 0.80::dog::::, bird');
   });
@@ -67,7 +69,7 @@ void main() {
     TagEditorCommands(session).adjustWeight(step: 0.05);
     expect(source.text, '1.15::cat, dog::, bird');
     TagEditorCommands(session).adjustWeight(step: 0.05);
-    expect(source.text, '1.20::cat, dog::, bird');
+    expect(source.text, '1.2::cat, dog::, bird');
     session.setSelection(session.tags.first.leaves.map((tag) => tag.id));
     TagEditorCommands(session).adjustWeight(step: 0.05);
     expect(source.text, '1.25::cat, dog::, bird');
@@ -137,7 +139,7 @@ void main() {
     expect(session.selected, {cat, dog});
     expect(session.selectedGroup, isNotNull);
     commands.adjustWeight(step: 0.05);
-    expect(source.text, '1.10::cat, dog::, fox, bird');
+    expect(source.text, '1.1::cat, dog::, fox, bird');
     session.undo();
     expect(source.text, '1.05::cat, dog::, fox, bird');
     session.undo();
@@ -172,7 +174,7 @@ void main() {
       session.leaves.elementAt(2).id,
     ]);
     TagEditorCommands(session).adjustWeight(value: 1.2);
-    expect(source.text, '1.20::{cat}, {dog}::, {fox}, {bird}, grass');
+    expect(source.text, '1.2::{cat}, {dog}::, {fox}, {bird}, grass');
   });
 
   test(
@@ -190,13 +192,15 @@ void main() {
     final ids = session.tags.first.leaves.map((tag) => tag.id).toSet();
     session.setSelection(ids);
     final commands = TagEditorCommands(session);
-    for (final expected in [1.0, 0.95, 0.90]) {
+    // 权重数值的规范写法（去尾零）由 PromptWeightEditing.formatWeight 负责，
+    // 这里直接沿用，避免测试里再抄一份格式规则。
+    for (final expected in [1.0, 0.95, 0.9]) {
       commands.adjustWeight(step: -0.05);
       expect(
         source.text,
         expected == 1
             ? 'cat, dog, bird'
-            : '${expected.toStringAsFixed(2)}::cat, dog::, bird',
+            : '${PromptWeightEditing.formatWeight(expected)}::cat, dog::, bird',
       );
       expect(session.selected, ids);
       expect(session.selectedGroup, expected == 1 ? isNull : isNotNull);
