@@ -99,7 +99,14 @@ jobs:
             'test/presentation/providers/generation/generation_params_notifier_test.dart',
             'test/presentation/widgets/image_editor/tool_manager_settings_persistence_test.dart',
             'test/core/utils/isolate_pool_test.dart',
-            'test/presentation/widgets/prompt/prompt_weight_editing_test.dart'
+            'test/presentation/widgets/prompt/prompt_weight_editing_test.dart',
+            'test/presentation/widgets/drop/global_drop_controller_test.dart',
+            'test/presentation/widgets/common/weight_adjust_toolbar_test.dart',
+            'test/presentation/screens/settings/settings_screen_test.dart',
+            'test/presentation/widgets/danbooru_post_card_test.dart',
+            'test/presentation/widgets/online_gallery/gallery_generation_transfer_flow_test.dart',
+            'test/core/services/character_conversion_service_test.dart',
+            'test/presentation/widgets/prompt/preset_selector_tooltip_test.dart'
           )
           foreach ($t in $targets) {
             if (!(Test-Path $t)) { throw "Missing expected test file: $t" }

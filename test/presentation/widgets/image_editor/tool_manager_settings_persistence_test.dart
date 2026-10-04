@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -113,5 +115,54 @@ void main() {
     await pumpEventQueue();
     expect(brushOf(next).selectedPresetIndex, 5);
     expect(brushOf(next).settings.size, defaultBrushPresets[5].size);
+  });
+
+  test('repairs the brush an old build clobbered with mask values', () async {
+    // 旧版每次进局部重绘都会把笔刷写成 55% 不透明度 / 100% 硬度并落盘，
+    // 而 presetIndex 还指着「标准笔刷」——高亮的预设与实际数值对不上。
+    SharedPreferences.setMockInitialValues({
+      'image_editor_tool_settings': jsonEncode({
+        'brush': {
+          'settings': {
+            'size': 17.5,
+            'opacity': 0.55,
+            'hardness': 1.0,
+            'spacing': 0.1,
+          },
+          'presetIndex': 2,
+        },
+      }),
+    });
+
+    final session = ToolManager();
+    await pumpEventQueue();
+
+    // 只还原不透明度与硬度（按当前预设），用户自己的笔刷大小保留。
+    expect(brushOf(session).settings.size, 17.5);
+    expect(brushOf(session).settings.opacity, defaultBrushPresets[2].opacity);
+    expect(brushOf(session).settings.hardness, defaultBrushPresets[2].hardness);
+  });
+
+  test('leaves a brush that merely resembles the mask values alone', () async {
+    // 只有「0.55 + 1.0」这组签名才会被判为旧版覆盖；硬度不同就说明是用户自己调的。
+    SharedPreferences.setMockInitialValues({
+      'image_editor_tool_settings': jsonEncode({
+        'brush': {
+          'settings': {
+            'size': 30.0,
+            'opacity': 0.55,
+            'hardness': 0.9,
+            'spacing': 0.1,
+          },
+          'presetIndex': -1,
+        },
+      }),
+    });
+
+    final session = ToolManager();
+    await pumpEventQueue();
+
+    expect(brushOf(session).settings.opacity, 0.55);
+    expect(brushOf(session).settings.hardness, 0.9);
   });
 }
