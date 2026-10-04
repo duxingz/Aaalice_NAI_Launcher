@@ -1,5 +1,8 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
+import '../../../../core/utils/bigman_mod_flags.dart';
 import '../tools/blur_tool.dart';
 import '../tools/brush_tool.dart';
 import '../tools/clone_stamp_tool.dart';
@@ -67,6 +70,7 @@ class ToolManager extends ChangeNotifier {
   /// 异步加载持久化设置
   Future<void> _loadSettingsAsync() async {
     await settingsManager.load();
+    _repairMaskClobberedBrush();
     // 恢复所有工具的设置。
     //
     // 不能只恢复此刻的 _currentTool：加载是异步的，界面可能在它完成前就切走了
@@ -75,6 +79,53 @@ class ToolManager extends ChangeNotifier {
     for (final tool in _tools) {
       _restoreToolSettings(tool);
     }
+  }
+
+  /// 一次性修掉旧版留下的「笔刷被蒙版预设覆盖」。
+  ///
+  /// 旧版每次进局部重绘都会把笔刷写成 55% 不透明度 / 100% 硬度并落盘，用户
+  /// 自己调好的笔刷就此被永久顶掉，而且界面高亮的预设和实际数值还对不上。
+  /// 这里只还原**不透明度与硬度**（按当前预设；预设无效时用默认值），
+  /// **保留用户自己的笔刷大小**——那一次覆盖本来就没动大小。
+  ///
+  /// 判定签名 `opacity == 0.55 && hardness == 1.0`：内置 8 个预设没有任何一个是
+  /// 这组值，所以它只可能来自那次覆盖。整件事只做一次（存储标志记住），否则
+  /// 用户故意把不透明度设成 0.55 会被每次启动重置。
+  void _repairMaskClobberedBrush() {
+    if (BigmanModFlags.brushMaskClobberRepaired()) return;
+
+    final settings = settingsManager.getToolSettings('brush');
+    if (settings == null) return;
+    final raw = settings['settings'];
+    if (raw is! Map<String, dynamic>) return;
+
+    final opacity = (raw['opacity'] as num?)?.toDouble();
+    final hardness = (raw['hardness'] as num?)?.toDouble();
+    final clobbered =
+        opacity != null &&
+        hardness != null &&
+        (opacity - 0.55).abs() < 0.0005 &&
+        (hardness - 1.0).abs() < 0.0005;
+
+    if (clobbered) {
+      final presetIndex = settings['presetIndex'];
+      final preset =
+          presetIndex is int &&
+              presetIndex >= 0 &&
+              presetIndex < defaultBrushPresets.length
+          ? defaultBrushPresets[presetIndex]
+          : null;
+      const fallback = BrushSettings();
+      settingsManager.setSetting('brush', 'settings', {
+        ...raw,
+        'opacity': preset?.opacity ?? fallback.opacity,
+        'hardness': preset?.hardness ?? fallback.hardness,
+      });
+      unawaited(settingsManager.save());
+    }
+
+    // 无论是否命中都打标志：这是「已检查过」而不是「已修过」，避免每次启动重扫。
+    unawaited(BigmanModFlags.markBrushMaskClobberRepaired());
   }
 
   /// 挂起/恢复画笔设置的持久化写入。

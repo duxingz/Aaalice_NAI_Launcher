@@ -216,6 +216,17 @@ class EditorState extends ChangeNotifier {
     toolManager.setBrushSettingsPersistSuspended(suspended);
   }
 
+  /// 笔触被丢弃时通知（目前只有「当前图层被锁定」）。
+  ///
+  /// 各绘图工具在锁定的图层上原本是**静默**什么都不做，用户会以为画笔坏了；
+  /// 有了这个通知，界面可以明确告诉他该去解锁图层。
+  final ChangeNotifier strokeRejectedNotifier = ChangeNotifier();
+
+  /// 供绘图工具在丢弃笔触时调用。
+  void notifyStrokeRejected() {
+    strokeRejectedNotifier.notifyListeners();
+  }
+
   /// 切回上一个工具
   void switchToPreviousTool() {
     currentTool?.onDeactivateFast(this);

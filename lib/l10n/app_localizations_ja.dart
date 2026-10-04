@@ -2811,6 +2811,23 @@ class AppLocalizationsJa extends AppLocalizations {
   String get editor_focusBrush => 'ブラシ';
 
   @override
+  String get editor_focusInpaintEnable => 'フォーカスインペイント';
+
+  @override
+  String get editor_focusInpaintActive => 'フォーカス範囲';
+
+  @override
+  String get editor_outpaintFocusConflict => '外側拡張とフォーカスインペイントは同時に使用できません。';
+
+  @override
+  String get editor_maskFillModeHint =>
+      '塗りつぶしモード：閉じた領域の内側をクリックしてください。もう一度バケツボタンを押すと終了します。';
+
+  @override
+  String get editor_activeLayerLocked =>
+      '現在のレイヤーはロックされているため描画できません。先にレイヤー一覧でロックを解除してください。';
+
+  @override
   String get editor_focusContextHint =>
       '外側の長方形は Focused インペイントに送信される領域です。内側の長方形が主な再描画領域です。その間の帯が最小コンテキスト領域です。';
 

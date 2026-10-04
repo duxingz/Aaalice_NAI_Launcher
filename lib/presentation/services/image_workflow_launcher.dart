@@ -83,9 +83,15 @@ class ImageWorkflowLauncher {
       initialMinimumContextMegaPixels: mode == ImageEditorMode.inpaint
           ? workflow.minimumContextMegaPixels
           : 88.0,
-      initialFocusedInpaintEnabled: mode == ImageEditorMode.inpaint
-          ? workflow.focusedInpaintEnabled
-          : false,
+      // 聚焦重绘只在「确实已经框出聚焦区」时才自动恢复。
+      //
+      // 否则「上次开着、这次没有框」的状态会跨会话粘住，并把进入编辑器时的默认
+      // 工具变成矩形选区：用户点进局部重绘发现画笔不是当前工具、点画布出来的是
+      // 框选矩形，就会以为画笔坏了（第三方反馈的「画笔工具用不了」）。
+      initialFocusedInpaintEnabled:
+          mode == ImageEditorMode.inpaint &&
+          workflow.focusedInpaintEnabled &&
+          workflow.focusedSelectionRect != null,
       focusedInpaintCostConfig: mode == ImageEditorMode.inpaint
           ? ImageEditorFocusedInpaintCostConfig(
               model: params.model,

@@ -204,6 +204,10 @@ class BrushTool extends EditorTool {
         AddStrokeAction(layerId: activeLayer.id, stroke: stroke),
         state,
       );
+    } else {
+      // 图层为空或已锁定：原本是静默丢弃，用户只会看到「画笔没反应」。
+      // 明确回报一次，由工作区给出提示。
+      state.notifyStrokeRejected();
     }
     state.endStroke();
   }

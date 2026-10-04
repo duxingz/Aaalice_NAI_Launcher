@@ -17,6 +17,9 @@ class MobileToolbar extends StatelessWidget {
   final VoidCallback? onLayersPressed;
   final Set<String>? allowedToolIds;
 
+  /// 「填充封闭区域」模式是否正在开启（用于把该按钮点亮）。
+  final bool isFillMaskActive;
+
   const MobileToolbar({
     super.key,
     required this.state,
@@ -27,6 +30,7 @@ class MobileToolbar extends StatelessWidget {
     this.canFillMask,
     this.onLayersPressed,
     this.allowedToolIds,
+    this.isFillMaskActive = false,
   });
 
   List<EditorTool> get _visibleTools {
@@ -87,6 +91,7 @@ class MobileToolbar extends StatelessWidget {
                       icon: Icons.format_color_fill,
                       tooltip: context.l10n.editor_fillClosedRegion,
                       enabled: canFillMask?.call() ?? false,
+                      selected: isFillMaskActive,
                       onTap: onFillMask!,
                     ),
                 ],
@@ -214,11 +219,16 @@ class _ActionButton extends StatelessWidget {
   final VoidCallback onTap;
   final bool enabled;
 
+  /// 是否为「已开启的持续模式」（目前只有填充封闭区域）。
+  /// 这类按钮原本显示不出状态，用户看不出模式还开着，画笔就会被挡住。
+  final bool selected;
+
   const _ActionButton({
     required this.icon,
     required this.tooltip,
     required this.onTap,
     this.enabled = true,
+    this.selected = false,
   });
 
   @override
@@ -231,20 +241,30 @@ class _ActionButton extends StatelessWidget {
       child: Semantics(
         button: true,
         enabled: enabled,
+        selected: selected,
         label: tooltip,
         child: Material(
           color: Colors.transparent,
           child: InkWell(
             onTap: enabled ? onTap : null,
-            child: SizedBox(
+            child: Container(
               width: 48,
               height: 56,
+              alignment: Alignment.center,
+              decoration: selected
+                  ? BoxDecoration(
+                      color: theme.colorScheme.primary.withValues(alpha: 0.16),
+                      borderRadius: BorderRadius.circular(8),
+                    )
+                  : null,
               child: Icon(
                 icon,
                 size: 22,
-                color: enabled
-                    ? theme.colorScheme.onSurface
-                    : theme.colorScheme.onSurface.withValues(alpha: 0.3),
+                color: !enabled
+                    ? theme.colorScheme.onSurface.withValues(alpha: 0.3)
+                    : selected
+                    ? theme.colorScheme.primary
+                    : theme.colorScheme.onSurface,
               ),
             ),
           ),

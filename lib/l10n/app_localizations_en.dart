@@ -2884,6 +2884,24 @@ class AppLocalizationsEn extends AppLocalizations {
   String get editor_focusBrush => 'Brush';
 
   @override
+  String get editor_focusInpaintEnable => 'Focused Inpaint';
+
+  @override
+  String get editor_focusInpaintActive => 'Focused Area';
+
+  @override
+  String get editor_outpaintFocusConflict =>
+      'Outpaint cannot be used together with Focused Inpaint.';
+
+  @override
+  String get editor_maskFillModeHint =>
+      'Fill mode: click inside a closed region. Click the paint-bucket button again to exit.';
+
+  @override
+  String get editor_activeLayerLocked =>
+      'The active layer is locked, so nothing can be drawn. Unlock it in the layer list first.';
+
+  @override
   String get editor_focusContextHint =>
       'The outer rectangle is the area sent to Focused Inpaint. The inner rectangle is the main repaint area. The band between them is the Minimum Context Area.';
 

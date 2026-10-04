@@ -5242,6 +5242,36 @@ abstract class AppLocalizations {
   /// **'Brush'**
   String get editor_focusBrush;
 
+  /// No description provided for @editor_focusInpaintEnable.
+  ///
+  /// In en, this message translates to:
+  /// **'Focused Inpaint'**
+  String get editor_focusInpaintEnable;
+
+  /// No description provided for @editor_focusInpaintActive.
+  ///
+  /// In en, this message translates to:
+  /// **'Focused Area'**
+  String get editor_focusInpaintActive;
+
+  /// No description provided for @editor_outpaintFocusConflict.
+  ///
+  /// In en, this message translates to:
+  /// **'Outpaint cannot be used together with Focused Inpaint.'**
+  String get editor_outpaintFocusConflict;
+
+  /// No description provided for @editor_maskFillModeHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Fill mode: click inside a closed region. Click the paint-bucket button again to exit.'**
+  String get editor_maskFillModeHint;
+
+  /// No description provided for @editor_activeLayerLocked.
+  ///
+  /// In en, this message translates to:
+  /// **'The active layer is locked, so nothing can be drawn. Unlock it in the layer list first.'**
+  String get editor_activeLayerLocked;
+
   /// No description provided for @editor_focusContextHint.
   ///
   /// In en, this message translates to:

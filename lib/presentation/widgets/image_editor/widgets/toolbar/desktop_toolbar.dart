@@ -22,6 +22,9 @@ class DesktopToolbar extends StatelessWidget {
   final bool Function()? canFillMask;
   final Set<String>? allowedToolIds;
 
+  /// 「填充封闭区域」模式是否正在开启（用于把该按钮点亮）。
+  final bool isFillMaskActive;
+
   const DesktopToolbar({
     super.key,
     required this.state,
@@ -31,6 +34,7 @@ class DesktopToolbar extends StatelessWidget {
     this.onFillMask,
     this.canFillMask,
     this.allowedToolIds,
+    this.isFillMaskActive = false,
   });
 
   List<EditorTool> get _visibleTools {
@@ -123,6 +127,7 @@ class DesktopToolbar extends StatelessWidget {
                               icon: Icons.format_color_fill,
                               tooltip: context.l10n.editor_fillClosedRegion,
                               enabled: canFillMask?.call() ?? false,
+                              selected: isFillMaskActive,
                               onTap: onFillMask!,
                             ),
                         ],
@@ -272,12 +277,17 @@ class _ActionButton extends StatelessWidget {
   final bool enabled;
   final double minimumExtent;
 
+  /// 是否为「已开启的持续模式」（目前只有填充封闭区域）。
+  /// 这类按钮原本显示不出状态，用户看不出模式还开着，画笔就会被挡住。
+  final bool selected;
+
   const _ActionButton({
     required this.icon,
     required this.tooltip,
     required this.onTap,
     required this.minimumExtent,
     this.enabled = true,
+    this.selected = false,
   });
 
   @override
@@ -298,12 +308,20 @@ class _ActionButton extends StatelessWidget {
               width: minimumExtent,
               height: minimumExtent,
               alignment: Alignment.center,
+              decoration: selected
+                  ? BoxDecoration(
+                      color: theme.colorScheme.primary.withValues(alpha: 0.16),
+                      borderRadius: BorderRadius.circular(8),
+                    )
+                  : null,
               child: Icon(
                 icon,
                 size: 20,
-                color: enabled
-                    ? theme.colorScheme.onSurface
-                    : theme.colorScheme.onSurface.withValues(alpha: 0.3),
+                color: !enabled
+                    ? theme.colorScheme.onSurface.withValues(alpha: 0.3)
+                    : selected
+                    ? theme.colorScheme.primary
+                    : theme.colorScheme.onSurface,
               ),
             ),
           ),

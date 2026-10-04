@@ -446,4 +446,6 @@ class StorageKeys {
   static const String bigmanPromptInboxEnabled = 'bigman_prompt_inbox_enabled';
   static const String bigmanMergeMultiSelectWeight =
       'bigman_merge_multiselect_weight';
+  static const String bigmanBrushMaskClobberRepaired =
+      'bigman_brush_mask_clobber_repaired';
 }

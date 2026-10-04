@@ -2765,6 +2765,21 @@ class AppLocalizationsZh extends AppLocalizations {
   String get editor_focusBrush => '画笔';
 
   @override
+  String get editor_focusInpaintEnable => '聚焦重绘';
+
+  @override
+  String get editor_focusInpaintActive => '聚焦选区';
+
+  @override
+  String get editor_outpaintFocusConflict => '外扩与聚焦重绘不能同时使用。';
+
+  @override
+  String get editor_maskFillModeHint => '填充模式：点击封闭区域内部；再点一次油漆桶按钮退出。';
+
+  @override
+  String get editor_activeLayerLocked => '当前图层已锁定，画不上去。请先在图层列表里解锁。';
+
+  @override
   String get editor_focusContextHint =>
       '外框是实际送去 Focused Inpaint 的区域，内框是主要重绘区域；两框之间的带宽就是 Minimum Context Area。';
 
@@ -17488,6 +17503,21 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
 
   @override
   String get editor_focusBrush => '畫筆';
+
+  @override
+  String get editor_focusInpaintEnable => '聚焦重繪';
+
+  @override
+  String get editor_focusInpaintActive => '聚焦選區';
+
+  @override
+  String get editor_outpaintFocusConflict => '外擴與聚焦重繪不能同時使用。';
+
+  @override
+  String get editor_maskFillModeHint => '填充模式：點擊封閉區域內部；再點一次油漆桶按鈕結束。';
+
+  @override
+  String get editor_activeLayerLocked => '目前圖層已鎖定，畫不上去。請先在圖層清單解鎖。';
 
   @override
   String get editor_focusContextHint =>

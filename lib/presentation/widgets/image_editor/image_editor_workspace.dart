@@ -161,6 +161,9 @@ class ImageEditorWorkspaceState extends State<ImageEditorWorkspace> {
   set _isImportingDroppedImage(bool value) =>
       _controller.isImportingDroppedImage = value;
   bool _isMaskFillMode = false;
+
+  /// 上一次「图层已锁定」提示的时间，用于节流（避免每一笔都弹一次）。
+  DateTime? _lastLockedLayerToastAt;
   bool _showLayerPanel = true;
   bool _allowRoutePop = false;
   bool _exitDialogVisible = false;
@@ -381,8 +384,32 @@ class ImageEditorWorkspaceState extends State<ImageEditorWorkspace> {
     _state.selectionManager.selectionNotifier.addListener(
       _consumeFocusedSelection,
     );
+    // 填充模式会在画布上盖一层吃掉全部点击的拦截层，而它本身没有任何可见状态。
+    // 用户一旦切到别的工具（画笔/橡皮/选区…）意图就很明确，此时必须让位，
+    // 否则他会发现画笔「画不上」。
+    _state.toolNotifier.addListener(_handleToolChangedExitFillMode);
+    // 笔触被丢弃（当前图层被锁定）时给出提示，而不是静默失败。
+    _state.strokeRejectedNotifier.addListener(_handleStrokeRejected);
     _syncFocusedSelectionConstraint();
     _showLayerPanel = widget.initialShowLayerPanel;
+  }
+
+  /// 切换到别的工具就退出「填充封闭区域」模式。
+  void _handleToolChangedExitFillMode() {
+    if (!_isMaskFillMode || !mounted) return;
+    setState(() => _isMaskFillMode = false);
+  }
+
+  /// 当前图层锁定导致笔触被丢弃时提示一次（3 秒内不重复，避免刷屏）。
+  void _handleStrokeRejected() {
+    if (!mounted) return;
+    final now = DateTime.now();
+    final last = _lastLockedLayerToastAt;
+    if (last != null && now.difference(last) < const Duration(seconds: 3)) {
+      return;
+    }
+    _lastLockedLayerToastAt = now;
+    AppToast.warning(context, context.l10n.editor_activeLayerLocked);
   }
 
   @override
@@ -601,6 +628,8 @@ class ImageEditorWorkspaceState extends State<ImageEditorWorkspace> {
     _state.selectionManager.selectionNotifier.removeListener(
       _consumeFocusedSelection,
     );
+    _state.toolNotifier.removeListener(_handleToolChangedExitFillMode);
+    _state.strokeRejectedNotifier.removeListener(_handleStrokeRejected);
     _state.setMagicWandHandler(null);
     super.dispose();
   }
@@ -1048,13 +1077,20 @@ class ImageEditorWorkspaceState extends State<ImageEditorWorkspace> {
 
       _state.requestUiUpdate();
       if (mounted) {
-        _isMaskFillMode = false;
-        setState(() {});
         AppToast.success(context, l10n.editor_closedRegionFilled);
       }
     } catch (e) {
       if (mounted) {
         AppToast.error(context, l10n.editor_fillMaskFailed(e));
+      }
+    } finally {
+      // 填充是「点一次做一次」：成功失败都退出该模式。
+      //
+      // 该模式会在画布上盖一层吃掉全部点击的拦截层（见 build 里的 opaque
+      // Listener）。原来只有填充成功才退出，失败就静默留着——用户随后点画笔
+      // 会发现什么都画不上，以为画笔坏了。
+      if (mounted && _isMaskFillMode) {
+        setState(() => _isMaskFillMode = false);
       }
     }
   }
@@ -1771,7 +1807,11 @@ class ImageEditorWorkspaceState extends State<ImageEditorWorkspace> {
               ),
             ),
           ),
-        if (_isInpaintMode)
+        // 填充模式与聚焦重绘卡片同处画布左上角，两者互斥显示：填充模式是一次性
+        // 操作，此刻聚焦开关本来也用不上。
+        if (_isInpaintMode && _isMaskFillMode)
+          Positioned(top: 16, left: 16, child: _buildMaskFillModeCard()),
+        if (_isInpaintMode && !_isMaskFillMode)
           Positioned(top: 16, left: 16, child: _buildFocusedSelectionCard()),
         Positioned.fill(
           child: MagicWandProgressOverlay(controller: _magicWandController),
@@ -2334,6 +2374,48 @@ class ImageEditorWorkspaceState extends State<ImageEditorWorkspace> {
     return FocusedInpaintCostEstimate(geometry: geometry, cost: cost);
   }
 
+  /// 「填充封闭区域」模式下的常驻提示。
+  ///
+  /// 该模式会在画布上盖一层吃掉全部点击的拦截层，但工具栏按钮原本没有任何状态
+  /// 指示，用户看不出它还开着，就会以为画笔坏了。这里把它明确写出来。
+  Widget _buildMaskFillModeCard() {
+    final theme = Theme.of(context);
+    return IgnorePointer(
+      child: Container(
+        width: 260,
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: theme.colorScheme.surfaceContainerHigh,
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.12),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(
+              Icons.format_color_fill,
+              size: 16,
+              color: theme.colorScheme.primary,
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                context.l10n.editor_maskFillModeHint,
+                style: theme.textTheme.bodySmall,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildFocusedSelectionCard() {
     final theme = Theme.of(context);
     final hasFocusArea =
@@ -2371,8 +2453,8 @@ class ImageEditorWorkspaceState extends State<ImageEditorWorkspace> {
                   ),
                   label: Text(
                     _focusedInpaintEnabled
-                        ? 'Focused Area Selection'
-                        : 'Focused Inpaint',
+                        ? context.l10n.editor_focusInpaintActive
+                        : context.l10n.editor_focusInpaintEnable,
                   ),
                   style: FilledButton.styleFrom(
                     padding: const EdgeInsets.symmetric(
@@ -2506,10 +2588,7 @@ class ImageEditorWorkspaceState extends State<ImageEditorWorkspace> {
 
   void _toggleFocusedInpaint() {
     if (_hasOutpaintChanges && !_focusedInpaintEnabled) {
-      AppToast.warning(
-        context,
-        'Outpaint cannot be used together with Focused Inpaint.',
-      );
+      AppToast.warning(context, context.l10n.editor_outpaintFocusConflict);
       return;
     }
 
@@ -2627,6 +2706,7 @@ class ImageEditorWorkspaceState extends State<ImageEditorWorkspace> {
                         ? _handleFillClosedMaskRegions
                         : null,
                     canFillMask: _isInpaintMode ? _hasMaskContent : null,
+                    isFillMaskActive: _isMaskFillMode,
                     allowedToolIds: _isInpaintMode
                         ? ImageEditorWorkspaceState._inpaintToolIds
                         : null,
@@ -2733,6 +2813,7 @@ class ImageEditorWorkspaceState extends State<ImageEditorWorkspace> {
                     ? _handleFillClosedMaskRegions
                     : null,
                 canFillMask: _isInpaintMode ? _hasMaskContent : null,
+                isFillMaskActive: _isMaskFillMode,
                 onLayersPressed: _showMobileLayerSheet,
                 allowedToolIds: _isInpaintMode
                     ? ImageEditorWorkspaceState._inpaintToolIds

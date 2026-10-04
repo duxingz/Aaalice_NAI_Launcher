@@ -37,4 +37,24 @@ class BigmanModFlags {
   /// （`0.95::a::, 0.95::b::`）。每次按键都会重新读取，改设置立即生效。
   static bool mergeMultiSelectWeight() =>
       _readBool(StorageKeys.bigmanMergeMultiSelectWeight) ?? true;
+
+  /// 「笔刷参数被蒙版预设覆盖」这件事是否已经修过。
+  ///
+  /// 旧版每次进局部重绘都会把笔刷写成 55% 不透明度 / 100% 硬度并落盘，把用户
+  /// 自己的笔刷顶掉。这次修复只能做一次：否则用户故意把不透明度设成 0.55 也会
+  /// 每次启动被重置。所以用一个标志记住已处理过。
+  static bool brushMaskClobberRepaired() =>
+      _readBool(StorageKeys.bigmanBrushMaskClobberRepaired) ?? false;
+
+  /// 记下「已修过」的标志；存储未就绪时静默跳过。
+  static Future<void> markBrushMaskClobberRepaired() async {
+    try {
+      if (!Hive.isBoxOpen(StorageKeys.settingsBox)) return;
+      await Hive.box(
+        StorageKeys.settingsBox,
+      ).put(StorageKeys.bigmanBrushMaskClobberRepaired, true);
+    } catch (_) {
+      // 标记失败只会让下次启动再修一次，不影响使用。
+    }
+  }
 }
