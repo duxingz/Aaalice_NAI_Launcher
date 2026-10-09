@@ -448,4 +448,6 @@ class StorageKeys {
       'bigman_merge_multiselect_weight';
   static const String bigmanBrushMaskClobberRepaired =
       'bigman_brush_mask_clobber_repaired';
+  static const String bigmanQueueBridgeEnabled = 'bigman_queue_bridge_enabled';
+  static const String bigmanBridgeDir = 'bigman_bridge_dir';
 }

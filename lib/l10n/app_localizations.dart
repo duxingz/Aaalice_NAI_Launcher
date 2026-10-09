@@ -155,6 +155,30 @@ abstract class AppLocalizations {
   /// **'When on, adjusting a multi-selection writes a single block such as 0.95::a, b, c::. When off, the previous behaviour is kept and every tag gets its own weight. Dropping trailing zeros and adding the guard comma after a trailing digit always apply.'**
   String get bigmanMod_mergeMultiSelectWeightSubtitle;
 
+  /// No description provided for @bigmanMod_queueBridge.
+  ///
+  /// In en, this message translates to:
+  /// **'DSH Queue Batch Bridge'**
+  String get bigmanMod_queueBridge;
+
+  /// No description provided for @bigmanMod_queueBridgeSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Polls jobs.json in the bridge folder and pushes a batch of tasks straight into the generation queue (enqueue only by default; no auto start).'**
+  String get bigmanMod_queueBridgeSubtitle;
+
+  /// No description provided for @bigmanMod_bridgeDir.
+  ///
+  /// In en, this message translates to:
+  /// **'Bridge folder'**
+  String get bigmanMod_bridgeDir;
+
+  /// No description provided for @bigmanMod_bridgeDirHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Leave empty to use the default folder (same as the prompt inbox).'**
+  String get bigmanMod_bridgeDirHint;
+
   /// No description provided for @bigmanMod_promptMoveShortcut.
   ///
   /// In en, this message translates to:

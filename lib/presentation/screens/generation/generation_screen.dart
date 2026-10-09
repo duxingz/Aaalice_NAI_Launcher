@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
@@ -5,13 +6,17 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/platform/platform_capabilities.dart';
 import '../../../core/services/bigman_prompt_inbox.dart';
+import '../../../core/services/bigman_queue_bridge.dart';
 import '../../../data/models/character/character_prompt.dart';
+import '../../../data/models/queue/replication_task.dart';
 import '../../adaptive/adaptive_layout.dart';
 import '../../providers/bigman/bigman_mod_settings.dart';
 import '../../providers/character_prompt_provider.dart';
 import '../../providers/generation_layout_mode_provider.dart';
 import '../../providers/image_generation_provider.dart';
 import '../../providers/layout_state_provider.dart';
+import '../../providers/queue_execution_provider.dart';
+import '../../providers/replication_queue_provider.dart';
 import '../../widgets/common/app_toast.dart';
 import '../../widgets/common/owned_scroll_controller.dart';
 import '../../widgets/drop/global_drop_handler.dart';
@@ -40,6 +45,9 @@ class _GenerationScreenState extends ConsumerState<GenerationScreen> {
   /// 挂在生成页（三种布局的共同父级）而不是某个具体布局里 —— 否则用户
   /// 切换到 Web 风格布局时轮询就不会启动。
   PromptInboxWatcher? _promptInbox;
+
+  /// DSH 队列批次桥：把 `jobs.json` 里的一批任务直接塞进生成队列。
+  QueueJobWatcher? _queueBridge;
 
   @override
   void initState() {
@@ -98,11 +106,101 @@ class _GenerationScreenState extends ConsumerState<GenerationScreen> {
           },
         )
           ..start();
+
+    _queueBridge =
+        QueueJobWatcher(
+          enqueue: _enqueueJobs,
+          isEnabled: () =>
+              ref.read(bigmanModSettingsProvider).queueBridgeEnabled,
+          // 入队不受「正在生成」影响：队列本来就是拿来边出边排的。
+          isBusy: () => false,
+          statusJson: _queueStatusJson,
+          onApplied: (summary) {
+            if (!mounted) return;
+            AppToast.info(context, '已从 DSH 入队：$summary');
+          },
+          onRejected: (reason) {
+            if (!mounted) return;
+            AppToast.warning(context, 'DSH 队列批次：$reason');
+          },
+        )
+          ..start();
+  }
+
+  /// 上次「自动开始」的结果（如需要登录 / 队列空），写进状态回执，
+  /// 免得自动开始失败时静默无声。
+  String? _lastQueueStart;
+
+  /// 把一批任务规格变成队列任务；返回实际入队条数。
+  Future<int> _enqueueJobs(
+    List<QueueJobSpec> jobs, {
+    required bool autoStart,
+  }) async {
+    var remaining = ref
+        .read(replicationQueueNotifierProvider)
+        .remainingCapacity;
+    final tasks = <ReplicationTask>[];
+    for (final job in jobs) {
+      final copies = job.count < 1 ? 1 : job.count;
+      for (var i = 0; i < copies && remaining > 0; i++) {
+        tasks.add(
+          ReplicationTask.create(
+            prompt: job.positive,
+            negativePrompt: job.negative ?? '',
+            // 不置 true 的话任务里的负面词会被静默忽略。
+            applyNegativePrompt: job.negative != null,
+            width: job.width,
+            height: job.height,
+            seed: job.seed,
+            steps: job.steps,
+            cfgScale: job.cfgScale,
+            model: job.model,
+            sampler: job.sampler,
+          ),
+        );
+        remaining--;
+      }
+      if (remaining <= 0) break;
+    }
+    if (tasks.isEmpty) return 0;
+
+    final added = await ref
+        .read(replicationQueueNotifierProvider.notifier)
+        .addAll(tasks);
+    if (autoStart && added > 0) {
+      final result = await ref
+          .read(queueExecutionNotifierProvider.notifier)
+          .startQueue();
+      _lastQueueStart = switch (result) {
+        QueueStartResult.started => 'started',
+        QueueStartResult.busy => 'busy',
+        QueueStartResult.empty => 'empty',
+        QueueStartResult.authRequired => 'authRequired',
+      };
+    }
+    return added;
+  }
+
+  /// 状态回执：让 DSH 能读到队列进度与出图情况。
+  String? _queueStatusJson() {
+    final queue = ref.read(replicationQueueNotifierProvider);
+    final execution = ref.read(queueExecutionNotifierProvider);
+    return jsonEncode({
+      'updatedAt': DateTime.now().toIso8601String(),
+      'count': queue.count,
+      'remaining': queue.remainingCapacity,
+      'completed': queue.completedCount,
+      'failed': queue.failedCount,
+      'running': execution.isRunning,
+      'paused': execution.isPaused,
+      if (_lastQueueStart != null) 'lastStart': _lastQueueStart,
+    });
   }
 
   @override
   void dispose() {
     _promptInbox?.stop();
+    _queueBridge?.stop();
     _promptInputController.dispose();
     _webNegativeMode.dispose();
     super.dispose();

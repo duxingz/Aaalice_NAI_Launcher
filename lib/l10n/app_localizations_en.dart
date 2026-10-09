@@ -42,6 +42,20 @@ class AppLocalizationsEn extends AppLocalizations {
       'When on, adjusting a multi-selection writes a single block such as 0.95::a, b, c::. When off, the previous behaviour is kept and every tag gets its own weight. Dropping trailing zeros and adding the guard comma after a trailing digit always apply.';
 
   @override
+  String get bigmanMod_queueBridge => 'DSH Queue Batch Bridge';
+
+  @override
+  String get bigmanMod_queueBridgeSubtitle =>
+      'Polls jobs.json in the bridge folder and pushes a batch of tasks straight into the generation queue (enqueue only by default; no auto start).';
+
+  @override
+  String get bigmanMod_bridgeDir => 'Bridge folder';
+
+  @override
+  String get bigmanMod_bridgeDirHint =>
+      'Leave empty to use the default folder (same as the prompt inbox).';
+
+  @override
   String get bigmanMod_promptMoveShortcut => 'Ctrl+←/→ move tag position';
 
   @override

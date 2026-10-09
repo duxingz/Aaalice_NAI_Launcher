@@ -30,6 +30,8 @@ class BigmanModSettings {
     this.saveNameStart = 1,
     this.promptInboxEnabled = true,
     this.mergeMultiSelectWeight = true,
+    this.queueBridgeEnabled = false,
+    this.bridgeDir = '',
   });
 
   /// Ctrl+↑/↓ 调整光标所在标签的权重。
@@ -72,6 +74,17 @@ class BigmanModSettings {
   /// （`0.95::1boy::, 0.95::1girl::`）。
   final bool mergeMultiSelectWeight;
 
+  /// 是否启用「DSH 队列批次桥」：轮询桥目录里的 `jobs.json`，把一批任务直接
+  /// 塞进生成队列。
+  ///
+  /// **默认关闭**：这条通道会真的往队列里加任务，配合 `jobs.json` 里的
+  /// `autoStart` 还能自动开始出图（消耗 Anlas），所以必须由用户显式打开。
+  final bool queueBridgeEnabled;
+
+  /// 桥目录（放 `prompt.txt` / `jobs.json` / `status.json`）。
+  /// 空字符串表示用默认目录（与提示词收件箱同目录）。
+  final String bridgeDir;
+
   bool get hasCustomSaveName => saveNameTemplate.trim().isNotEmpty;
 
   BigmanModSettings copyWith({
@@ -87,6 +100,8 @@ class BigmanModSettings {
     int? saveNameStart,
     bool? promptInboxEnabled,
     bool? mergeMultiSelectWeight,
+    bool? queueBridgeEnabled,
+    String? bridgeDir,
   }) {
     return BigmanModSettings(
       promptWeightShortcut: promptWeightShortcut ?? this.promptWeightShortcut,
@@ -102,6 +117,8 @@ class BigmanModSettings {
       promptInboxEnabled: promptInboxEnabled ?? this.promptInboxEnabled,
       mergeMultiSelectWeight:
           mergeMultiSelectWeight ?? this.mergeMultiSelectWeight,
+      queueBridgeEnabled: queueBridgeEnabled ?? this.queueBridgeEnabled,
+      bridgeDir: bridgeDir ?? this.bridgeDir,
     );
   }
 }
@@ -171,6 +188,13 @@ class BigmanModSettingsNotifier extends StateNotifier<BigmanModSettings> {
         StorageKeys.bigmanMergeMultiSelectWeight,
         true,
       ),
+      queueBridgeEnabled: _readBool(
+        storage,
+        StorageKeys.bigmanQueueBridgeEnabled,
+        false,
+      ),
+      bridgeDir:
+          storage.getSetting<String>(StorageKeys.bigmanBridgeDir) ?? '',
     );
   }
 
@@ -239,6 +263,18 @@ class BigmanModSettingsNotifier extends StateNotifier<BigmanModSettings> {
   Future<void> setMergeMultiSelectWeight(bool value) => _write(
     state.copyWith(mergeMultiSelectWeight: value),
     {StorageKeys.bigmanMergeMultiSelectWeight: value},
+  );
+
+  /// 开关「DSH 队列批次桥」。
+  Future<void> setQueueBridgeEnabled(bool value) => _write(
+    state.copyWith(queueBridgeEnabled: value),
+    {StorageKeys.bigmanQueueBridgeEnabled: value},
+  );
+
+  /// 设置桥目录；空字符串表示用默认目录。
+  Future<void> setBridgeDir(String value) => _write(
+    state.copyWith(bridgeDir: value.trim()),
+    {StorageKeys.bigmanBridgeDir: value.trim()},
   );
 
   /// 读取当前自定义命名的计数值；未初始化时返回 [BigmanModSettings.saveNameStart]。

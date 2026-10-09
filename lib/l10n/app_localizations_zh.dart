@@ -41,6 +41,19 @@ class AppLocalizationsZh extends AppLocalizations {
       '开启后，选中多个标签调权重会写成一个块 0.95::a, b, c::；关闭则保留旧行为，每个标签各自套权重。去尾零与「数字结尾补保护逗号」始终生效。';
 
   @override
+  String get bigmanMod_queueBridge => 'DSH 队列批次桥';
+
+  @override
+  String get bigmanMod_queueBridgeSubtitle =>
+      '轮询桥目录里的 jobs.json，把一批任务直接加入生成队列（默认只入队，不自动开始）';
+
+  @override
+  String get bigmanMod_bridgeDir => '桥目录';
+
+  @override
+  String get bigmanMod_bridgeDirHint => '留空＝用默认目录（与提示词收件箱同目录）';
+
+  @override
   String get bigmanMod_promptMoveShortcut => 'Ctrl+←/→ 移动标签位置';
 
   @override
@@ -14779,6 +14792,19 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
   @override
   String get bigmanMod_mergeMultiSelectWeightSubtitle =>
       '開啟後，選取多個標籤調權重會寫成一個塊 0.95::a, b, c::；關閉則保留舊行為，每個標籤各自套權重。去尾零與「數字結尾補保護逗號」始終生效。';
+
+  @override
+  String get bigmanMod_queueBridge => 'DSH 佇列批次橋';
+
+  @override
+  String get bigmanMod_queueBridgeSubtitle =>
+      '輪詢橋目錄裡的 jobs.json，把一批任務直接加入生成佇列（預設只入佇列，不自動開始）';
+
+  @override
+  String get bigmanMod_bridgeDir => '橋目錄';
+
+  @override
+  String get bigmanMod_bridgeDirHint => '留空＝用預設目錄（與提示詞收件匣同目錄）';
 
   @override
   String get bigmanMod_promptMoveShortcut => 'Ctrl+←/→ 移動標籤位置';

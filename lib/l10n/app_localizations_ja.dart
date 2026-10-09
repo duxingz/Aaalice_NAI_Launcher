@@ -41,6 +41,19 @@ class AppLocalizationsJa extends AppLocalizations {
       'オンにすると、複数選択の重み調整は 0.95::a, b, c:: のような 1 つのブロックになります。オフにすると従来どおりタグごとに個別の重みになります。末尾の 0 の削除と、数字で終わる場合の保護カンマは常に有効です。';
 
   @override
+  String get bigmanMod_queueBridge => 'DSH キュー一括ブリッジ';
+
+  @override
+  String get bigmanMod_queueBridgeSubtitle =>
+      'ブリッジフォルダーの jobs.json を監視し、複数タスクをまとめて生成キューに追加します（既定では追加のみ、自動開始はしません）。';
+
+  @override
+  String get bigmanMod_bridgeDir => 'ブリッジフォルダー';
+
+  @override
+  String get bigmanMod_bridgeDirHint => '空欄の場合は既定のフォルダー（プロンプト受信箱と同じ）を使用します。';
+
+  @override
   String get bigmanMod_promptMoveShortcut => 'Ctrl+←/→ タグの位置を移動';
 
   @override
