@@ -94,6 +94,7 @@ jobs:
             'test/presentation/screens/generation/widgets/prompt_input_test.dart',
             'test/presentation/providers/generation_settings_notifiers_test.dart',
             'test/core/services/bigman_prompt_inbox_test.dart',
+            'test/core/services/bigman_queue_bridge_test.dart',
             'test/core/constants/model_capabilities_test.dart',
             'test/presentation/providers/generation/model_param_profiles_test.dart',
             'test/presentation/providers/generation/generation_params_notifier_test.dart',
