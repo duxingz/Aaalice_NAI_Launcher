@@ -58,6 +58,9 @@ class PromptInboxPayload {
 ///    boy, fat man
 ///    ```
 ///    只填给出了标记的区，没给的区保持原样（不误删用户内容）。
+///
+/// 有标记时，**首个标记之前的内容会并进正面** —— 2026-10-04 修：此前这段
+/// 被静默丢弃，全局块写在角色段前面就会莫名消失。
 class BigmanPromptInbox {
   BigmanPromptInbox._();
 
@@ -89,7 +92,12 @@ class BigmanPromptInbox {
       );
     }
 
+    // 首个标记之前的内容也归入正面：否则「全局块写在角色段前面」会被静默丢掉。
     String? positive;
+    final leading = text.substring(0, matches.first.start).trim();
+    if (leading.isNotEmpty) {
+      positive = leading;
+    }
     String? negative;
     final characters = <PromptInboxCharacter>[];
     var autoIndex = 0;

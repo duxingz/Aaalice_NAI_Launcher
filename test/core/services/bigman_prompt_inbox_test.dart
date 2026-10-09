@@ -60,6 +60,26 @@ void main() {
       expect(payload.characters, isEmpty);
     });
 
+    test('标记之前的内容并进正面，不丢', () {
+      final payload = BigmanPromptInbox.parse(
+        '1boy, 1girl\n'
+        '---CHARACTER:艾玛---\ngirl, sakuraba ema\n',
+      );
+      expect(payload.positive, '1boy, 1girl');
+      expect(payload.characters.single.prompt, 'girl, sakuraba ema');
+    });
+
+    test('标记前内容与 POSITIVE 段合并到正面', () {
+      final payload = BigmanPromptInbox.parse('1boy\n---POSITIVE---\n1girl\n');
+      expect(payload.positive, '1boy\n\n1girl');
+    });
+
+    test('标记前只有空白时正面保持为空', () {
+      final payload = BigmanPromptInbox.parse('\n---CHARACTER---\ngirl');
+      expect(payload.positive, isNull);
+      expect(payload.characters.single.prompt, 'girl');
+    });
+
     test('标记大小写不敏感', () {
       expect(
         BigmanPromptInbox.parse('---positive---\n1girl').positive,
