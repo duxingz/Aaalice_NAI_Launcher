@@ -4,11 +4,14 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:nai_launcher/core/storage/local_storage_service.dart';
+import 'package:nai_launcher/core/utils/bigman_import_prefs.dart';
 import 'package:nai_launcher/core/utils/localization_extension.dart';
 
 import '../common/image_viewport_surface.dart';
 import '../common/model_family_icon.dart';
 import '../../../data/models/gallery/nai_image_metadata.dart';
+import '../../../data/models/metadata/metadata_import_options.dart';
 import '../../../data/models/vibe/vibe_reference.dart';
 import '../../adaptive/adaptive_presenter.dart';
 import '../../adaptive/content_sized_adaptive_form.dart';
@@ -46,6 +49,20 @@ enum ImageDestination {
 
   /// 提取提示词加入队列
   addToQueue,
+
+  /// 胖大叔自用改：设为图生图源图，并导入正面提示词与角色提示词
+  img2imgWithPrompts,
+}
+
+/// 胖大叔自用改：把动作与元数据导入选项一次性带出。
+///
+/// 上游流程是「选动作 → 再弹一次选参数」，这里让对话框内的勾选随动作一起
+/// 返回，调用方直接用，省掉第二次弹窗。
+class ImageDestinationSelection {
+  const ImageDestinationSelection(this.destination, this.options);
+
+  final ImageDestination destination;
+  final MetadataImportOptions options;
 }
 
 /// 图片目标选择对话框
@@ -76,6 +93,12 @@ class ImageDestinationDialog extends ConsumerWidget {
   /// 由自适应表单呈现器持有的主滚动控制器。
   final ScrollController? scrollController;
 
+  /// 胖大叔自用改：对话框内的元数据导入勾选，由 [show] 创建并读取。
+  final ValueNotifier<MetadataImportOptions>? optionsNotifier;
+
+  /// 胖大叔自用改：记住导入勾选用的本地存储；为空时不做记忆。
+  final LocalStorageService? storage;
+
   const ImageDestinationDialog({
     super.key,
     required this.imageBytes,
@@ -86,10 +109,12 @@ class ImageDestinationDialog extends ConsumerWidget {
     this.detectedVibe,
     this.isBundle = false,
     this.scrollController,
+    this.optionsNotifier,
+    this.storage,
   });
 
   /// 显示对话框
-  static Future<ImageDestination?> show(
+  static Future<ImageDestinationSelection?> show(
     BuildContext context, {
     required Uint8List imageBytes,
     required String fileName,
@@ -98,39 +123,94 @@ class ImageDestinationDialog extends ConsumerWidget {
     String? metadataParseError,
     VibeReference? detectedVibe,
     bool isBundle = false,
-  }) {
-    return AdaptivePresenter.showForm<ImageDestination>(
-      context: context,
-      dialogWidth: metadata == null ? 480 : 960,
-      titleBuilder: (panelContext) {
-        final theme = Theme.of(panelContext);
-        return Row(
-          children: [
-            Icon(Icons.image_search_outlined, color: theme.colorScheme.primary),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Text(
-                panelContext.l10n.drop_dialogTitle,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: theme.textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.w600,
+  }) async {
+    // 胖大叔自用改：勾选状态随动作一起返回，省掉第二次弹窗。
+    final storage = ProviderScope.containerOf(
+      context,
+      listen: false,
+    ).read(localStorageServiceProvider);
+    final optionsNotifier = ValueNotifier<MetadataImportOptions>(
+      _defaultImportOptions(metadata, storage),
+    );
+    try {
+      final destination = await AdaptivePresenter.showForm<ImageDestination>(
+        context: context,
+        dialogWidth: metadata == null ? 480 : 960,
+        titleBuilder: (panelContext) {
+          final theme = Theme.of(panelContext);
+          return Row(
+            children: [
+              Icon(
+                Icons.image_search_outlined,
+                color: theme.colorScheme.primary,
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  panelContext.l10n.drop_dialogTitle,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ),
-            ),
-          ],
-        );
-      },
-      builder: (panelContext, scrollController) => ImageDestinationDialog(
-        imageBytes: imageBytes,
-        fileName: fileName,
-        showExtractMetadata: showExtractMetadata,
-        metadata: metadata,
-        metadataParseError: metadataParseError,
-        detectedVibe: detectedVibe,
-        isBundle: isBundle,
-        scrollController: scrollController,
+            ],
+          );
+        },
+        builder: (panelContext, scrollController) => ImageDestinationDialog(
+          imageBytes: imageBytes,
+          fileName: fileName,
+          showExtractMetadata: showExtractMetadata,
+          metadata: metadata,
+          metadataParseError: metadataParseError,
+          detectedVibe: detectedVibe,
+          isBundle: isBundle,
+          scrollController: scrollController,
+          optionsNotifier: optionsNotifier,
+          storage: storage,
+        ),
+      );
+      if (destination == null) return null;
+      return ImageDestinationSelection(destination, optionsNotifier.value);
+    } finally {
+      optionsNotifier.dispose();
+    }
+  }
+
+  /// 与上游第二次弹窗一致的默认值：全部导入并全选各列表。
+  ///
+  /// 胖大叔自用改：上次在本对话框改过勾选时沿用上次的选择，
+  /// 没有记录（首次使用）才回到全选。
+  static MetadataImportOptions _defaultImportOptions(
+    NaiImageMetadata? metadata,
+    LocalStorageService? storage,
+  ) {
+    if (metadata == null) return MetadataImportOptions.none();
+    final base = MetadataImportOptions.all().copyWith(
+      selectedQualityTags: metadata.qualityTags.isNotEmpty
+          ? List<String>.from(metadata.qualityTags)
+          : const <String>[],
+      selectedCharacterIndices: metadata.characterInfos.isNotEmpty
+          ? List<int>.generate(metadata.characterInfos.length, (i) => i)
+          : const <int>[],
+      selectedVibeIndices: metadata.vibeReferences.isNotEmpty
+          ? List<int>.generate(metadata.vibeReferences.length, (i) => i)
+          : const <int>[],
+      selectedPreciseReferenceIndices: metadata.preciseReferences.isNotEmpty
+          ? List<int>.generate(metadata.preciseReferences.length, (i) => i)
+          : const <int>[],
+    );
+    final remembered = BigmanImportPrefs.read(storage);
+    if (remembered == null) return base;
+    return _withSettings(
+      base.copyWith(
+        importPrompt: remembered.prompt,
+        importNegativePrompt: remembered.negative,
+        importCharacterPrompts: remembered.characters,
+        importSeed: remembered.seed,
       ),
+      remembered.settings,
     );
   }
 
@@ -499,6 +579,7 @@ class ImageDestinationDialog extends ConsumerWidget {
   }) {
     final theme = Theme.of(context);
     final actions = _metadataDestinationActions(context);
+    final importOptions = _buildImportOptionsSection(context);
     final content = Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -507,6 +588,7 @@ class ImageDestinationDialog extends ConsumerWidget {
           if (index > 0) const SizedBox(height: 10),
           actions[index],
         ],
+        importOptions,
       ],
     );
 
@@ -565,6 +647,14 @@ class ImageDestinationDialog extends ConsumerWidget {
               Navigator.of(context).pop(ImageDestination.extractMetadata),
         ),
       if (showExtractMetadata)
+        _DestinationButton(
+          icon: Icons.auto_fix_high_outlined,
+          label: context.l10n.drop_img2imgWithPrompts,
+          subtitle: context.l10n.drop_img2imgWithPromptsSubtitle,
+          onTap: () =>
+              Navigator.of(context).pop(ImageDestination.img2imgWithPrompts),
+        ),
+      if (showExtractMetadata)
         Tooltip(
           message: context.l10n.drop_addToQueueSubtitle,
           child: _DestinationButton(
@@ -598,6 +688,98 @@ class ImageDestinationDialog extends ConsumerWidget {
       ),
     ];
   }
+
+  /// 胖大叔自用改：把第二次弹窗的常用勾选搬进本对话框，一步到位。
+  Widget _buildImportOptionsSection(BuildContext context) {
+    final notifier = optionsNotifier;
+    if (notifier == null || metadata == null) return const SizedBox.shrink();
+    final theme = Theme.of(context);
+    final l10n = context.l10n;
+    return ValueListenableBuilder<MetadataImportOptions>(
+      valueListenable: notifier,
+      builder: (context, options, _) {
+        // 胖大叔自用改：每次改动都记下来，下次拖图沿用这次的选择。
+        void apply(MetadataImportOptions next) {
+          notifier.value = next;
+          BigmanImportPrefs.save(
+            storage,
+            BigmanImportPrefsValue(
+              prompt: next.importPrompt,
+              negative: next.importNegativePrompt,
+              characters: next.importCharacterPrompts,
+              settings: _settingsSelected(next),
+              seed: next.importSeed,
+            ),
+          );
+        }
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const SizedBox(height: 12),
+            Divider(
+              height: 1,
+              color: theme.colorScheme.onSurface.withValues(alpha: 0.08),
+            ),
+            const SizedBox(height: 10),
+            Text(
+              l10n.drop_importOptions,
+              style: theme.textTheme.titleSmall?.copyWith(
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: 4),
+            _ImportOptionTile(
+              label: l10n.drop_importPrompt,
+              value: options.importPrompt,
+              onChanged: (value) =>
+                  apply(options.copyWith(importPrompt: value)),
+            ),
+            _ImportOptionTile(
+              label: l10n.drop_importNegativePrompt,
+              value: options.importNegativePrompt,
+              onChanged: (value) =>
+                  apply(options.copyWith(importNegativePrompt: value)),
+            ),
+            _ImportOptionTile(
+              label: l10n.drop_importCharacters,
+              value: options.importCharacterPrompts,
+              onChanged: (value) =>
+                  apply(options.copyWith(importCharacterPrompts: value)),
+            ),
+            _ImportOptionTile(
+              label: l10n.drop_importSettings,
+              value: _settingsSelected(options),
+              onChanged: (value) => apply(_withSettings(options, value)),
+            ),
+            _ImportOptionTile(
+              label: l10n.drop_importSeed,
+              value: options.importSeed,
+              onChanged: (value) => apply(options.copyWith(importSeed: value)),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  static bool _settingsSelected(MetadataImportOptions options) =>
+      options.importSteps ||
+      options.importScale ||
+      options.importSize ||
+      options.importSampler ||
+      options.importModel;
+
+  static MetadataImportOptions _withSettings(
+    MetadataImportOptions options,
+    bool value,
+  ) => options.copyWith(
+    importSteps: value,
+    importScale: value,
+    importSize: value,
+    importSampler: value,
+    importModel: value,
+  );
 
   /// 构建 Vibe 检测卡片
   Widget _buildVibeDetectedCard(BuildContext context) {
@@ -1346,6 +1528,48 @@ class _DestinationButton extends StatelessWidget {
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+/// 胖大叔自用改：导入选项的紧凑勾选行。
+///
+/// 刻意不用 ListTile 系控件：动作面板是带背景色的 Container，
+/// ListTile 放在其中会触发框架的「背景色遮住 ink splash」断言。
+class _ImportOptionTile extends StatelessWidget {
+  const _ImportOptionTile({
+    required this.label,
+    required this.value,
+    required this.onChanged,
+  });
+
+  final String label;
+  final bool value;
+  final ValueChanged<bool> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return InkWell(
+      onTap: () => onChanged(!value),
+      borderRadius: BorderRadius.circular(6),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 1),
+        child: Row(
+          children: [
+            Checkbox(
+              value: value,
+              visualDensity: VisualDensity.compact,
+              materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              onChanged: (next) => onChanged(next ?? false),
+            ),
+            const SizedBox(width: 6),
+            Expanded(
+              child: Text(label, style: theme.textTheme.bodyMedium),
+            ),
+          ],
         ),
       ),
     );

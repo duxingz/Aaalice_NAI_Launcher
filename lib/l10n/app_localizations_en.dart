@@ -16139,4 +16139,29 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get bigmanMod_promptInboxSubtitle =>
       'Watches an agreed file and fills prompts written by DSH into the input box (including negative prompt and character sections), so you can skip copy-paste.';
+
+  @override
+  String get drop_importOptions => 'Import options';
+
+  @override
+  String get drop_importPrompt => 'Positive prompt';
+
+  @override
+  String get drop_importNegativePrompt => 'Negative prompt';
+
+  @override
+  String get drop_importCharacters => 'Character prompts';
+
+  @override
+  String get drop_importSettings => 'Generation settings';
+
+  @override
+  String get drop_importSeed => 'Seed';
+
+  @override
+  String get drop_img2imgWithPrompts => 'Img2img + prompts';
+
+  @override
+  String get drop_img2imgWithPromptsSubtitle =>
+      'Use as the img2img source and import the positive prompt and character prompts';
 }

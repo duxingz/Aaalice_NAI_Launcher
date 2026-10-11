@@ -7488,5 +7488,13 @@
   "bigmanMod_autoDateFolder": "自动新建日期文件夹",
   "bigmanMod_autoDateFolderSubtitle": "关闭后图片直接保存在目标目录，不再按日期分子文件夹。",
   "bigmanMod_promptInbox": "DSH 提示词收件箱",
-  "bigmanMod_promptInboxSubtitle": "轮询约定文件，把 DSH 写好的提示词自动填进输入框（含负面词与角色分区），省掉手动复制粘贴。"
+  "bigmanMod_promptInboxSubtitle": "轮询约定文件，把 DSH 写好的提示词自动填进输入框（含负面词与角色分区），省掉手动复制粘贴。",
+  "drop_importOptions": "导入选项",
+  "drop_importPrompt": "正面提示词",
+  "drop_importNegativePrompt": "负面提示词",
+  "drop_importCharacters": "角色提示词",
+  "drop_importSettings": "生成设置",
+  "drop_importSeed": "种子",
+  "drop_img2imgWithPrompts": "图生图 + 导入提示词",
+  "drop_img2imgWithPromptsSubtitle": "设为图生图源图，并导入正面提示词与角色提示词"
 }

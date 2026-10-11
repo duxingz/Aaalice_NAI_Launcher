@@ -28010,6 +28010,54 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Watches an agreed file and fills prompts written by DSH into the input box (including negative prompt and character sections), so you can skip copy-paste.'**
   String get bigmanMod_promptInboxSubtitle;
+
+  /// No description provided for @drop_importOptions.
+  ///
+  /// In en, this message translates to:
+  /// **'Import options'**
+  String get drop_importOptions;
+
+  /// No description provided for @drop_importPrompt.
+  ///
+  /// In en, this message translates to:
+  /// **'Positive prompt'**
+  String get drop_importPrompt;
+
+  /// No description provided for @drop_importNegativePrompt.
+  ///
+  /// In en, this message translates to:
+  /// **'Negative prompt'**
+  String get drop_importNegativePrompt;
+
+  /// No description provided for @drop_importCharacters.
+  ///
+  /// In en, this message translates to:
+  /// **'Character prompts'**
+  String get drop_importCharacters;
+
+  /// No description provided for @drop_importSettings.
+  ///
+  /// In en, this message translates to:
+  /// **'Generation settings'**
+  String get drop_importSettings;
+
+  /// No description provided for @drop_importSeed.
+  ///
+  /// In en, this message translates to:
+  /// **'Seed'**
+  String get drop_importSeed;
+
+  /// No description provided for @drop_img2imgWithPrompts.
+  ///
+  /// In en, this message translates to:
+  /// **'Img2img + prompts'**
+  String get drop_img2imgWithPrompts;
+
+  /// No description provided for @drop_img2imgWithPromptsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Use as the img2img source and import the positive prompt and character prompts'**
+  String get drop_img2imgWithPromptsSubtitle;
 }
 
 class _AppLocalizationsDelegate

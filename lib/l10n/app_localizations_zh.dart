@@ -15424,6 +15424,30 @@ class AppLocalizationsZh extends AppLocalizations {
   @override
   String get bigmanMod_promptInboxSubtitle =>
       '轮询约定文件，把 DSH 写好的提示词自动填进输入框（含负面词与角色分区），省掉手动复制粘贴。';
+
+  @override
+  String get drop_importOptions => '导入选项';
+
+  @override
+  String get drop_importPrompt => '正面提示词';
+
+  @override
+  String get drop_importNegativePrompt => '负面提示词';
+
+  @override
+  String get drop_importCharacters => '角色提示词';
+
+  @override
+  String get drop_importSettings => '生成设置';
+
+  @override
+  String get drop_importSeed => '种子';
+
+  @override
+  String get drop_img2imgWithPrompts => '图生图 + 导入提示词';
+
+  @override
+  String get drop_img2imgWithPromptsSubtitle => '设为图生图源图，并导入正面提示词与角色提示词';
 }
 
 /// The translations for Chinese, using the Han script (`zh_Hant`).
@@ -30847,4 +30871,28 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
   @override
   String get bigmanMod_promptInboxSubtitle =>
       '輪詢約定檔案，把 DSH 寫好的提示詞自動填入輸入框（含負面詞與角色分區），省掉手動複製貼上。';
+
+  @override
+  String get drop_importOptions => '匯入選項';
+
+  @override
+  String get drop_importPrompt => '正面提示詞';
+
+  @override
+  String get drop_importNegativePrompt => '負面提示詞';
+
+  @override
+  String get drop_importCharacters => '角色提示詞';
+
+  @override
+  String get drop_importSettings => '生成設定';
+
+  @override
+  String get drop_importSeed => '種子';
+
+  @override
+  String get drop_img2imgWithPrompts => '圖生圖 + 匯入提示詞';
+
+  @override
+  String get drop_img2imgWithPromptsSubtitle => '設為圖生圖來源圖，並匯入正面提示詞與角色提示詞';
 }

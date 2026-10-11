@@ -7442,5 +7442,13 @@
   "bigmanMod_autoDateFolder": "日付フォルダを自動作成",
   "bigmanMod_autoDateFolderSubtitle": "オフにすると画像は日付のサブフォルダを作らず保存先フォルダに直接保存されます。",
   "bigmanMod_promptInbox": "DSH プロンプト受信箱",
-  "bigmanMod_promptInboxSubtitle": "共有ファイルを監視し、DSH が書いたプロンプトを入力欄へ自動反映します（ネガティブとキャラクター区画を含む）。コピー＆ペーストが不要になります。"
+  "bigmanMod_promptInboxSubtitle": "共有ファイルを監視し、DSH が書いたプロンプトを入力欄へ自動反映します（ネガティブとキャラクター区画を含む）。コピー＆ペーストが不要になります。",
+  "drop_importOptions": "取り込みオプション",
+  "drop_importPrompt": "ポジティブプロンプト",
+  "drop_importNegativePrompt": "ネガティブプロンプト",
+  "drop_importCharacters": "キャラクター",
+  "drop_importSettings": "生成設定",
+  "drop_importSeed": "シード",
+  "drop_img2imgWithPrompts": "img2img + プロンプト取り込み",
+  "drop_img2imgWithPromptsSubtitle": "img2img の元画像に設定し、ポジティブプロンプトとキャラクターを反映します"
 }

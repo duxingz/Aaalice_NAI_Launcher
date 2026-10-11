@@ -15709,4 +15709,29 @@ class AppLocalizationsJa extends AppLocalizations {
   @override
   String get bigmanMod_promptInboxSubtitle =>
       '共有ファイルを監視し、DSH が書いたプロンプトを入力欄へ自動反映します（ネガティブとキャラクター区画を含む）。コピー＆ペーストが不要になります。';
+
+  @override
+  String get drop_importOptions => '取り込みオプション';
+
+  @override
+  String get drop_importPrompt => 'ポジティブプロンプト';
+
+  @override
+  String get drop_importNegativePrompt => 'ネガティブプロンプト';
+
+  @override
+  String get drop_importCharacters => 'キャラクター';
+
+  @override
+  String get drop_importSettings => '生成設定';
+
+  @override
+  String get drop_importSeed => 'シード';
+
+  @override
+  String get drop_img2imgWithPrompts => 'img2img + プロンプト取り込み';
+
+  @override
+  String get drop_img2imgWithPromptsSubtitle =>
+      'img2img の元画像に設定し、ポジティブプロンプトとキャラクターを反映します';
 }
