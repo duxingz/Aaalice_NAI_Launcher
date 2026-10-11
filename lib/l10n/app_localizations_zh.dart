@@ -15345,6 +15345,19 @@ class AppLocalizationsZh extends AppLocalizations {
   String get bigmanMod_autoFormatSubtitle => '离开输入框时整理中文逗号、空格与分隔符。与工具栏按钮联动。';
 
   @override
+  String get bigmanMod_promptTagFormat => '标签格式';
+
+  @override
+  String get bigmanMod_promptTagFormatSubtitle =>
+      '格式化时标签内部用什么分隔：下划线（long_hair，与官方一致）或空格（long hair）。';
+
+  @override
+  String get bigmanMod_promptTagFormatUnderscore => '下划线';
+
+  @override
+  String get bigmanMod_promptTagFormatSpace => '空格';
+
+  @override
   String get bigmanMod_disableSectionTitle => '功能停用';
 
   @override
@@ -30790,6 +30803,19 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
 
   @override
   String get bigmanMod_autoFormatSubtitle => '離開輸入框時整理中文逗號、空格與分隔符號。與工具列按鈕連動。';
+
+  @override
+  String get bigmanMod_promptTagFormat => '標籤格式';
+
+  @override
+  String get bigmanMod_promptTagFormatSubtitle =>
+      '格式化時標籤內部用什麼分隔：下劃線（long_hair，與官方一致）或空格（long hair）。';
+
+  @override
+  String get bigmanMod_promptTagFormatUnderscore => '下劃線';
+
+  @override
+  String get bigmanMod_promptTagFormatSpace => '空格';
 
   @override
   String get bigmanMod_disableSectionTitle => '功能停用';

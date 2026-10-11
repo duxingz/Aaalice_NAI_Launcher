@@ -15627,6 +15627,19 @@ class AppLocalizationsJa extends AppLocalizations {
       '入力欄から離れた時に中国語の読点・空白・区切りを整えます。ツールバーのボタンと連動します。';
 
   @override
+  String get bigmanMod_promptTagFormat => 'タグ形式';
+
+  @override
+  String get bigmanMod_promptTagFormatSubtitle =>
+      '整形時にタグ内部で使う区切り：アンダースコア（long_hair、公式と同じ）または空白（long hair）。';
+
+  @override
+  String get bigmanMod_promptTagFormatUnderscore => 'アンダースコア';
+
+  @override
+  String get bigmanMod_promptTagFormatSpace => '空白';
+
+  @override
   String get bigmanMod_disableSectionTitle => '機能の停止';
 
   @override

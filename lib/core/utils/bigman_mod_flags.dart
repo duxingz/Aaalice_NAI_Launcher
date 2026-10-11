@@ -19,6 +19,15 @@ class BigmanModFlags {
     }
   }
 
+  static String? _readString(String key) {
+    try {
+      if (!Hive.isBoxOpen(StorageKeys.settingsBox)) return null;
+      return Hive.box(StorageKeys.settingsBox).get(key) as String?;
+    } catch (_) {
+      return null;
+    }
+  }
+
   /// 质量词预设是否启用；默认关闭（不注入官方质量词）。
   static bool qualityPresetEnabled() =>
       _readBool(StorageKeys.bigmanQualityPresetEnabled) ?? false;
@@ -37,4 +46,14 @@ class BigmanModFlags {
   /// （`0.95::a::, 0.95::b::`）。每次按键都会重新读取，改设置立即生效。
   static bool mergeMultiSelectWeight() =>
       _readBool(StorageKeys.bigmanMergeMultiSelectWeight) ?? true;
+
+  /// 格式化提示词时标签内用什么：`true` = 下划线（空格换下划线），
+  /// `false` = 空格（下划线换空格）。
+  ///
+  /// 默认下划线 —— 与官方格式化一致；存储缺失、旧值、类型不符都按默认。
+  static bool promptTagsUseUnderscores() =>
+      _readString(StorageKeys.bigmanPromptTagFormat) != _spaceTagFormat;
 }
+
+/// 设置里表示「空格格式」的存储值。
+const String _spaceTagFormat = 'space';

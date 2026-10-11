@@ -16055,6 +16055,19 @@ class AppLocalizationsEn extends AppLocalizations {
       'Tidies Chinese commas, spaces and separators when the field loses focus. Linked with the toolbar button.';
 
   @override
+  String get bigmanMod_promptTagFormat => 'Tag format';
+
+  @override
+  String get bigmanMod_promptTagFormatSubtitle =>
+      'Separator used inside a tag when formatting: underscore (long_hair, same as upstream) or space (long hair).';
+
+  @override
+  String get bigmanMod_promptTagFormatUnderscore => 'Underscore';
+
+  @override
+  String get bigmanMod_promptTagFormatSpace => 'Space';
+
+  @override
   String get bigmanMod_disableSectionTitle => 'Disabled features';
 
   @override

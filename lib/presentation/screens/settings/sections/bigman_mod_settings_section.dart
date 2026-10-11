@@ -91,6 +91,26 @@ class _BigmanModSettingsSectionState
                     .read(autoFormatPromptSettingsProvider.notifier)
                     .set(value),
               ),
+              ListTile(
+                title: Text(l10n.bigmanMod_promptTagFormat),
+                subtitle: Text(l10n.bigmanMod_promptTagFormatSubtitle),
+                trailing: SegmentedButton<BigmanPromptTagFormat>(
+                  showSelectedIcon: false,
+                  segments: [
+                    ButtonSegment(
+                      value: BigmanPromptTagFormat.underscore,
+                      label: Text(l10n.bigmanMod_promptTagFormatUnderscore),
+                    ),
+                    ButtonSegment(
+                      value: BigmanPromptTagFormat.space,
+                      label: Text(l10n.bigmanMod_promptTagFormatSpace),
+                    ),
+                  ],
+                  selected: {settings.promptTagFormat},
+                  onSelectionChanged: (selection) =>
+                      notifier.setPromptTagFormat(selection.first),
+                ),
+              ),
             ],
           ),
         ),

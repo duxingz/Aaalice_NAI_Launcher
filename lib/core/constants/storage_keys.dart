@@ -466,4 +466,6 @@ class StorageKeys {
   static const String bigmanPromptInboxEnabled = 'bigman_prompt_inbox_enabled';
   static const String bigmanMergeMultiSelectWeight =
       'bigman_merge_multiselect_weight';
+  /// 标签格式：`space` = 空格（下划线转空格），`underscore` = 下划线（空格转下划线）。
+  static const String bigmanPromptTagFormat = 'bigman_prompt_tag_format';
 }

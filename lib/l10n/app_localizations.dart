@@ -27868,6 +27868,30 @@ abstract class AppLocalizations {
   /// **'Tidies Chinese commas, spaces and separators when the field loses focus. Linked with the toolbar button.'**
   String get bigmanMod_autoFormatSubtitle;
 
+  /// No description provided for @bigmanMod_promptTagFormat.
+  ///
+  /// In en, this message translates to:
+  /// **'Tag format'**
+  String get bigmanMod_promptTagFormat;
+
+  /// No description provided for @bigmanMod_promptTagFormatSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Separator used inside a tag when formatting: underscore (long_hair, same as upstream) or space (long hair).'**
+  String get bigmanMod_promptTagFormatSubtitle;
+
+  /// No description provided for @bigmanMod_promptTagFormatUnderscore.
+  ///
+  /// In en, this message translates to:
+  /// **'Underscore'**
+  String get bigmanMod_promptTagFormatUnderscore;
+
+  /// No description provided for @bigmanMod_promptTagFormatSpace.
+  ///
+  /// In en, this message translates to:
+  /// **'Space'**
+  String get bigmanMod_promptTagFormatSpace;
+
   /// No description provided for @bigmanMod_disableSectionTitle.
   ///
   /// In en, this message translates to:

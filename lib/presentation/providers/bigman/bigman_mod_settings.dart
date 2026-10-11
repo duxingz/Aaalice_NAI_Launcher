@@ -12,6 +12,29 @@ enum BigmanSaveNameCounterMode {
   scan,
 }
 
+/// 格式化提示词时的标签内分隔符形式。
+///
+/// 官方行为是「空格 → 下划线」；本改版早期反过来（下划线 → 空格）。
+/// 现在两种都保留，由用户在设置里选，默认下划线（与官方一致）。
+enum BigmanPromptTagFormat {
+  /// 标签内的空格转下划线：`long hair` → `long_hair`。
+  underscore('underscore'),
+
+  /// 标签内的下划线转空格：`long_hair` → `long hair`。
+  space('space');
+
+  const BigmanPromptTagFormat(this.storageValue);
+
+  /// 存进设置里的字符串；读不到时按 [underscore] 处理。
+  final String storageValue;
+
+  static BigmanPromptTagFormat fromStorage(String? value) =>
+      value == space.storageValue ? space : underscore;
+
+  /// 下划线模式走向官方那套「空格转下划线」的转换。
+  bool get convertsSpacesToUnderscores => this == underscore;
+}
+
 /// 胖大叔自用改的全部开关与参数。
 ///
 /// 默认值遵循自用改的需求：提示词快捷键默认开启；质量词预设、负面预设与
@@ -30,6 +53,7 @@ class BigmanModSettings {
     this.saveNameStart = 1,
     this.promptInboxEnabled = true,
     this.mergeMultiSelectWeight = true,
+    this.promptTagFormat = BigmanPromptTagFormat.underscore,
   });
 
   /// Ctrl+↑/↓ 调整光标所在标签的权重。
@@ -72,6 +96,9 @@ class BigmanModSettings {
   /// （`0.95::1boy::, 0.95::1girl::`）。
   final bool mergeMultiSelectWeight;
 
+  /// 格式化提示词时标签内用什么：默认下划线（空格 → 下划线，与官方一致）。
+  final BigmanPromptTagFormat promptTagFormat;
+
   /// 塞进生成队列。
   ///
 
@@ -92,6 +119,7 @@ class BigmanModSettings {
     int? saveNameStart,
     bool? promptInboxEnabled,
     bool? mergeMultiSelectWeight,
+    BigmanPromptTagFormat? promptTagFormat,
   }) {
     return BigmanModSettings(
       promptWeightShortcut: promptWeightShortcut ?? this.promptWeightShortcut,
@@ -107,6 +135,7 @@ class BigmanModSettings {
       promptInboxEnabled: promptInboxEnabled ?? this.promptInboxEnabled,
       mergeMultiSelectWeight:
           mergeMultiSelectWeight ?? this.mergeMultiSelectWeight,
+      promptTagFormat: promptTagFormat ?? this.promptTagFormat,
     );
   }
 }
@@ -176,6 +205,10 @@ class BigmanModSettingsNotifier extends StateNotifier<BigmanModSettings> {
         StorageKeys.bigmanMergeMultiSelectWeight,
         true,
       ),
+      // 默认下划线（空格 → 下划线），与官方格式化一致。
+      promptTagFormat: BigmanPromptTagFormat.fromStorage(
+        storage.getSetting<String>(StorageKeys.bigmanPromptTagFormat),
+      ),
     );
   }
 
@@ -244,6 +277,12 @@ class BigmanModSettingsNotifier extends StateNotifier<BigmanModSettings> {
   Future<void> setMergeMultiSelectWeight(bool value) => _write(
     state.copyWith(mergeMultiSelectWeight: value),
     {StorageKeys.bigmanMergeMultiSelectWeight: value},
+  );
+
+  /// 切换标签格式（空格 / 下划线）。
+  Future<void> setPromptTagFormat(BigmanPromptTagFormat value) => _write(
+    state.copyWith(promptTagFormat: value),
+    {StorageKeys.bigmanPromptTagFormat: value.storageValue},
   );
 
 

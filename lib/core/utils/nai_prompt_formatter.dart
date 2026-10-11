@@ -1,12 +1,17 @@
+import 'bigman_mod_flags.dart';
 import 'character_prompt_block_parser.dart';
 import 'prompt_edit_document.dart';
+import 'text_space_converter.dart';
 
 /// NAI 提示词格式化工具
 ///
 /// - 中文逗号 → 英文逗号
 /// - 标签之间统一成「逗号 + 空格」
 /// - 去掉多余的首尾空白
-/// - 标签内部的下划线 → 空格（表情类标签如 `x_x` / `^_^` 保持原样）
+/// - 标签内部的空格 / 下划线二选一（见 [format] 的 `tagFormat`）：
+///   - 下划线格式（默认，与官方一致）：`long hair` → `long_hair`
+///   - 空格格式：`long_hair` → `long hair`
+///   - 表情类标签（`x_x` / `^_^` / `>_<`）两种模式下都保持原样
 class NaiPromptFormatter {
   static final RegExp _alphanumericPattern = RegExp(r'[A-Za-z0-9]');
   static final RegExp _lineBreakPattern = RegExp(r'\r\n|\r|\n');
@@ -15,15 +20,25 @@ class NaiPromptFormatter {
   static final RegExp _trailingHorizontalWhitespacePattern = RegExp(r'[ \t]*$');
   static final RegExp _leadingSeparatorPattern = RegExp(r'^[ \t]*[,，][ \t]*');
 
-  /// 规范化单个标签：统一空白，并把下划线换成空格（表情类标签除外）。
-  static String formatTag(String tag) =>
-      _normalizeTag(_normalizeHorizontalWhitespace(tag));
+  /// 规范化单个标签：统一空白，再按标签格式统一分隔符（表情类标签除外）。
+  static String formatTag(String tag, {bool? useUnderscores}) => _normalizeTag(
+    _normalizeHorizontalWhitespace(tag),
+    _resolveUnderscoreMode(useUnderscores),
+  );
+
+  /// 当前该用哪种标签格式；[useUnderscores] 传值时为显式覆盖（测试用）。
+  static bool _resolveUnderscoreMode(bool? useUnderscores) =>
+      useUnderscores ?? BigmanModFlags.promptTagsUseUnderscores();
 
   /// 格式化整个提示词
   /// - 将中文逗号转换为英文逗号
-  /// - 将标签中的空格转换为下划线（保留逗号后的空格和尖括号内的空格）
+  /// - 按标签格式统一分隔符：下划线格式把标签内空格换成下划线，
+  ///   空格格式把标签内下划线换成空格（两种都保留逗号后的空格和尖括号内的空格）
   /// - 保留用户用于分组的换行、空行和行首缩进
-  static String format(String prompt) {
+  ///
+  /// [useUnderscores] 省略时按本机设置（默认下划线）。
+  static String format(String prompt, {bool? useUnderscores}) {
+    final underscoreMode = _resolveUnderscoreMode(useUnderscores);
     var followsDisabled = false;
     return PromptEditDocument.mapActiveText(prompt, (fragment) {
       // A leading comma after an opaque disabled fragment separates tags;
@@ -32,13 +47,13 @@ class NaiPromptFormatter {
           ? _leadingSeparatorPattern.firstMatch(fragment)
           : null;
       followsDisabled = true;
-      if (separator == null) return _formatActive(fragment);
+      if (separator == null) return _formatActive(fragment, underscoreMode);
       return '${separator.group(0)!.replaceAll('，', ',')}'
-          '${_formatActive(fragment.substring(separator.end))}';
+          '${_formatActive(fragment.substring(separator.end), underscoreMode)}';
     });
   }
 
-  static String _formatActive(String prompt) {
+  static String _formatActive(String prompt, bool underscoreMode) {
     if (prompt.isEmpty) return prompt;
 
     // Format block contents through the same path as positive tags while the
@@ -53,22 +68,22 @@ class NaiPromptFormatter {
       prepared = prepared.replaceRange(
         block.contentRange.start,
         block.contentRange.end,
-        _formatPromptText(content),
+        _formatPromptText(content, underscoreMode),
       );
     }
 
-    return _formatPromptText(prepared);
+    return _formatPromptText(prepared, underscoreMode);
   }
 
-  static String _formatPromptText(String prompt) {
+  static String _formatPromptText(String prompt, bool underscoreMode) {
     return prompt.splitMapJoin(
       _lineBreakPattern,
       onMatch: (match) => match.group(0)!,
-      onNonMatch: _formatLine,
+      onNonMatch: (line) => _formatLine(line, underscoreMode),
     );
   }
 
-  static String _formatLine(String line) {
+  static String _formatLine(String line, bool underscoreMode) {
     if (line.isEmpty) return line;
 
     final leadingWhitespace =
@@ -84,11 +99,11 @@ class NaiPromptFormatter {
     content = _normalizeHorizontalWhitespace(content).replaceAll('，', ',');
     final keepsTrailingComma = content.endsWith(',');
 
-    // 胖大叔自用改：不再把空格转成下划线，反而把下划线换成空格。
-    // 表情类标签（x_x / o_o / ^_^ / >_< / <o>_<o>）保持原样。
+    // 胖大叔自用改：标签格式由设置决定（默认下划线，与官方一致）。
+    // 表情类标签（x_x / o_o / ^_^ / >_< / <o>_<o>）两种模式都保持原样。
     final tags = content
         .split(',')
-        .map(_normalizeTag)
+        .map((tag) => _normalizeTag(tag, underscoreMode))
         .where((tag) => tag.isNotEmpty)
         .toList();
 
@@ -107,14 +122,29 @@ class NaiPromptFormatter {
     return result;
   }
 
-  /// 单个标签的规范化：下划线换空格，表情类标签除外。
+  /// 单个标签的规范化；表情类标签原样返回。
   ///
-  /// `soft_dramatic_lighting` → `soft dramatic lighting`
-  /// 而 `x_x`、`o_o`、`^_^`、`>_<`、`<o>_<o>` 保持不变。
-  static String _normalizeTag(String tag) {
+  /// 下划线格式（[underscoreMode] = true）：
+  ///   `soft dramatic lighting` → `soft_dramatic_lighting`
+  ///   复用官方的 [TextSpaceConverter]，保护逗号 / 括号 / 竖线 / 尖括号旁与
+  ///   尖括号内部的空格（`{red|blue} hair` 保持不变）。
+  ///
+  /// 空格格式（[underscoreMode] = false）：
+  ///   `soft_dramatic_lighting` → `soft dramatic lighting`
+  ///
+  /// 两种模式下 `x_x`、`o_o`、`^_^`、`>_<`、`<o>_<o>` 都保持不变。
+  static String _normalizeTag(String tag, bool underscoreMode) {
     final trimmed = tag.trim();
-    if (trimmed.isEmpty || !trimmed.contains('_')) return trimmed;
+    if (trimmed.isEmpty) return trimmed;
     if (_isFaceLikeTag(trimmed)) return trimmed;
+    if (underscoreMode) {
+      if (!trimmed.contains(' ')) return trimmed;
+      return TextSpaceConverter.convert(
+        trimmed,
+        protectChars: TextSpaceConverter.naiFormat,
+      );
+    }
+    if (!trimmed.contains('_')) return trimmed;
     return trimmed.replaceAll('_', ' ');
   }
 
