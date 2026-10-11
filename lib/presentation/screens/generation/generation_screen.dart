@@ -6,7 +6,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/platform/platform_capabilities.dart';
 import '../../../core/services/bigman_prompt_inbox.dart';
 import '../../../data/models/character/character_prompt.dart';
-import '../../../data/models/queue/replication_task.dart';
 import '../../adaptive/adaptive_layout.dart';
 import '../../providers/bigman/bigman_mod_settings.dart';
 import '../../providers/character_prompt_provider.dart';
