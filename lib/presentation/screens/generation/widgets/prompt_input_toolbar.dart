@@ -5,6 +5,7 @@ import '../../../../core/autocomplete/autocomplete_settings.dart'
     as completion_settings;
 import '../../../../core/utils/localization_extension.dart';
 import '../../../adaptive/interaction_policy.dart';
+import '../../../providers/bigman/bigman_mod_settings.dart';
 import '../../../providers/image_generation_provider.dart';
 import '../../../providers/prompt_regex_rules_provider.dart';
 import '../../../widgets/character/character_prompt_button.dart';
@@ -385,6 +386,10 @@ class PromptInputBottomActions extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final showRandomTools = ref.watch(randomPromptToolsVisibilityProvider);
+    // 胖大叔自用改：关闭随机提示词时保留图标，但点击不再有任何反应。
+    final bigmanRandom = ref.watch(
+      bigmanModSettingsProvider.select((s) => s.randomPromptEnabled),
+    );
     return PromptEditorToolbar(
       key: const ValueKey('generation_prompt_bottom_actions'),
       buttonStyle: PromptFooterStyle.button(context).copyWith(
@@ -399,7 +404,9 @@ class PromptInputBottomActions extends ConsumerWidget {
         showFullscreenButton: false,
         showClearButton: showClearButton,
       ),
-      onRandomPressed: showRandomTools ? commands.generateRandomPrompt : null,
+      onRandomPressed: showRandomTools
+          ? (bigmanRandom ? commands.generateRandomPrompt : () {})
+          : null,
       onClearPressed: controller.isNegativeMode
           ? commands.clearNegativePrompt
           : commands.clearPrompt,

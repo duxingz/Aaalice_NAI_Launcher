@@ -103,7 +103,8 @@ jobs:
             'test/presentation/widgets/online_gallery/gallery_generation_transfer_flow_test.dart',
             'test/core/services/character_conversion_service_test.dart',
             'test/presentation/widgets/prompt/preset_selector_tooltip_test.dart',
-            'test/presentation/widgets/prompt/tag_mode_prompt_field_test.dart'
+            'test/presentation/widgets/prompt/tag_mode_prompt_field_test.dart',
+            'test/presentation/providers/bigman_disabled_features_test.dart'
           )
           foreach ($t in $targets) {
             if (!(Test-Path $t)) { throw "Missing expected test file: $t" }

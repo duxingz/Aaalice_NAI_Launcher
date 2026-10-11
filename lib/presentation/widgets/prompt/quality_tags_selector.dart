@@ -7,6 +7,7 @@ import 'package:nai_launcher/core/utils/localization_extension.dart';
 import '../../../core/constants/api_constants.dart';
 import '../../../data/models/prompt/prompt_preset_mode.dart';
 import '../../../data/models/tag_library/tag_library_entry.dart';
+import '../../providers/bigman/bigman_mod_settings.dart';
 import '../../providers/quality_preset_provider.dart';
 import '../common/translated_tag_text.dart';
 import '../../themes/prompt_semantic_colors.dart';
@@ -55,6 +56,10 @@ class _QualityTagsSelectorState extends ConsumerState<QualityTagsSelector> {
     final presetState = ref.watch(qualityPresetNotifierProvider);
     final customEntries = ref.watch(qualityCustomEntriesProvider);
     final isEnabled = presetState.mode != PromptPresetMode.none;
+    // 胖大叔自用改：关闭时保留图标与悬浮说明，只让点击不再弹出菜单。
+    final bigmanEnabled = ref.watch(
+      bigmanModSettingsProvider.select((s) => s.qualityPresetEnabled),
+    );
     return DelayedRichTooltip(
       content: RichTooltipSurface(
         maxWidth: 320,
@@ -66,7 +71,9 @@ class _QualityTagsSelectorState extends ConsumerState<QualityTagsSelector> {
         child: PromptControlButton(
           color: theme.promptSemanticColors.positiveQuality,
           active: isEnabled,
-          onPressed: () => _showMenu(context, presetState, customEntries),
+          onPressed: bigmanEnabled
+              ? () => _showMenu(context, presetState, customEntries)
+              : () {},
           padding: EdgeInsets.symmetric(
             horizontal: widget.compact ? 8 : 10,
             vertical: widget.compact ? 4 : 6,
