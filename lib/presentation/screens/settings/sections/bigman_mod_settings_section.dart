@@ -25,7 +25,6 @@ class _BigmanModSettingsSectionState
   late final TextEditingController _templateController;
   late final TextEditingController _paddingController;
   late final TextEditingController _startController;
-  late final TextEditingController _bridgeDirController;
 
   @override
   void initState() {
@@ -38,7 +37,6 @@ class _BigmanModSettingsSectionState
       text: '${settings.saveNamePadding}',
     );
     _startController = TextEditingController(text: '${settings.saveNameStart}');
-    _bridgeDirController = TextEditingController(text: settings.bridgeDir);
   }
 
   @override
@@ -46,7 +44,6 @@ class _BigmanModSettingsSectionState
     _templateController.dispose();
     _paddingController.dispose();
     _startController.dispose();
-    _bridgeDirController.dispose();
     super.dispose();
   }
 
@@ -230,24 +227,6 @@ class _BigmanModSettingsSectionState
                 subtitle: Text(l10n.bigmanMod_promptInboxSubtitle),
                 value: settings.promptInboxEnabled,
                 onChanged: (value) => notifier.setPromptInboxEnabled(value),
-              ),
-              SwitchListTile(
-                title: Text(l10n.bigmanMod_queueBridge),
-                subtitle: Text(l10n.bigmanMod_queueBridgeSubtitle),
-                value: settings.queueBridgeEnabled,
-                onChanged: (value) => notifier.setQueueBridgeEnabled(value),
-              ),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-                child: TextField(
-                  key: const ValueKey('bigman-bridge-dir'),
-                  controller: _bridgeDirController,
-                  onChanged: notifier.setBridgeDir,
-                  decoration: InputDecoration(
-                    labelText: l10n.bigmanMod_bridgeDir,
-                    hintText: l10n.bigmanMod_bridgeDirHint,
-                  ),
-                ),
               ),
             ],
           ),
