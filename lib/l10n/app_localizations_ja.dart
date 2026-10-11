@@ -15701,6 +15701,14 @@ class AppLocalizationsJa extends AppLocalizations {
   String get bigmanMod_saveNameCounterScan => '毎回フォルダを走査して最大値';
 
   @override
+  String get bigmanMod_saveNameCounterScanHint =>
+      '保存のたびに保存先を走査して最大番号から続けます。削除した番号は再利用されます。';
+
+  @override
+  String get bigmanMod_saveNameCounterGlobalHint =>
+      '端末内のカウンタで日付フォルダをまたいで増え続けます。番号は再利用されません（画像を削除しても）。';
+
+  @override
   String get bigmanMod_saveNamePadding => 'ゼロ埋め桁数';
 
   @override

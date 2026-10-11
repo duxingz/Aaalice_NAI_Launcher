@@ -16131,6 +16131,14 @@ class AppLocalizationsEn extends AppLocalizations {
       'Scan folder for the highest index';
 
   @override
+  String get bigmanMod_saveNameCounterScanHint =>
+      'Scans the save folder on every save and continues from the highest index; numbers of deleted images are reused.';
+
+  @override
+  String get bigmanMod_saveNameCounterGlobalHint =>
+      'A local counter that keeps increasing across date folders; numbers are never reused, not even after deleting an image.';
+
+  @override
   String get bigmanMod_saveNamePadding => 'Zero padding';
 
   @override

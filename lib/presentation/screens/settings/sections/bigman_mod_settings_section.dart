@@ -173,21 +173,23 @@ class _BigmanModSettingsSectionState
               ListTile(
                 title: Text(l10n.bigmanMod_saveNameCounterMode),
                 subtitle: Text(
+                  // 把两种模式的**差别**写出来：删掉的号会不会被回收，
+                  // 光看名字看不出来（用户就是照着这个报过 bug）。
                   settings.saveNameCounterMode ==
                           BigmanSaveNameCounterMode.scan
-                      ? l10n.bigmanMod_saveNameCounterScan
-                      : l10n.bigmanMod_saveNameCounterGlobal,
+                      ? l10n.bigmanMod_saveNameCounterScanHint
+                      : l10n.bigmanMod_saveNameCounterGlobalHint,
                 ),
                 trailing: SegmentedButton<BigmanSaveNameCounterMode>(
                   showSelectedIcon: false,
                   segments: [
                     ButtonSegment(
-                      value: BigmanSaveNameCounterMode.global,
-                      label: Text(l10n.bigmanMod_saveNameCounterGlobal),
-                    ),
-                    ButtonSegment(
                       value: BigmanSaveNameCounterMode.scan,
                       label: Text(l10n.bigmanMod_saveNameCounterScan),
+                    ),
+                    ButtonSegment(
+                      value: BigmanSaveNameCounterMode.global,
+                      label: Text(l10n.bigmanMod_saveNameCounterGlobal),
                     ),
                   ],
                   selected: {settings.saveNameCounterMode},

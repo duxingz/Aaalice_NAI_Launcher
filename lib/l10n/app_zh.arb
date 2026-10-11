@@ -7486,6 +7486,8 @@
   "bigmanMod_saveNameCounterMode": "序号来源",
   "bigmanMod_saveNameCounterGlobal": "全局连续计数",
   "bigmanMod_saveNameCounterScan": "每次扫描目录取最大号",
+  "bigmanMod_saveNameCounterScanHint": "每次保存扫描保存目录，取最大号 +1；删掉的号会被回收复用。",
+  "bigmanMod_saveNameCounterGlobalHint": "本机计数器，跨日期目录持续递增；号只增不回收，删了图也不会复用。",
   "bigmanMod_saveNamePadding": "补零位数",
   "bigmanMod_saveNamePaddingHint": "0 表示不补零",
   "bigmanMod_saveNameStart": "起始序号",

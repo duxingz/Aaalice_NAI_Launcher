@@ -2,13 +2,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/constants/storage_keys.dart';
 import '../../../core/storage/local_storage_service.dart';
+import '../../../core/utils/bigman_save_name.dart';
 
 /// 保存文件名的序号来源。
 enum BigmanSaveNameCounterMode {
-  /// 全局连续计数：本机保存一个计数器，跨日期目录持续递增。
+  /// 全局连续计数：本机保存一个计数器，跨日期目录持续递增，删掉的号不回收。
   global,
 
-  /// 每次保存扫描保存目录里已有的最大编号后 +1。
+  /// 每次保存扫描保存目录里已有的最大编号后 +1；删掉的号会被回收复用。
   scan,
 }
 
@@ -48,7 +49,7 @@ class BigmanModSettings {
     this.randomPromptEnabled = false,
     this.autoDateFolder = false,
     this.saveNameTemplate = '{n}',
-    this.saveNameCounterMode = BigmanSaveNameCounterMode.global,
+    this.saveNameCounterMode = BigmanSaveNameCounterMode.scan,
     this.saveNamePadding = 0,
     this.saveNameStart = 1,
     this.promptInboxEnabled = true,
@@ -189,8 +190,15 @@ class BigmanModSettingsNotifier extends StateNotifier<BigmanModSettings> {
       saveNameTemplate:
           storage.getSetting<String>(StorageKeys.bigmanSaveNameTemplate) ??
           '{n}',
+      // 默认扫描模式：读不到设置（老用户首次升级）时也按扫描走，
+      // 与 BigmanSaveName.read() 用同一套常量与默认值。
       saveNameCounterMode:
-          _readInt(storage, StorageKeys.bigmanSaveNameCounterMode, 0) == 1
+          _readInt(
+                storage,
+                StorageKeys.bigmanSaveNameCounterMode,
+                BigmanSaveName.defaultCounterMode,
+              ) ==
+              BigmanSaveName.scanCounterMode
           ? BigmanSaveNameCounterMode.scan
           : BigmanSaveNameCounterMode.global,
       saveNamePadding: _readInt(storage, StorageKeys.bigmanSaveNamePadding, 0),
@@ -254,7 +262,12 @@ class BigmanModSettingsNotifier extends StateNotifier<BigmanModSettings> {
 
   Future<void> setSaveNameCounterMode(BigmanSaveNameCounterMode value) => _write(
     state.copyWith(saveNameCounterMode: value),
-    {StorageKeys.bigmanSaveNameCounterMode: value == BigmanSaveNameCounterMode.scan ? 1 : 0},
+    {
+      StorageKeys.bigmanSaveNameCounterMode:
+          value == BigmanSaveNameCounterMode.scan
+          ? BigmanSaveName.scanCounterMode
+          : BigmanSaveName.globalCounterMode,
+    },
   );
 
   Future<void> setSaveNamePadding(int value) => _write(

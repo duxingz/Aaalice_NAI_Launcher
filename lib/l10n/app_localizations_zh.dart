@@ -15417,6 +15417,14 @@ class AppLocalizationsZh extends AppLocalizations {
   String get bigmanMod_saveNameCounterScan => '每次扫描目录取最大号';
 
   @override
+  String get bigmanMod_saveNameCounterScanHint =>
+      '每次保存扫描保存目录，取最大号 +1；删掉的号会被回收复用。';
+
+  @override
+  String get bigmanMod_saveNameCounterGlobalHint =>
+      '本机计数器，跨日期目录持续递增；号只增不回收，删了图也不会复用。';
+
+  @override
   String get bigmanMod_saveNamePadding => '补零位数';
 
   @override
@@ -30875,6 +30883,14 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
 
   @override
   String get bigmanMod_saveNameCounterScan => '每次掃描目錄取最大號';
+
+  @override
+  String get bigmanMod_saveNameCounterScanHint =>
+      '每次儲存掃描儲存目錄，取最大號 +1；刪掉的號會被回收重複使用。';
+
+  @override
+  String get bigmanMod_saveNameCounterGlobalHint =>
+      '本機計數器，跨日期資料夾持續遞增；號只增不回收，刪了圖也不會重複使用。';
 
   @override
   String get bigmanMod_saveNamePadding => '補零位數';

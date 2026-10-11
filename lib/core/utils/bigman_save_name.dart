@@ -23,6 +23,21 @@ class BigmanSaveName {
   /// 十万级图库时应改为按目录名倒序只扫最近若干天。
   static const int maxScanEntries = 50000;
 
+  // ==================== 序号来源的存储取值 ====================
+  //
+  // 「序号来源」在设置里是二选一，存的是这两个整数。两个模块（本工具与
+  // 设置 provider）必须用同一套常量与同一个默认值，否则会出现「设置写着扫描、
+  // 实际按全局计数走」这种对不上的情况。
+
+  /// 全局连续计数：本机一个计数器，跨日期目录持续递增，**不回收**删掉的号。
+  static const int globalCounterMode = 0;
+
+  /// 每次扫描保存目录，取最大号 +1；删掉的号会被**回收**复用。
+  static const int scanCounterMode = 1;
+
+  /// 没设置过时的默认值：扫描模式（用户选的；接收方也期望"删号会回收"）。
+  static const int defaultCounterMode = scanCounterMode;
+
   static Box? settingsBox() {
     try {
       if (!Hive.isBoxOpen(StorageKeys.settingsBox)) return null;
@@ -46,14 +61,15 @@ class BigmanSaveName {
     final padding = (box.get(StorageKeys.bigmanSaveNamePadding) as int?) ?? 0;
     final start = (box.get(StorageKeys.bigmanSaveNameStart) as int?) ?? 1;
     final counterMode =
-        (box.get(StorageKeys.bigmanSaveNameCounterMode) as int?) ?? 0;
+        (box.get(StorageKeys.bigmanSaveNameCounterMode) as int?) ??
+        defaultCounterMode;
     final autoDateFolder =
         (box.get(StorageKeys.bigmanAutoDateFolder) as bool?) ?? false;
     return BigmanSaveNameConfig(
       template: template,
       padding: padding.clamp(0, 8),
       start: start < 0 ? 0 : start,
-      scanMode: counterMode == 1,
+      scanMode: counterMode == scanCounterMode,
       autoDateFolder: autoDateFolder,
     );
   }

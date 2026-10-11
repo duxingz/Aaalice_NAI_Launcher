@@ -1,7 +1,10 @@
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:hive/hive.dart';
+import 'package:nai_launcher/core/constants/storage_keys.dart';
 import 'package:nai_launcher/core/utils/bigman_save_name.dart';
+import 'package:nai_launcher/presentation/providers/bigman/bigman_mod_settings.dart';
 import 'package:path/path.dart' as p;
 
 void main() {
@@ -220,6 +223,51 @@ void main() {
 
       await touch('3.png');
       expect(await config(start: 50).resolveNextIndex(dir.path), 50);
+    });
+  });
+
+  // 2026-10-11 起「序号来源」默认是扫描（删掉号会被回收）：接收方期望的正是
+  // 这个行为，而读取端与设置 provider 必须用同一个默认值，否则会再次出现
+  // 「设置写着扫描、实际按全局计数走」的错位。
+  group('序号来源的默认值', () {
+    late Directory hiveDir;
+    late Box<dynamic> settings;
+
+    setUp(() async {
+      hiveDir = await Directory.systemTemp.createTemp('counter-mode-hive-');
+      Hive.init(hiveDir.path);
+      settings = await Hive.openBox(StorageKeys.settingsBox);
+    });
+
+    tearDown(() async {
+      await Hive.close();
+      await hiveDir.delete(recursive: true);
+    });
+
+    test('没设置过时按扫描模式（与设置 provider 的默认一致）', () {
+      final config = BigmanSaveName.read();
+      expect(config, isNotNull);
+      expect(config!.scanMode, isTrue);
+      expect(
+        const BigmanModSettings().saveNameCounterMode,
+        BigmanSaveNameCounterMode.scan,
+      );
+    });
+
+    test('显式选全局计数时按全局走', () async {
+      await settings.put(
+        StorageKeys.bigmanSaveNameCounterMode,
+        BigmanSaveName.globalCounterMode,
+      );
+      expect(BigmanSaveName.read()!.scanMode, isFalse);
+    });
+
+    test('显式选扫描时按扫描走', () async {
+      await settings.put(
+        StorageKeys.bigmanSaveNameCounterMode,
+        BigmanSaveName.scanCounterMode,
+      );
+      expect(BigmanSaveName.read()!.scanMode, isTrue);
     });
   });
 }

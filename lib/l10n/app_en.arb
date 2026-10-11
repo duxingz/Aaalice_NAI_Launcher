@@ -7417,6 +7417,8 @@
   "bigmanMod_saveNameCounterMode": "Index source",
   "bigmanMod_saveNameCounterGlobal": "Global counter",
   "bigmanMod_saveNameCounterScan": "Scan folder for the highest index",
+  "bigmanMod_saveNameCounterScanHint": "Scans the save folder on every save and continues from the highest index; numbers of deleted images are reused.",
+  "bigmanMod_saveNameCounterGlobalHint": "A local counter that keeps increasing across date folders; numbers are never reused, not even after deleting an image.",
   "bigmanMod_saveNamePadding": "Zero padding",
   "bigmanMod_saveNamePaddingHint": "0 means no padding",
   "bigmanMod_saveNameStart": "Start index",

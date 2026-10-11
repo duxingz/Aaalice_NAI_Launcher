@@ -27993,6 +27993,18 @@ abstract class AppLocalizations {
   /// **'Scan folder for the highest index'**
   String get bigmanMod_saveNameCounterScan;
 
+  /// No description provided for @bigmanMod_saveNameCounterScanHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Scans the save folder on every save and continues from the highest index; numbers of deleted images are reused.'**
+  String get bigmanMod_saveNameCounterScanHint;
+
+  /// No description provided for @bigmanMod_saveNameCounterGlobalHint.
+  ///
+  /// In en, this message translates to:
+  /// **'A local counter that keeps increasing across date folders; numbers are never reused, not even after deleting an image.'**
+  String get bigmanMod_saveNameCounterGlobalHint;
+
   /// No description provided for @bigmanMod_saveNamePadding.
   ///
   /// In en, this message translates to:

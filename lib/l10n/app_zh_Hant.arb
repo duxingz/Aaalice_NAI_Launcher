@@ -7774,6 +7774,8 @@
   "bigmanMod_saveNameCounterMode": "序號來源",
   "bigmanMod_saveNameCounterGlobal": "全域連續計數",
   "bigmanMod_saveNameCounterScan": "每次掃描目錄取最大號",
+  "bigmanMod_saveNameCounterScanHint": "每次儲存掃描儲存目錄，取最大號 +1；刪掉的號會被回收重複使用。",
+  "bigmanMod_saveNameCounterGlobalHint": "本機計數器，跨日期資料夾持續遞增；號只增不回收，刪了圖也不會重複使用。",
   "bigmanMod_saveNamePadding": "補零位數",
   "bigmanMod_saveNamePaddingHint": "0 表示不補零",
   "bigmanMod_saveNameStart": "起始序號",
