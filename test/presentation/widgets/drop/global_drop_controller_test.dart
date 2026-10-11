@@ -1,5 +1,5 @@
 import 'dart:async';
-import 'dart:typed_data';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:nai_launcher/presentation/utils/dropped_file_reader.dart';
@@ -49,7 +49,19 @@ void main() {
       processFile: (_) async {},
     );
     addTearDown(controller.dispose);
-    await expectLater(controller.onPerformDrop(_Event()), throwsStateError);
+
+    // 不再向上抛：异常若逃进原生拖放层，只会被 super_drag_and_drop 的
+    // handleError 当成「未处理错误」上报（在 logs/crash_diagnostics 留下转储），
+    // 而原生侧拿到的返回值一样是 null。所以改成就地上报。
+    final reported = <FlutterErrorDetails>[];
+    final previousOnError = FlutterError.onError;
+    FlutterError.onError = reported.add;
+    addTearDown(() => FlutterError.onError = previousOnError);
+
+    await controller.onPerformDrop(_Event());
+
+    expect(reported, hasLength(1));
+    expect(reported.single.exception, isA<StateError>());
     expect(controller.isProcessing, isFalse);
   });
 }

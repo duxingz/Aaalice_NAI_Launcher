@@ -223,7 +223,7 @@ void main() {
 
     expect(
       controller.text,
-      'quality_tags, best_quality,\n\n  blue_hair, red_eyes',
+      'quality tags, best quality,\n\n  blue hair, red eyes',
     );
   });
 
@@ -247,7 +247,7 @@ void main() {
     await tester.pump(const Duration(seconds: 4));
     await tester.pumpAndSettle();
 
-    const formatted = 'masterpiece_tag,\nblue_hair, smile';
+    const formatted = 'masterpiece tag,\nblue hair, smile';
     expect(controller.text, formatted);
     expect(
       controller.selection,

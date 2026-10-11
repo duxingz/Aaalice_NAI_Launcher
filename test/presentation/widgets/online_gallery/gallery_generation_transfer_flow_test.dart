@@ -127,7 +127,7 @@ void main() {
     await tester.pump(const Duration(milliseconds: 500));
 
     final params = container.read(generationParamsNotifierProvider);
-    expect(params.prompt, '1girl, blue_hair');
+    expect(params.prompt, '1girl, blue hair');
     expect(params.seed, 123456);
     expect(params.model, ImageModels.animeDiffusionV5Full);
     expect((params.width, params.height), (832, 1216));

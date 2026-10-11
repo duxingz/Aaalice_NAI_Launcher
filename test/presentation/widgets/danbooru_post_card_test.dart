@@ -382,7 +382,9 @@ void main() {
 
       expect(
         container.read(generationParamsNotifierProvider).prompt,
-        'blue_archive, 1girl',
+        // 标签内下划线按本改版规则转成空格（soft dramatic lighting 这类
+        // 词组标签不该被改成下划线连接）。
+        'blue archive, 1girl',
       );
       expect(router.routeInformationProvider.value.uri.path, '/');
       await tester.pump(const Duration(seconds: 3));

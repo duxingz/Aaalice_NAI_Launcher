@@ -96,15 +96,16 @@ void main() {
     await tester.pump();
     final pageOffset = page.offset;
 
-    for (final expected in ['0.95', '0.90', '0.85']) {
+    // 权重数值去尾零：0.90 写成 0.9。
+    for (final expected in ['0.95', '0.9', '0.85']) {
       await _sendWheel(tester);
       await tester.pump();
       expect(prompt.text, '$expected::$body::');
     }
-    for (final expected in ['0.90', '0.95', '1.00', '1.05']) {
+    for (final expected in ['0.9', '0.95', '1.0', '1.05']) {
       await _sendWheel(tester, delta: const Offset(0, -40));
       await tester.pump();
-      expect(prompt.text, expected == '1.00' ? body : '$expected::$body::');
+      expect(prompt.text, expected == '1.0' ? body : '$expected::$body::');
     }
     expect(page.offset, pageOffset);
     expect(tester.takeException(), isNull);
