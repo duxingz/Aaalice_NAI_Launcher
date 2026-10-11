@@ -29,6 +29,7 @@ import 'widgets/prompt_input_controller.dart';
 import 'widgets/resize_handle.dart';
 import 'widgets/right_panel.dart';
 import 'widgets/web_left_panel.dart';
+import '../../../core/utils/bigman_mod_flags.dart';
 
 /// 官网式布局：提示词与设置固定在最左栏，中间为纯预览区
 class WebStyleGenerationLayout extends ConsumerStatefulWidget {
@@ -93,6 +94,8 @@ class _WebStyleGenerationLayoutState
       }
     },
     ShortcutIds.randomPrompt: () {
+        // 胖大叔自用改：关闭随机提示词时快捷键静默无效。
+        if (!BigmanModFlags.randomPromptEnabled()) return;
       if (ref.read(randomPromptToolsVisibilityProvider)) {
         ref.read(randomPromptModeProvider.notifier).toggle();
       } else {
