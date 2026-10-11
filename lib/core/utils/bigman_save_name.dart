@@ -91,6 +91,19 @@ class BigmanSaveNameConfig {
 
   bool get hasIndex => template.contains('{n}');
 
+  /// 文件名里不允许出现的字符；渲染与扫描必须用**同一套**规则，
+  /// 否则扫描拿模板去匹配实际文件名会永远匹配不上。
+  static final RegExp _illegalFileNameChars = RegExp(r'[<>:"/\\|?*\x00-\x1F]');
+
+  static const String _indexPlaceholder = '{n}';
+  static const String _seedPlaceholder = '{seed}';
+  static const String _datePlaceholder = '{date}';
+  static const String _timePlaceholder = '{time}';
+
+  /// 把一段文本净化成文件名里实际会出现的形状（非法字符换下划线并去首尾空白）。
+  static String _sanitizeFileName(String name) =>
+      name.replaceAll(_illegalFileNameChars, '_').trim();
+
   static String _two(int value) => value.toString().padLeft(2, '0');
 
   /// 按模板渲染文件名主干（不含扩展名）。
@@ -100,17 +113,20 @@ class BigmanSaveNameConfig {
         ? '$index'
         : index.toString().padLeft(padding, '0');
     var name = template
-        .replaceAll('{n}', digits)
-        .replaceAll('{seed}', seed != null && seed >= 0 ? '$seed' : '')
+        .replaceAll(_indexPlaceholder, digits)
         .replaceAll(
-          '{date}',
+          _seedPlaceholder,
+          seed != null && seed >= 0 ? '$seed' : '',
+        )
+        .replaceAll(
+          _datePlaceholder,
           '${moment.year}-${_two(moment.month)}-${_two(moment.day)}',
         )
         .replaceAll(
-          '{time}',
+          _timePlaceholder,
           '${_two(moment.hour)}-${_two(moment.minute)}-${_two(moment.second)}',
         );
-    name = name.replaceAll(RegExp(r'[<>:"/\\|?*\x00-\x1F]'), '_').trim();
+    name = _sanitizeFileName(name);
     return name.isEmpty ? digits : name;
   }
 
@@ -168,19 +184,37 @@ class BigmanSaveNameConfig {
     return max;
   }
 
-  /// 只匹配 `{n}` 位置为数字的文件名；模板没有 `{n}` 时返回 null。
+  /// 只匹配按当前模板写出来的文件名；模板没有 `{n}` 时返回 null。
+  ///
+  /// 每个占位符都按 [formatName] 实际写出来的样子建模，否则扫描永远匹配不上
+  /// （表现就是「每次扫描都从起始序号重来、文件一路 -2 -3 叠后缀」）：
+  /// - `{n}` → 一串数字（参与取最大值的那一组）
+  /// - `{seed}` → 允许 0 个数字：解析不到种子时 [formatName] 写的是空串
+  /// - `{date}` / `{time}` → 固定样式的数字
+  /// - 字面部分先做和渲染一样的净化：模板里的 `:` `?` 之类会被写成下划线，
+  ///   拿原字符去匹配同样匹配不上。
   RegExp? _namePattern() {
     if (!hasIndex) return null;
+    final source = _sanitizeFileName(template);
     final buffer = StringBuffer('^');
     var index = 0;
-    while (index < template.length) {
-      if (template.startsWith('{n}', index)) {
+    while (index < source.length) {
+      if (source.startsWith(_indexPlaceholder, index)) {
         buffer.write(r'(\d+)');
-        index += 3;
-        continue;
+        index += _indexPlaceholder.length;
+      } else if (source.startsWith(_seedPlaceholder, index)) {
+        buffer.write(r'\d*');
+        index += _seedPlaceholder.length;
+      } else if (source.startsWith(_datePlaceholder, index)) {
+        buffer.write(r'\d{4}-\d{2}-\d{2}');
+        index += _datePlaceholder.length;
+      } else if (source.startsWith(_timePlaceholder, index)) {
+        buffer.write(r'\d{2}-\d{2}-\d{2}');
+        index += _timePlaceholder.length;
+      } else {
+        buffer.write(RegExp.escape(source[index]));
+        index++;
       }
-      buffer.write(RegExp.escape(template[index]));
-      index++;
     }
     buffer.write(r'$');
     return RegExp(buffer.toString());

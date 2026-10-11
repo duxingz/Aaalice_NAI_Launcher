@@ -976,6 +976,19 @@ void main() {
       expect(p.dirname(saved), p.join(root.path, '2026-10-11'));
     });
 
+    // 扫描模式走完整保存链路：第一次要看到 1、第二次要看到 2（不是靠 -2 后缀
+    // 硬凑），模板里的 `{seed}` 必须被扫描正则正确建模。
+    test('扫描模式：模板含 {seed} 时序号仍然逐次递增', () async {
+      await settings.put(StorageKeys.bigmanSaveNameTemplate, '{n}_{seed}');
+      await settings.put(StorageKeys.bigmanSaveNameCounterMode, 1);
+
+      final first = await save(seed: 42);
+      final second = await save(seed: 43);
+
+      expect(p.basename(first), '1_42.png');
+      expect(p.basename(second), '2_43.png');
+    });
+
     test('派生副本优先用调用方给的文件名，不走自定义规则', () async {
       await settings.put(StorageKeys.bigmanSaveNameTemplate, '胖大叔_{n}');
 

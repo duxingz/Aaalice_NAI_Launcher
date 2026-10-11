@@ -101,4 +101,125 @@ void main() {
       expect(value, 1);
     });
   });
+
+  // 用户报「每次扫描目录取最大号好像有问题」。根因：扫描用的正则只把 `{n}`
+  // 换成了数字，其它占位符与非法字符都按**字面**匹配，于是模板一旦含
+  // `{seed}` / `{date}` / `{time}` 或 `:` 这类会被净化的字符，就永远匹配不上，
+  // 每次保存都从起始序号重来，文件靠 -2 -3 后缀叠起来。
+  group('扫描模式要按模板实际写出来的样子匹配', () {
+    late Directory dir;
+
+    setUp(() async {
+      dir = await Directory.systemTemp.createTemp('bigman_scan_match_');
+    });
+
+    tearDown(() async {
+      if (await dir.exists()) await dir.delete(recursive: true);
+    });
+
+    Future<void> touch(String relative) async {
+      final file = File(p.join(dir.path, relative));
+      await file.parent.create(recursive: true);
+      await file.writeAsBytes(const [0]);
+    }
+
+    BigmanSaveNameConfig config({
+      String template = '{n}',
+      int padding = 0,
+      int start = 1,
+    }) => BigmanSaveNameConfig(
+      template: template,
+      padding: padding,
+      start: start,
+      scanMode: true,
+      autoDateFolder: false,
+    );
+
+    test('{n}：取整棵树（含日期子目录）里的最大号 +1', () async {
+      await touch('1.png');
+      await touch('2.png');
+      await touch('5.png');
+      await touch('2026-10-11/7.png');
+      await touch('note.txt'); // 非 PNG 不参与
+      await touch('12.jpg');
+
+      expect(await config().resolveNextIndex(dir.path), 8);
+    });
+
+    test('{date}_{n}：按当天写出来的文件名匹配', () async {
+      await touch('2026-10-11_3.png');
+      await touch('2026-10-12_9.png');
+      await touch('3.png'); // 不带日期的旧文件不该被算进去
+
+      expect(
+        await config(template: '{date}_{n}').resolveNextIndex(dir.path),
+        10,
+      );
+    });
+
+    test('{time}_{n}：按写出来的时间样式匹配', () async {
+      await touch('21-30-05_4.png');
+      await touch('09-00-00_6.png');
+
+      expect(
+        await config(template: '{time}_{n}').resolveNextIndex(dir.path),
+        7,
+      );
+    });
+
+    test('{n}_{seed}：种子有值取数字，解析不到时是空串', () async {
+      await touch('1_12345.png');
+      await touch('2_.png');
+
+      expect(
+        await config(template: '{n}_{seed}').resolveNextIndex(dir.path),
+        3,
+      );
+    });
+
+    test('{seed}_{n}：种子在前也能匹配', () async {
+      await touch('12345_3.png');
+      await touch('_4.png');
+
+      expect(
+        await config(template: '{seed}_{n}').resolveNextIndex(dir.path),
+        5,
+      );
+    });
+
+    test('模板里的非法字符按净化后的样子匹配', () async {
+      // 渲染时 `:` 会变成 `_`，所以实际文件叫 a_b_20.png。
+      await touch('a_b_20.png');
+      await touch('a:b_99.png'); // 手写的非法名字不该被算进去
+
+      expect(
+        await config(template: 'a:b_{n}').resolveNextIndex(dir.path),
+        21,
+      );
+    });
+
+    test('前缀不匹配的文件不算数，退回起始序号', () async {
+      await touch('1.png');
+      await touch('99.png');
+
+      expect(
+        await config(template: '胖大叔_{n}').resolveNextIndex(dir.path),
+        1,
+      );
+
+      await touch('胖大叔_9.png');
+      expect(
+        await config(template: '胖大叔_{n}').resolveNextIndex(dir.path),
+        10,
+      );
+    });
+
+    test('补零与起始序号照旧生效', () async {
+      await touch('007.png');
+      expect(await config(padding: 3).resolveNextIndex(dir.path), 8);
+
+      await touch('3.png');
+      expect(await config(start: 50).resolveNextIndex(dir.path), 50);
+    });
+  });
 }
