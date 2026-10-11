@@ -989,6 +989,37 @@ void main() {
       expect(p.basename(second), '2_43.png');
     });
 
+    // 用户报的场景：删掉已有的号再保存，扫描模式应当**复用**这个号。
+    test('扫描模式：删掉最大号后，下一次保存复用它', () async {
+      await settings.put(StorageKeys.bigmanSaveNameTemplate, '{n}');
+      await settings.put(StorageKeys.bigmanSaveNameCounterMode, 1);
+
+      final first = await save(seed: 1);
+      final second = await save(seed: 2);
+      expect(p.basename(first), '1.png');
+      expect(p.basename(second), '2.png');
+
+      await File(second).delete();
+
+      final third = await save(seed: 3);
+      expect(p.basename(third), '2.png', reason: '扫描模式按目录里的最大号重算，删掉的号应被回收');
+    });
+
+    // 对照组：全局连续计数是「只增不回收」，删掉号之后下一个仍然往后走。
+    test('全局连续计数：删掉最大号也不会回收（对照）', () async {
+      await settings.put(StorageKeys.bigmanSaveNameTemplate, '{n}');
+      await settings.put(StorageKeys.bigmanSaveNameCounterMode, 0);
+
+      final first = await save(seed: 1);
+      final second = await save(seed: 2);
+      await File(second).delete();
+
+      final third = await save(seed: 3);
+      expect(p.basename(first), '1.png');
+      expect(p.basename(second), '2.png');
+      expect(p.basename(third), '3.png', reason: '全局计数器的语义就是不回收');
+    });
+
     test('派生副本优先用调用方给的文件名，不走自定义规则', () async {
       await settings.put(StorageKeys.bigmanSaveNameTemplate, '胖大叔_{n}');
 
