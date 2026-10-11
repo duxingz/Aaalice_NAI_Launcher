@@ -251,7 +251,7 @@ class CharacterPrompt with _$CharacterPrompt {
     required String name,
     CharacterGender gender = CharacterGender.female,
     String prompt = '',
-    String negativePrompt = 'lowres, aliasing, ',
+    String negativePrompt = '',
     CharacterPositionMode positionMode = CharacterPositionMode.aiChoice,
     CharacterPosition? customPosition,
     String? thumbnailPath,
@@ -481,7 +481,7 @@ class CharacterPromptConfig with _$CharacterPromptConfig {
       name: name ?? getNextCharacterName(),
       gender: gender,
       prompt: initialPrompt,
-      negativePrompt: negativePrompt ?? 'lowres, aliasing, ',
+      negativePrompt: negativePrompt ?? '',
       positionMode: globalAiChoice
           ? CharacterPositionMode.aiChoice
           : CharacterPositionMode.custom,
