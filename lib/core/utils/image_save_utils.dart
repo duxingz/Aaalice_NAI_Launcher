@@ -494,6 +494,9 @@ class ImageSaveUtils {
         source.contains('novelai');
   }
 
+  /// 写元数据的预算：超时就不带元数据保存，绝不拖住保存流程。
+  static const Duration _metadataWriteTimeout = Duration(seconds: 60);
+
   /// 对齐 NAI 官网格式写入 PNG 文本块：
   /// - Comment: 纯参数 JSON（根级含 prompt/seed/...）
   /// - Description/Software/Source: 独立 tEXt 字段
@@ -505,19 +508,26 @@ class ImageSaveUtils {
     required String source,
     bool useStealth = false,
   }) async {
-    final result = await ComputeGate().runCompute(
-      _writeAlignedMetadata,
-      _MetadataWriteRequest(
-        bytes: TransferableTypedData.fromList([imageBytes]),
-        commentJson: commentJson,
-        description: description,
-        software: software,
-        source: source,
-        useStealth: useStealth,
-      ),
-      debugLabel: 'save-image-metadata',
-    );
-    return result.materialize().asUint8List();
+    try {
+      final result = await ComputeGate().runCompute(
+        _writeAlignedMetadata,
+        _MetadataWriteRequest(
+          bytes: TransferableTypedData.fromList([imageBytes]),
+          commentJson: commentJson,
+          description: description,
+          software: software,
+          source: source,
+          useStealth: useStealth,
+        ),
+        debugLabel: 'save-image-metadata',
+        timeout: _metadataWriteTimeout,
+      );
+      return result.materialize().asUint8List();
+    } on ComputeGateTimeout catch (error) {
+      // 胖大叔自用改：元数据写不进去只是少一层信息，不该把保存本身拖死。
+      AppLogger.w('保存图片：写入元数据超时，改为不带元数据保存（$error）');
+      return imageBytes;
+    }
   }
 
   static _NormalizedPrebuiltMetadata _normalizePrebuiltMetadata(
