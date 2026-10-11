@@ -1261,6 +1261,42 @@ void main() {
     }
     await tester.binding.setSurfaceSize(null);
   });
+
+  // 移植到 v4.3.0 时这段接线整段丢了：文本模式还能用，标签模式按 Ctrl+方向键
+  // 毫无反应。用户在标签模式下用这两个快捷键，所以钉住它。
+  testWidgets('标签模式支持 Ctrl+↑/↓ 调权重、Ctrl+←/→ 移动标签', (tester) async {
+    final source = TextEditingController(text: 'cat, dog, bird');
+    addTearDown(source.dispose);
+    await pumpEditor(tester, source);
+    await tester.tap(find.byKey(const ValueKey('tag-mode-button')));
+    await tester.pumpAndSettle();
+
+    Future<void> withControl(LogicalKeyboardKey key) async {
+      await tester.sendKeyDownEvent(LogicalKeyboardKey.controlLeft);
+      await tester.sendKeyEvent(key);
+      await tester.sendKeyUpEvent(LogicalKeyboardKey.controlLeft);
+      await tester.pumpAndSettle();
+    }
+
+    // 点标签即选中并把焦点交给标签编辑器，快捷键才会被处理。
+    await tester.tap(find.text('cat'));
+    await tester.pumpAndSettle();
+
+    await withControl(LogicalKeyboardKey.arrowUp);
+    expect(source.text, '1.05::cat::, dog, bird');
+
+    await withControl(LogicalKeyboardKey.arrowDown);
+    expect(source.text, 'cat, dog, bird');
+
+    await withControl(LogicalKeyboardKey.arrowRight);
+    expect(source.text, 'dog, cat, bird');
+
+    await withControl(LogicalKeyboardKey.arrowLeft);
+    expect(source.text, 'cat, dog, bird');
+
+    expect(tester.takeException(), isNull);
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
 }
 
 class _Dictionary extends ZhDictionaryService {

@@ -3,6 +3,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../core/constants/api_constants.dart';
 import '../../core/storage/local_storage_service.dart';
+import '../../core/utils/bigman_mod_flags.dart';
 import '../../data/models/prompt/prompt_preset_mode.dart';
 import '../../data/models/tag_library/tag_library_entry.dart';
 import 'generation/generation_params_notifier.dart';
@@ -194,6 +195,9 @@ class QualityPresetNotifier extends _$QualityPresetNotifier {
   /// [model] 当前选择的模型
   /// 返回 null 表示不添加质量词
   String? getEffectiveContent(String model) {
+    // 胖大叔自用改：质量词预设关闭时视为「无」，
+    // 界面上的图标与选择保持不变，只是不再注入生成请求。
+    if (!BigmanModFlags.qualityPresetEnabled()) return null;
     switch (state.mode) {
       case PromptPresetMode.naiDefault:
         return QualityTags.getQualityTagsForTier(model, state.naiTierId);

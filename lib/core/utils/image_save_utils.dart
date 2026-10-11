@@ -16,6 +16,7 @@ import '../constants/api_constants.dart';
 import '../enums/image_model_mode.dart';
 import '../enums/precise_ref_type.dart';
 import 'app_logger.dart';
+import 'bigman_save_name.dart';
 import 'isolate_pool.dart';
 import 'novelai_dataset_prefix.dart';
 import 'prompt_semantics_utils.dart';
@@ -601,8 +602,14 @@ class ImageSaveUtils {
   }) async {
     final time = now ?? DateTime.now();
     String two(int v) => v.toString().padLeft(2, '0');
+    // 胖大叔自用改：日期文件夹可关闭，文件名可套用自定义规则。
+    final customName = BigmanSaveName.read();
+    // 日期文件夹开关独立于命名模板：模板清空时它仍然生效。
+    final useDateFolder = BigmanSaveName.readAutoDateFolder();
     final dateFolder = '${time.year}-${two(time.month)}-${two(time.day)}';
-    final dir = Directory(p.join(rootPath, dateFolder));
+    final dir = Directory(
+      useDateFolder ? p.join(rootPath, dateFolder) : rootPath,
+    );
     if (!await dir.exists()) {
       await dir.create(recursive: true);
     }
@@ -612,9 +619,20 @@ class ImageSaveUtils {
               .basenameWithoutExtension(p.basename(preferredFileName))
               .replaceAll(RegExp(r'[<>:"/\\|?*\x00-\x1F]'), '_')
               .trim();
-    final baseName = preferredStem.isNotEmpty
-        ? preferredStem
-        : _galleryFileStem(seed: seed, time: time);
+    String? baseName;
+    if (preferredStem.isNotEmpty) {
+      baseName = preferredStem;
+    } else if (customName != null) {
+      baseName = await _resolveCustomBaseName(
+        customName,
+        rootPath: rootPath,
+        directoryPath: dir.path,
+        seed: seed,
+        time: time,
+      );
+    } else {
+      baseName = _galleryFileStem(seed: seed, time: time);
+    }
     var candidate = p.join(dir.path, '$baseName.png');
     var suffix = 2;
     File file;
@@ -648,6 +666,36 @@ class ImageSaveUtils {
   /// 图库保存时的默认文件名 `时-分-秒-seed.png`，另存为的建议文件名与它一致。
   static String galleryFileName({int? seed, DateTime? now}) =>
       '${_galleryFileStem(seed: seed, time: now ?? DateTime.now())}.png';
+
+  /// 胖大叔自用改：按用户规则取一个尚未占用的文件名主干。
+  ///
+  /// 序号可以来自本机计数器或保存目录里已用的最大编号；目录里已有同名
+  /// 文件时向后寻找空号，绝不覆盖既有文件。
+  static Future<String> _resolveCustomBaseName(
+    BigmanSaveNameConfig config, {
+    required String rootPath,
+    required String directoryPath,
+    required int? seed,
+    required DateTime time,
+  }) async {
+    if (!config.hasIndex) {
+      return config.formatName(config.start, seed: seed, time: time);
+    }
+    var index = await config.resolveNextIndex(rootPath);
+    // ponytail: 只向后试 1000 个号；正常图库远达不到，纯属防死循环。
+    for (var attempt = 0; attempt < 1000; attempt++) {
+      final name = config.formatName(index, seed: seed, time: time);
+      if (!await File(p.join(directoryPath, '$name.png')).exists()) {
+        await config.commitIndex(index);
+        return name;
+      }
+      index++;
+    }
+    throw FileSystemException(
+      'Cannot find a free file name for the custom save rule.',
+      directoryPath,
+    );
+  }
 
   static String _galleryFileStem({int? seed, required DateTime time}) {
     String two(int v) => v.toString().padLeft(2, '0');

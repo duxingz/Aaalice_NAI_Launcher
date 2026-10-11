@@ -6,6 +6,7 @@ import 'package:hive/hive.dart';
 import 'package:image/image.dart' as img;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:nai_launcher/core/constants/api_constants.dart';
+import 'package:nai_launcher/core/constants/storage_keys.dart';
 import 'package:nai_launcher/core/enums/image_model_mode.dart';
 import 'package:nai_launcher/core/utils/comfyui_prompt_parser.dart';
 import 'package:nai_launcher/core/utils/image_save_utils.dart';
@@ -796,7 +797,8 @@ void main() {
     );
 
     expect(p.basename(saved), '08-05-03-42.png');
-    expect(p.basename(p.dirname(saved)), '2026-09-26');
+    // 胖大叔自用改：日期文件夹默认关闭，图片直接落在目标目录。
+    expect(p.dirname(saved), root.path);
     expect(
       ImageSaveUtils.galleryFileName(seed: 42, now: now),
       p.basename(saved),
@@ -896,6 +898,95 @@ void main() {
           reason: entry.key,
         );
       }
+    });
+  });
+
+  // 移植到 v4.3.0 时这组接线整段丢了（设置能存、保存却不看它），
+  // 用户报「保存文件名规则完全失效」；补回接线并在此钉住行为。
+  group('胖大叔自用改：保存文件名规则真的生效', () {
+    late Directory hiveDirectory;
+    late Directory root;
+    late Box<dynamic> settings;
+    final bytes = Uint8List.fromList([1, 2, 3, 4]);
+    final now = DateTime(2026, 10, 11, 9, 30, 5);
+
+    setUp(() async {
+      hiveDirectory = await Directory.systemTemp.createTemp('bigman-name-hive-');
+      Hive.init(hiveDirectory.path);
+      settings = await Hive.openBox(StorageKeys.settingsBox);
+      root = await Directory.systemTemp.createTemp('bigman-name-root-');
+    });
+
+    tearDown(() async {
+      await Hive.close();
+      await hiveDirectory.delete(recursive: true);
+      await root.delete(recursive: true);
+    });
+
+    Future<String> save({int? seed}) =>
+        ImageSaveUtils.saveBytesToDatedPath(
+          rootPath: root.path,
+          bytes: bytes,
+          seed: seed,
+          now: now,
+        );
+
+    test('模板 + 补零 + 起始序号决定文件名，且序号跨次递增', () async {
+      await settings.put(StorageKeys.bigmanSaveNameTemplate, '胖大叔_{n}');
+      await settings.put(StorageKeys.bigmanSaveNamePadding, 3);
+      await settings.put(StorageKeys.bigmanSaveNameStart, 5);
+
+      final first = await save(seed: 42);
+      final second = await save(seed: 43);
+
+      expect(p.basename(first), '胖大叔_005.png');
+      expect(p.basename(second), '胖大叔_006.png');
+      // 日期文件夹默认关闭：两次都落在保存根目录，不建 yyyy-MM-dd。
+      expect(p.dirname(first), root.path);
+      expect(p.dirname(second), root.path);
+      // 自定义规则接管后不再使用上游的 时-分-秒-seed 命名。
+      expect(p.basename(first), isNot('09-30-05-42.png'));
+    });
+
+    test('{seed} 与 {date} 变量参与渲染', () async {
+      await settings.put(StorageKeys.bigmanSaveNameTemplate, '{date}_{seed}-{n}');
+
+      final saved = await save(seed: 1234);
+
+      expect(p.basename(saved), '2026-10-11_1234-1.png');
+    });
+
+    test('打开「自动新建日期文件夹」后按日期分子目录', () async {
+      await settings.put(StorageKeys.bigmanSaveNameTemplate, '{n}');
+      await settings.put(StorageKeys.bigmanAutoDateFolder, true);
+
+      final saved = await save(seed: 1);
+
+      expect(p.dirname(saved), p.join(root.path, '2026-10-11'));
+      expect(p.basename(saved), '1.png');
+    });
+
+    test('模板清空后回到上游命名，但日期文件夹开关仍然独立生效', () async {
+      await settings.put(StorageKeys.bigmanSaveNameTemplate, '');
+      await settings.put(StorageKeys.bigmanAutoDateFolder, true);
+
+      final saved = await save(seed: 42);
+
+      expect(p.basename(saved), '09-30-05-42.png');
+      expect(p.dirname(saved), p.join(root.path, '2026-10-11'));
+    });
+
+    test('派生副本优先用调用方给的文件名，不走自定义规则', () async {
+      await settings.put(StorageKeys.bigmanSaveNameTemplate, '胖大叔_{n}');
+
+      final saved = await ImageSaveUtils.saveBytesToDatedPath(
+        rootPath: root.path,
+        bytes: bytes,
+        preferredFileName: 'portrait_watermarked.png',
+        now: now,
+      );
+
+      expect(p.basename(saved), 'portrait_watermarked.png');
     });
   });
 }

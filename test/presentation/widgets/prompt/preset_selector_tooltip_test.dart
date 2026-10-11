@@ -60,7 +60,7 @@ void main() {
     await tester.pump(const Duration(milliseconds: 350));
     await tester.pump();
 
-    var preview = tester.widget<TranslatedPromptText>(
+    final preview = tester.widget<TranslatedPromptText>(
       find.byType(TranslatedPromptText),
     );
     final resolvedBodyFontSize = Theme.of(
@@ -70,15 +70,14 @@ void main() {
     expect(preview.style?.color, theme.promptSemanticColors.positiveQuality);
     expect(find.text('非常唯美'), findsOneWidget);
 
+    // 负面词预设在本改版里默认「停用」（设置 → 胖大叔自用改 → 功能停用），
+    // 停用时组件按设计不再渲染预览内容。悬浮预览的正文排版与快速翻译由
+    // 上面质量词那一段覆盖。
     await mouse.moveTo(tester.getCenter(find.byType(UcPresetSelector)));
     await tester.pump(const Duration(milliseconds: 500));
     await tester.pump();
 
-    preview = tester.widget<TranslatedPromptText>(
-      find.byType(TranslatedPromptText),
-    );
-    expect(preview.style?.fontSize, resolvedBodyFontSize);
-    expect(find.text('低分辨率'), findsOneWidget);
+    expect(find.text('低分辨率'), findsNothing);
     expect(tester.takeException(), isNull);
   });
 }
