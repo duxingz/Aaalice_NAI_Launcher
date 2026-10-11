@@ -16014,4 +16014,129 @@ class AppLocalizationsEn extends AppLocalizations {
 
     return 'Subscription expiry: $dateString';
   }
+
+  @override
+  String get bigmanMod_settingsTitle => '胖大叔自用改';
+
+  @override
+  String get bigmanMod_promptSectionTitle => 'Prompt editing';
+
+  @override
+  String get bigmanMod_promptSectionDescription =>
+      'Keyboard shortcuts inside the prompt box. Auto-format shares its switch with the toolbar button.';
+
+  @override
+  String get bigmanMod_promptWeightShortcut => 'Ctrl+↑/↓ adjust tag weight';
+
+  @override
+  String get bigmanMod_promptWeightShortcutSubtitle =>
+      'Adds or removes 0.05 on the tag at the caret or in the selection. Dropping to 1.0 removes the weight syntax. Range -10 to 10, so weights can go negative for suppression.';
+
+  @override
+  String get bigmanMod_mergeMultiSelectWeight =>
+      'Merge a multi-selection into one weight block';
+
+  @override
+  String get bigmanMod_mergeMultiSelectWeightSubtitle =>
+      'When on, adjusting a multi-selection writes a single block such as 0.95::a, b, c::. When off, the previous behaviour is kept and every tag gets its own weight. Dropping trailing zeros and adding the guard comma after a trailing digit always apply.';
+
+  @override
+  String get bigmanMod_promptMoveShortcut => 'Ctrl+←/→ move tag position';
+
+  @override
+  String get bigmanMod_promptMoveShortcutSubtitle =>
+      'Swaps with the neighbouring tag. A weight group holding a single tag moves as a whole.';
+
+  @override
+  String get bigmanMod_autoFormat => 'Auto-format on blur';
+
+  @override
+  String get bigmanMod_autoFormatSubtitle =>
+      'Tidies Chinese commas, spaces and separators when the field loses focus. Linked with the toolbar button.';
+
+  @override
+  String get bigmanMod_disableSectionTitle => 'Disabled features';
+
+  @override
+  String get bigmanMod_disableSectionDescription =>
+      'Turning a feature off keeps its icon visible, but clicking it no longer does anything.';
+
+  @override
+  String get bigmanMod_qualityPreset => 'Enable quality tag preset';
+
+  @override
+  String get bigmanMod_qualityPresetSubtitle =>
+      'When off, official quality tags are no longer injected into requests. The display keeps its current selection.';
+
+  @override
+  String get bigmanMod_ucPreset => 'Enable undesired content preset';
+
+  @override
+  String get bigmanMod_ucPresetSubtitle =>
+      'When off, the preset content is no longer injected. The display keeps its current selection.';
+
+  @override
+  String get bigmanMod_randomPrompt => 'Enable random prompt tools';
+
+  @override
+  String get bigmanMod_randomPromptSubtitle =>
+      'When off, the random button, the Ctrl+R shortcut and the random-mode toggle stop responding.';
+
+  @override
+  String get bigmanMod_saveNameSectionTitle => 'Saved file name rule';
+
+  @override
+  String get bigmanMod_saveNameSectionDescription =>
+      'Leave the template empty to keep the original time-seed naming.';
+
+  @override
+  String get bigmanMod_saveNameTemplate => 'Name template';
+
+  @override
+  String bigmanMod_saveNameTemplateHint(Object n) {
+    return 'For example $n or Bigman_$n';
+  }
+
+  @override
+  String bigmanMod_saveNameVariables(
+    Object date,
+    Object n,
+    Object seed,
+    Object time,
+  ) {
+    return 'Variables: $n index · $seed seed · $date date · $time time';
+  }
+
+  @override
+  String get bigmanMod_saveNameCounterMode => 'Index source';
+
+  @override
+  String get bigmanMod_saveNameCounterGlobal => 'Global counter';
+
+  @override
+  String get bigmanMod_saveNameCounterScan =>
+      'Scan folder for the highest index';
+
+  @override
+  String get bigmanMod_saveNamePadding => 'Zero padding';
+
+  @override
+  String get bigmanMod_saveNamePaddingHint => '0 means no padding';
+
+  @override
+  String get bigmanMod_saveNameStart => 'Start index';
+
+  @override
+  String get bigmanMod_autoDateFolder => 'Auto-create date folder';
+
+  @override
+  String get bigmanMod_autoDateFolderSubtitle =>
+      'When off, images are saved directly in the target folder without a per-day subfolder.';
+
+  @override
+  String get bigmanMod_promptInbox => 'DSH prompt inbox';
+
+  @override
+  String get bigmanMod_promptInboxSubtitle =>
+      'Watches an agreed file and fills prompts written by DSH into the input box (including negative prompt and character sections), so you can skip copy-paste.';
 }
