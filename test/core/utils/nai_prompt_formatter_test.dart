@@ -40,12 +40,35 @@ void main() {
       );
     });
 
+    // 用户报的场景：danbooru 的消歧后缀里，括号属于标签本身，
+    // 权重壳里的 `hong (white_spider)` 必须连成 `hong_(white_spider)`。
+    test('括号属于标签本身，前面的空格也要连起来', () {
+      expect(
+        underscore('0.75::hong (white_spider)::, 0.7::loong (loong_blo)::'),
+        '0.75::hong_(white_spider)::, 0.7::loong_(loong_blo)::',
+      );
+      expect(
+        underscore('0.8::greatodoggo (rokudaime)::'),
+        '0.8::greatodoggo_(rokudaime)::',
+      );
+      // 括号内部、以及括号在前的写法同样连起来
+      expect(underscore('hong (white spider)'), 'hong_(white_spider)');
+      expect(underscore('(white_spider) hong'), '(white_spider)_hong');
+    });
+
     test('花括号、竖线、尖括号旁边与内部的空格保留', () {
       // `}` 紧邻的空格受保护，尖括号内部整段不动
       expect(underscore('{red|blue} hair'), '{red|blue} hair');
       expect(underscore('<alias name>, solo'), '<alias name>, solo');
       // 普通标签仍然转换
       expect(underscore('red hair, {a|b} c'), 'red_hair, {a|b} c');
+    });
+
+    test('冒号旁边的空格保留（text: 与权重壳写法）', () {
+      expect(underscore('text: hello'), 'text: hello');
+      expect(underscore('long hair ::, solo'), 'long_hair ::, solo');
+      // 冒号后面紧跟内容时照旧连接
+      expect(underscore('text:hello world'), 'text:hello_world');
     });
 
     test('已经写成下划线的标签保持原样', () {

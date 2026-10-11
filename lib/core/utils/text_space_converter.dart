@@ -6,7 +6,7 @@ class TextSpaceConverter {
   /// 保护字符集预设：仅逗号
   static const Set<String> commaOnly = {',', '，'};
 
-  /// 保护字符集预设：逗号 + 括号 + 竖线 + 尖括号（用于 NAI 格式化）
+  /// 保护字符集预设：逗号 + 括号 + 竖线 + 尖括号（上游 NAI 格式化的口径）
   static const Set<String> naiFormat = {
     ',',
     '，', // 中文逗号
@@ -16,6 +16,27 @@ class TextSpaceConverter {
     ']',
     '(',
     ')',
+    '|',
+    '<', // 别名语法
+    '>', // 别名语法
+  };
+
+  /// 保护字符集预设：下划线格式用（本改版的默认格式化口径）。
+  ///
+  /// 与 [naiFormat] 的两处差别：
+  /// - **不保护圆括号**：danbooru 的消歧后缀里括号属于标签本身，
+  ///   `hong (white_spider)` 应该连成 `hong_(white_spider)`；
+  ///   上游把它当分隔符保护，会让这类标签永远连不起来（用户报的就是这个）。
+  /// - **多保护冒号**：`text: hello`、权重壳里的 `long hair ::` 这类写法
+  ///   冒号旁边的空格要留着。
+  static const Set<String> danbooruStyle = {
+    ',',
+    '，', // 中文逗号
+    ':',
+    '{',
+    '}',
+    '[',
+    ']',
     '|',
     '<', // 别名语法
     '>', // 别名语法

@@ -126,8 +126,10 @@ class NaiPromptFormatter {
   ///
   /// 下划线格式（[underscoreMode] = true）：
   ///   `soft dramatic lighting` → `soft_dramatic_lighting`
-  ///   复用官方的 [TextSpaceConverter]，保护逗号 / 括号 / 竖线 / 尖括号旁与
-  ///   尖括号内部的空格（`{red|blue} hair` 保持不变）。
+  ///   复用 [TextSpaceConverter]，按 [TextSpaceConverter.danbooruStyle] 保护：
+  ///   逗号 / 冒号 / 花括号 / 方括号 / 竖线 / 尖括号旁与尖括号内部的空格留着，
+  ///   **圆括号不保护** —— `hong (white_spider)` 属于同一个标签，
+  ///   要连成 `hong_(white_spider)`。
   ///
   /// 空格格式（[underscoreMode] = false）：
   ///   `soft_dramatic_lighting` → `soft dramatic lighting`
@@ -141,7 +143,7 @@ class NaiPromptFormatter {
       if (!trimmed.contains(' ')) return trimmed;
       return TextSpaceConverter.convert(
         trimmed,
-        protectChars: TextSpaceConverter.naiFormat,
+        protectChars: TextSpaceConverter.danbooruStyle,
       );
     }
     if (!trimmed.contains('_')) return trimmed;
