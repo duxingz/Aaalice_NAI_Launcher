@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/constants/storage_keys.dart';
 import '../../../core/storage/local_storage_service.dart';
+import '../../../core/utils/bigman_mod_flags.dart';
 import '../../../core/utils/bigman_save_name.dart';
 
 /// 保存文件名的序号来源。
@@ -55,6 +56,8 @@ class BigmanModSettings {
     this.promptInboxEnabled = true,
     this.mergeMultiSelectWeight = true,
     this.promptTagFormat = BigmanPromptTagFormat.underscore,
+    this.historyLimit = BigmanModFlags.defaultHistoryLimit,
+    this.compactQuickActions = false,
   });
 
   /// Ctrl+↑/↓ 调整光标所在标签的权重。
@@ -100,6 +103,16 @@ class BigmanModSettings {
   /// 格式化提示词时标签内用什么：默认下划线（空格 → 下划线，与官方一致）。
   final BigmanPromptTagFormat promptTagFormat;
 
+  /// 生成历史保留张数，可选 [BigmanModFlags.historyLimitOptions] 四档。
+  ///
+  /// 内存列表与 Hive 落盘共用这个值；调大后历史区能往回翻更多张。
+  final int historyLimit;
+
+  /// 精简快捷编辑：卡片悬浮条只留高频编辑操作，右键菜单不受影响。
+  ///
+  /// 默认关闭 —— 关闭时与上游完全一致，开启后才进入精简模式。
+  final bool compactQuickActions;
+
   /// 塞进生成队列。
   ///
 
@@ -121,6 +134,8 @@ class BigmanModSettings {
     bool? promptInboxEnabled,
     bool? mergeMultiSelectWeight,
     BigmanPromptTagFormat? promptTagFormat,
+    int? historyLimit,
+    bool? compactQuickActions,
   }) {
     return BigmanModSettings(
       promptWeightShortcut: promptWeightShortcut ?? this.promptWeightShortcut,
@@ -137,6 +152,8 @@ class BigmanModSettings {
       mergeMultiSelectWeight:
           mergeMultiSelectWeight ?? this.mergeMultiSelectWeight,
       promptTagFormat: promptTagFormat ?? this.promptTagFormat,
+      historyLimit: historyLimit ?? this.historyLimit,
+      compactQuickActions: compactQuickActions ?? this.compactQuickActions,
     );
   }
 }
@@ -217,7 +234,25 @@ class BigmanModSettingsNotifier extends StateNotifier<BigmanModSettings> {
       promptTagFormat: BigmanPromptTagFormat.fromStorage(
         storage.getSetting<String>(StorageKeys.bigmanPromptTagFormat),
       ),
+      historyLimit: _readHistoryLimit(storage),
+      compactQuickActions: _readBool(
+        storage,
+        StorageKeys.bigmanCompactQuickActions,
+        false,
+      ),
     );
+  }
+
+  /// 历史档位只认白名单；手改过存储或写入非法值时回落到默认档。
+  static int _readHistoryLimit(LocalStorageService storage) {
+    final value = _readInt(
+      storage,
+      StorageKeys.bigmanHistoryLimit,
+      BigmanModFlags.defaultHistoryLimit,
+    );
+    return BigmanModFlags.historyLimitOptions.contains(value)
+        ? value
+        : BigmanModFlags.defaultHistoryLimit;
   }
 
   Future<void> _write(BigmanModSettings next, Map<String, Object?> values) async {
@@ -296,6 +331,23 @@ class BigmanModSettingsNotifier extends StateNotifier<BigmanModSettings> {
   Future<void> setPromptTagFormat(BigmanPromptTagFormat value) => _write(
     state.copyWith(promptTagFormat: value),
     {StorageKeys.bigmanPromptTagFormat: value.storageValue},
+  );
+
+  /// 设置生成历史保留张数；只接受 [BigmanModFlags.historyLimitOptions] 里的档位。
+  Future<void> setHistoryLimit(int value) {
+    final resolved = BigmanModFlags.historyLimitOptions.contains(value)
+        ? value
+        : BigmanModFlags.defaultHistoryLimit;
+    return _write(
+      state.copyWith(historyLimit: resolved),
+      {StorageKeys.bigmanHistoryLimit: resolved},
+    );
+  }
+
+  /// 开关「精简快捷编辑」。
+  Future<void> setCompactQuickActions(bool value) => _write(
+    state.copyWith(compactQuickActions: value),
+    {StorageKeys.bigmanCompactQuickActions: value},
   );
 
 

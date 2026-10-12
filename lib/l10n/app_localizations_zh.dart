@@ -15447,6 +15447,26 @@ class AppLocalizationsZh extends AppLocalizations {
       '轮询约定文件，把 DSH 写好的提示词自动填进输入框（含负面词与角色分区），省掉手动复制粘贴。';
 
   @override
+  String get bigmanMod_uiSectionTitle => '界面与历史';
+
+  @override
+  String get bigmanMod_uiSectionDescription => '历史区保留多少张图，以及卡片悬浮时显示哪些快捷按钮。';
+
+  @override
+  String get bigmanMod_historyLimit => '历史记录保留数量';
+
+  @override
+  String get bigmanMod_historyLimitSubtitle =>
+      '调大后能往回翻更多张。每张都按原图存一份，占用的内存与磁盘会同步变大（约每张 1.8MB）。';
+
+  @override
+  String get bigmanMod_compactQuickActions => '精简快捷编辑';
+
+  @override
+  String get bigmanMod_compactQuickActionsSubtitle =>
+      '悬浮时只显示常用的编辑操作：保存、复制、编辑图像、局部重绘、增强、图生图、生成变体、导演工具、放大。其余操作仍在右键菜单里。';
+
+  @override
   String get drop_importOptions => '导入选项';
 
   @override
@@ -30913,6 +30933,26 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
   @override
   String get bigmanMod_promptInboxSubtitle =>
       '輪詢約定檔案，把 DSH 寫好的提示詞自動填入輸入框（含負面詞與角色分區），省掉手動複製貼上。';
+
+  @override
+  String get bigmanMod_uiSectionTitle => '介面與歷史';
+
+  @override
+  String get bigmanMod_uiSectionDescription => '歷史區保留多少張圖，以及卡片懸浮時顯示哪些快捷按鈕。';
+
+  @override
+  String get bigmanMod_historyLimit => '歷史記錄保留數量';
+
+  @override
+  String get bigmanMod_historyLimitSubtitle =>
+      '調大後能往回翻更多張。每張都按原圖存一份，佔用的記憶體與磁碟會同步變大（約每張 1.8MB）。';
+
+  @override
+  String get bigmanMod_compactQuickActions => '精簡快捷編輯';
+
+  @override
+  String get bigmanMod_compactQuickActionsSubtitle =>
+      '懸浮時只顯示常用的編輯操作：儲存、複製、編輯影象、區域性重繪、增強、圖生圖、生成變體、導演工具、放大。其餘操作仍在右鍵選單裡。';
 
   @override
   String get drop_importOptions => '匯入選項';

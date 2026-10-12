@@ -8,6 +8,7 @@ import 'image_card_action_dispatch.dart';
 import 'image_card_action_region.dart';
 import 'image_card_context_menu.dart';
 
+import '../../../core/utils/bigman_mod_flags.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../adaptive/interaction_policy.dart';
 
@@ -77,6 +78,12 @@ class CardActionButtons extends StatelessWidget {
   final double pointerExtent;
   final Map<ImageCardActionGroup, ({IconData icon, String label})> groupMenus;
 
+  /// 覆盖「精简快捷编辑」开关；为空时读设置。
+  ///
+  /// 留出这个入口是为了让悬浮条顺序能被直接断言，不必在 widget test 里
+  /// 做真实文件 I/O（假异步时钟下会永远等不到 Hive 完成）。
+  final bool? compactQuickActions;
+
   const CardActionButtons({
     super.key,
     required this.buttons,
@@ -88,15 +95,79 @@ class CardActionButtons extends StatelessWidget {
     this.menuKey,
     this.pointerExtent = 32,
     this.groupMenus = const {},
+    this.compactQuickActions,
   });
+
+  /// 精简模式从悬浮条隐藏的动作。
+  ///
+  /// 只影响悬浮条：右键菜单用的是完整动作清单，这些操作一个都没少。
+  static const Set<ImageCardActionId> _compactHiddenIds = {
+    ImageCardActionId.addToAgent,
+    ImageCardActionId.saveToLibrary,
+    ImageCardActionId.reversePrompt,
+    ImageCardActionId.vibeTransfer,
+    ImageCardActionId.preciseReference,
+    ImageCardActionId.saveToPreciseRefLibrary,
+    ImageCardActionId.dlssEnhance,
+    ImageCardActionId.sendToKrita,
+  };
+
+  /// 精简模式下悬浮条的固定顺序（用户点名的常用编辑顺序）。
+  static const List<ImageCardActionId> _compactOrder = [
+    ImageCardActionId.save,
+    ImageCardActionId.copy,
+    ImageCardActionId.editImage,
+    ImageCardActionId.inpaint,
+    ImageCardActionId.enhance,
+    ImageCardActionId.imageToImage,
+    ImageCardActionId.generateVariations,
+    ImageCardActionId.directorTools,
+    ImageCardActionId.upscale,
+  ];
+
+  /// 悬浮条实际显示的动作。
+  ///
+  /// [compact] 为 false 时是上游原样的「所有 showOnHover 动作」；为 true 时
+  /// 先按 [_compactOrder] 排好这 9 个，再按原顺序补上其余（水印、马赛克、
+  /// 删除等仍然保留，删除由 build 统一排到末尾），既清爽又不丢能力。
+  ///
+  /// 纯函数：不读设置、不碰 I/O，顺序可以被直接断言。
+  static List<ImageCardAction> hoverButtons(
+    List<ImageCardAction> buttons, {
+    required bool compact,
+  }) {
+    final hoverable = buttons
+        .where((a) => a.visible && a.showOnHover)
+        .toList();
+    if (!compact) return hoverable;
+
+    final ordered = <ImageCardActionId, ImageCardAction>{};
+    final rest = <ImageCardAction>[];
+    for (final action in hoverable) {
+      if (_compactHiddenIds.contains(action.id)) continue;
+      if (_compactOrder.contains(action.id)) {
+        ordered.putIfAbsent(action.id, () => action);
+      } else {
+        rest.add(action);
+      }
+    }
+    return [
+      for (final id in _compactOrder)
+        if (ordered[id] case final action?) action,
+      ...rest,
+    ];
+  }
 
   @override
   Widget build(BuildContext context) {
     if (this.buttons.isEmpty) return const SizedBox.shrink();
 
-    final buttons = this.buttons
-        .where((a) => a.visible && a.showOnHover)
-        .toList();
+    final buttons = hoverButtons(
+      this.buttons,
+      compact:
+          compactQuickActions ??
+          BigmanModFlags.compactQuickActionsEnabled(),
+    );
     final interactionPolicy = context.interactionPolicy;
     final loadingLabel =
         AppLocalizations.of(context)?.common_loading ?? 'Loading…';

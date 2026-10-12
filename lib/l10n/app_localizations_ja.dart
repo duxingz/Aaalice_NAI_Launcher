@@ -15732,6 +15732,27 @@ class AppLocalizationsJa extends AppLocalizations {
       '共有ファイルを監視し、DSH が書いたプロンプトを入力欄へ自動反映します（ネガティブとキャラクター区画を含む）。コピー＆ペーストが不要になります。';
 
   @override
+  String get bigmanMod_uiSectionTitle => '画面と履歴';
+
+  @override
+  String get bigmanMod_uiSectionDescription =>
+      '履歴に残す枚数と、カードのホバー時に表示するショートカットボタン。';
+
+  @override
+  String get bigmanMod_historyLimit => '履歴の保持枚数';
+
+  @override
+  String get bigmanMod_historyLimitSubtitle =>
+      '増やすと過去の画像をより多く遡れます。1 枚ごとに元画像をそのまま保存するため、メモリとディスクの使用量も比例して増えます（1 枚あたり約 1.8MB）。';
+
+  @override
+  String get bigmanMod_compactQuickActions => 'クイック編集を簡素化';
+
+  @override
+  String get bigmanMod_compactQuickActionsSubtitle =>
+      'ホバー時に、よく使う編集操作だけを表示します。その他の操作は右クリックメニューに残ります。';
+
+  @override
   String get drop_importOptions => '取り込みオプション';
 
   @override

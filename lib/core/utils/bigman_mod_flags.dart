@@ -28,6 +28,15 @@ class BigmanModFlags {
     }
   }
 
+  static int? _readInt(String key) {
+    try {
+      if (!Hive.isBoxOpen(StorageKeys.settingsBox)) return null;
+      return Hive.box(StorageKeys.settingsBox).get(key) as int?;
+    } catch (_) {
+      return null;
+    }
+  }
+
   /// 质量词预设是否启用；默认关闭（不注入官方质量词）。
   static bool qualityPresetEnabled() =>
       _readBool(StorageKeys.bigmanQualityPresetEnabled) ?? false;
@@ -53,6 +62,27 @@ class BigmanModFlags {
   /// 默认下划线 —— 与官方格式化一致；存储缺失、旧值、类型不符都按默认。
   static bool promptTagsUseUnderscores() =>
       _readString(StorageKeys.bigmanPromptTagFormat) != _spaceTagFormat;
+
+  /// 生成历史保留张数的可选档位。
+  static const List<int> historyLimitOptions = <int>[50, 100, 150, 200];
+
+  /// 生成历史保留张数的默认档位。
+  static const int defaultHistoryLimit = 50;
+
+  /// 生成历史保留张数；缺失或非法（手改存储、旧值）一律回落到默认档。
+  ///
+  /// 内存里的历史列表与 Hive 里的历史记录用同一个取值，否则会出现
+  /// 「界面上留着 100 张、落盘只存 50 张」这类不一致。
+  static int historyLimit() {
+    final value = _readInt(StorageKeys.bigmanHistoryLimit);
+    return value != null && historyLimitOptions.contains(value)
+        ? value
+        : defaultHistoryLimit;
+  }
+
+  /// 精简快捷编辑是否开启；默认关闭（保持上游满配悬浮条）。
+  static bool compactQuickActionsEnabled() =>
+      _readBool(StorageKeys.bigmanCompactQuickActions) ?? false;
 }
 
 /// 设置里表示「空格格式」的存储值。

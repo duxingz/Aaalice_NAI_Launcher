@@ -7,6 +7,7 @@ import 'package:hive/hive.dart';
 
 import '../../core/constants/storage_keys.dart';
 import '../../core/utils/app_logger.dart';
+import '../../core/utils/bigman_mod_flags.dart';
 import '../../data/models/gallery/nai_image_metadata.dart';
 import '../../data/models/fixed_tag/fixed_tag_usage_snapshot.dart';
 import '../providers/generation/generation_models.dart';
@@ -35,7 +36,13 @@ class GenerationHistoryStorageService {
 
   static const _orderKey = 'generation_history_v1_order';
   static const _recordPrefix = 'generation_history_v1_record_';
-  static const maxEntries = 50;
+
+  /// 落盘的历史记录上限。
+  ///
+  /// 与内存侧 `GenerationResultLifecycleService.historyLimit` 同源（都读
+  /// `BigmanModFlags.historyLimit()`），否则会出现「界面留着 100 张、
+  /// 落盘只存 50 张」这种界面与实际不一致。
+  static int get maxEntries => BigmanModFlags.historyLimit();
 
   final bool enabled;
   Future<void> _pendingWrite = Future<void>.value();

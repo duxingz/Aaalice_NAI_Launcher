@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/utils/bigman_mod_flags.dart';
 import '../../../../core/utils/localization_extension.dart';
 import '../../../providers/bigman/bigman_mod_settings.dart';
 import '../../../providers/generation/generation_settings_notifiers.dart';
@@ -249,6 +250,38 @@ class _BigmanModSettingsSectionState
                 subtitle: Text(l10n.bigmanMod_promptInboxSubtitle),
                 value: settings.promptInboxEnabled,
                 onChanged: (value) => notifier.setPromptInboxEnabled(value),
+              ),
+            ],
+          ),
+        ),
+        SettingsCard(
+          title: l10n.bigmanMod_uiSectionTitle,
+          description: l10n.bigmanMod_uiSectionDescription,
+          icon: Icons.tune_outlined,
+          child: Column(
+            children: [
+              ListTile(
+                title: Text(l10n.bigmanMod_historyLimit),
+                subtitle: Text(l10n.bigmanMod_historyLimitSubtitle),
+                trailing: SegmentedButton<int>(
+                  showSelectedIcon: false,
+                  segments: [
+                    for (final option in BigmanModFlags.historyLimitOptions)
+                      ButtonSegment<int>(
+                        value: option,
+                        label: Text('$option'),
+                      ),
+                  ],
+                  selected: {settings.historyLimit},
+                  onSelectionChanged: (selection) =>
+                      notifier.setHistoryLimit(selection.first),
+                ),
+              ),
+              SwitchListTile(
+                title: Text(l10n.bigmanMod_compactQuickActions),
+                subtitle: Text(l10n.bigmanMod_compactQuickActionsSubtitle),
+                value: settings.compactQuickActions,
+                onChanged: (value) => notifier.setCompactQuickActions(value),
               ),
             ],
           ),

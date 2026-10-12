@@ -28047,6 +28047,42 @@ abstract class AppLocalizations {
   /// **'Watches an agreed file and fills prompts written by DSH into the input box (including negative prompt and character sections), so you can skip copy-paste.'**
   String get bigmanMod_promptInboxSubtitle;
 
+  /// No description provided for @bigmanMod_uiSectionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Interface and history'**
+  String get bigmanMod_uiSectionTitle;
+
+  /// No description provided for @bigmanMod_uiSectionDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'How many images the history keeps, and which quick buttons appear when hovering a card.'**
+  String get bigmanMod_uiSectionDescription;
+
+  /// No description provided for @bigmanMod_historyLimit.
+  ///
+  /// In en, this message translates to:
+  /// **'History limit'**
+  String get bigmanMod_historyLimit;
+
+  /// No description provided for @bigmanMod_historyLimitSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'A larger value lets you scroll further back. Every entry keeps a full-resolution copy, so memory and disk use grow with it (about 1.8 MB each).'**
+  String get bigmanMod_historyLimitSubtitle;
+
+  /// No description provided for @bigmanMod_compactQuickActions.
+  ///
+  /// In en, this message translates to:
+  /// **'Compact quick edit'**
+  String get bigmanMod_compactQuickActions;
+
+  /// No description provided for @bigmanMod_compactQuickActionsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'On hover, show only the common editing actions: save, copy, edit image, inpaint, enhance, image to image, generate variations, director tools, upscale. All other actions remain in the right-click menu.'**
+  String get bigmanMod_compactQuickActionsSubtitle;
+
   /// No description provided for @drop_importOptions.
   ///
   /// In en, this message translates to:

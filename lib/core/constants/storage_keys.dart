@@ -468,4 +468,11 @@ class StorageKeys {
       'bigman_merge_multiselect_weight';
   /// 标签格式：`space` = 空格（下划线转空格），`underscore` = 下划线（空格转下划线）。
   static const String bigmanPromptTagFormat = 'bigman_prompt_tag_format';
+
+  /// 生成历史保留张数档位：50 / 100 / 150 / 200，读不到或非法时按 50。
+  static const String bigmanHistoryLimit = 'bigman_history_limit';
+
+  /// 精简快捷编辑：开启后卡片悬浮条只留高频编辑操作，右键菜单不受影响。
+  static const String bigmanCompactQuickActions =
+      'bigman_compact_quick_actions';
 }

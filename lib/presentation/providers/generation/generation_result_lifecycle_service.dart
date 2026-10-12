@@ -4,6 +4,7 @@ import 'dart:typed_data';
 import 'package:path/path.dart' as p;
 
 import '../../../core/utils/app_logger.dart';
+import '../../../core/utils/bigman_mod_flags.dart';
 import '../../../core/utils/image_save_utils.dart';
 import '../../../core/utils/nai_resolution_adapter.dart';
 import '../../../data/models/gallery/gallery_index_admission.dart';
@@ -86,7 +87,11 @@ class ExternalImagePreparationResult {
 class GenerationResultLifecycleService {
   const GenerationResultLifecycleService(this.dependencies);
 
-  static const int historyLimit = 50;
+  /// 生成历史在内存里保留的张数。
+  ///
+  /// 取自「设置 → 界面与历史」的档位（50 / 100 / 150 / 200，默认 50）；
+  /// 与 [GenerationHistoryStorageService.maxEntries] 同源，避免界面与落盘不一致。
+  static int get historyLimit => BigmanModFlags.historyLimit();
 
   final GenerationResultLifecycleDependencies dependencies;
 

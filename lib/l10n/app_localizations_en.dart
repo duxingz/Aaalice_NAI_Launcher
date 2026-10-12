@@ -16162,6 +16162,27 @@ class AppLocalizationsEn extends AppLocalizations {
       'Watches an agreed file and fills prompts written by DSH into the input box (including negative prompt and character sections), so you can skip copy-paste.';
 
   @override
+  String get bigmanMod_uiSectionTitle => 'Interface and history';
+
+  @override
+  String get bigmanMod_uiSectionDescription =>
+      'How many images the history keeps, and which quick buttons appear when hovering a card.';
+
+  @override
+  String get bigmanMod_historyLimit => 'History limit';
+
+  @override
+  String get bigmanMod_historyLimitSubtitle =>
+      'A larger value lets you scroll further back. Every entry keeps a full-resolution copy, so memory and disk use grow with it (about 1.8 MB each).';
+
+  @override
+  String get bigmanMod_compactQuickActions => 'Compact quick edit';
+
+  @override
+  String get bigmanMod_compactQuickActionsSubtitle =>
+      'On hover, show only the common editing actions: save, copy, edit image, inpaint, enhance, image to image, generate variations, director tools, upscale. All other actions remain in the right-click menu.';
+
+  @override
   String get drop_importOptions => 'Import options';
 
   @override
