@@ -130,23 +130,44 @@ void main() {
       String template = '{n}',
       int padding = 0,
       int start = 1,
+      bool autoDateFolder = false,
     }) => BigmanSaveNameConfig(
       template: template,
       padding: padding,
       start: start,
       scanMode: true,
-      autoDateFolder: false,
+      autoDateFolder: autoDateFolder,
     );
 
-    test('{n}：取整棵树（含日期子目录）里的最大号 +1', () async {
+    test('{n}：日期文件夹关闭时只算当前目录，子目录里的号不参与', () async {
+      // 分享对象报的 bug：日期文件夹**没开**，序号却「往上跳」。
+      // 根因是无条件 `recursive: true`，把子文件夹里编号更大的旧图算了进来。
+      await touch('1.png');
+      await touch('2.png');
+      await touch('5.png');
+      await touch('2026-10-11/7.png'); // 子目录里的大号不该参与取号
+      await touch('note.txt'); // 非 PNG 不参与
+      await touch('12.jpg');
+
+      expect(await config().resolveNextIndex(dir.path), 6);
+    });
+
+    test('{n}：日期文件夹开启时取整棵子树的最大号 +1', () async {
+      // 开启日期文件夹后图片分散在日期子目录里，必须递归整棵子树，
+      // 否则每换一天号码就从起始值重来。
       await touch('1.png');
       await touch('2.png');
       await touch('5.png');
       await touch('2026-10-11/7.png');
-      await touch('note.txt'); // 非 PNG 不参与
-      await touch('12.jpg');
 
-      expect(await config().resolveNextIndex(dir.path), 8);
+      expect(await config(autoDateFolder: true).resolveNextIndex(dir.path), 8);
+    });
+
+    test('日期文件夹关闭时，备份子目录里的图不再顶高序号', () async {
+      await touch('620.png');
+      await touch('备份/900.png');
+
+      expect(await config().resolveNextIndex(dir.path), 621);
     });
 
     test('{date}_{n}：按当天写出来的文件名匹配', () async {
