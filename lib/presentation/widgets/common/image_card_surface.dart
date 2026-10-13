@@ -170,26 +170,33 @@ class ImageCardSurface extends StatelessWidget {
               if (!capabilities.selectionMode &&
                   (capabilities.onFavoriteToggle != null ||
                       pinnedActions.isNotEmpty))
+                // 必须同时给 left：只给 right 时 Stack 不施加宽度约束，
+                // 轨道拿到的是无限宽，里面的宽度自适应就永远不会生效，
+                // 窄卡片上会一路画到卡片外被裁掉。
                 Positioned(
                   top: 8,
+                  left: 0,
                   right: 8,
-                  child: ImageCardCornerActionRail(
-                    pinnedActions: pinnedActions,
-                    favorite: capabilities.onFavoriteToggle == null
-                        ? null
-                        : CardFavoriteButton(
-                            isFavorite: data.isFavorite,
-                            onToggle: () => unawaited(
-                              dispatchImageCardAction(
-                                context,
-                                actions.firstWhere(
-                                  (a) => a.id == ImageCardActionId.favorite,
+                  child: Align(
+                    alignment: AlignmentDirectional.centerEnd,
+                    child: ImageCardCornerActionRail(
+                      pinnedActions: pinnedActions,
+                      favorite: capabilities.onFavoriteToggle == null
+                          ? null
+                          : CardFavoriteButton(
+                              isFavorite: data.isFavorite,
+                              onToggle: () => unawaited(
+                                dispatchImageCardAction(
+                                  context,
+                                  actions.firstWhere(
+                                    (a) => a.id == ImageCardActionId.favorite,
+                                  ),
                                 ),
                               ),
+                              size: 16,
+                              borderRadius: 999,
                             ),
-                            size: 16,
-                            borderRadius: 999,
-                          ),
+                    ),
                   ),
                 ),
               if (showHoverBar)
@@ -361,11 +368,12 @@ class ImageCardCornerActionRail extends StatelessWidget {
   static const _extent = 40.0;
   static const _spacing = 4.0;
 
-  /// 左侧要避开的宽度：多选框 40 + 左内边距 8 + 与轨道的间隙 8。
-  static const _leadingReserve = 56.0;
+  /// 左侧要避开的宽度：多选框 40 + 卡片左内边距 8。
+  static const _leadingReserve = 48.0;
 
-  /// 常驻收藏的预留宽度（触屏命中区 48 是它的最大值）。
-  static const _favoriteReserve = 48.0;
+  /// 常驻收藏的宽度（触屏下命中区更大）。
+  static double _favoriteReserve(BuildContext context) =>
+      context.interactionPolicy.touchAvailable ? 48 : 40;
 
   /// 放不下时最先舍弃的动作，越靠前越先丢。
   static const _dropOrder = <ImageCardActionId>[
@@ -384,7 +392,10 @@ class ImageCardCornerActionRail extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       spacing: _spacing,
       children: [
-        for (final action in _fitting(constraints.maxWidth))
+        for (final action in _fitting(
+          constraints.maxWidth,
+          favorite == null ? 0 : _favoriteReserve(context),
+        ))
           ImageCardOverlayActionButton(config: action, extent: _extent),
         if (favorite case final favorite?) favorite,
       ],
@@ -392,17 +403,15 @@ class ImageCardCornerActionRail extends StatelessWidget {
   );
 
   /// 当前宽度放得下的那些固定动作（保持原有顺序）。
-  List<ImageCardAction> _fitting(double maxWidth) {
+  List<ImageCardAction> _fitting(double maxWidth, double favoriteExtent) {
     if (maxWidth.isInfinite) return pinnedActions;
-    final reserved =
-        _leadingReserve + (favorite == null ? 0 : _favoriteReserve);
-    final available = maxWidth - reserved;
+    final available = maxWidth - _leadingReserve - favoriteExtent;
     final visible = List<ImageCardAction>.of(pinnedActions);
     while (visible.isNotEmpty) {
       final needed =
           visible.length * _extent +
           (visible.length - 1) * _spacing +
-          (favorite == null ? 0 : _spacing);
+          (favoriteExtent == 0 ? 0 : _spacing);
       if (needed <= available) break;
       final victim = _dropOrder.firstWhere(
         (id) => visible.any((action) => action.id == id),

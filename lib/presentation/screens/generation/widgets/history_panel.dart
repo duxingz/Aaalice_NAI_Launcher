@@ -108,10 +108,12 @@ class _HistoryPanelState extends ConsumerState<HistoryPanel> {
   /// 历史缩略图悬停时固定显示的操作，顺序即从左到右。
   ///
   /// 右侧常驻的收藏是第五个 —— 它固定在轨道最右，位置不随悬停移动。
+  /// 这个顺序只决定**显示位置**；卡片过窄时先舍弃哪个由
+  /// `ImageCardCornerActionRail._dropOrder` 单独决定。
   static const _pinnedHoverActions = [
+    ImageCardActionId.copy,
     ImageCardActionId.save,
     ImageCardActionId.imageToImage,
-    ImageCardActionId.copy,
     ImageCardActionId.delete,
   ];
 

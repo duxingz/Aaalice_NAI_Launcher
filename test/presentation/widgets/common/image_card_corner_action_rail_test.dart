@@ -6,8 +6,9 @@
 // 图生图 → 保存 → 复制 依次被舍弃，删除与收藏始终保留。
 //
 // 这里直接对轨道本身下断言（它是公开组件），宽度是唯一变量、可精确计算：
-//   可用宽度 = 轨道宽 - 56（左侧多选框与间隙）- 48（收藏预留）
+//   可用宽度 = 轨道宽 - 48（左侧多选框）- 40（收藏，指针设备）
 //   需要宽度 = 44 × 个数   （40 圆钮 + 4 间距，另加与收藏之间的一处间距）
+// 所以四个固定动作全出需要 88 + 176 = 264。
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:nai_launcher/l10n/app_localizations.dart';
@@ -76,15 +77,15 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('刚好够宽（约 280）时仍是五个', (tester) async {
-    // 可用 = 280 - 104 = 176；需要 = 44 × 4 = 176 → 正好放下。
-    await _pumpRail(tester, 280);
+  testWidgets('刚好够宽（264）时仍是五个（边界）', (tester) async {
+    // 可用 = 264 - 88 = 176；需要 = 44 × 4 = 176 → 正好放下。
+    await _pumpRail(tester, 264);
 
     expect(_visibleLabels(tester), const ['保存', '图生图', '复制', '删除']);
   });
 
   testWidgets('窄到 200 时先丢图生图与保存，只留复制和删除', (tester) async {
-    // 可用 = 200 - 104 = 96；44 × 3 = 132 > 96，44 × 2 = 88 ≤ 96。
+    // 可用 = 200 - 88 = 112；44 × 3 = 132 > 112，44 × 2 = 88 ≤ 112。
     await _pumpRail(tester, 200);
 
     expect(_visibleLabels(tester), const ['复制', '删除']);
@@ -92,7 +93,7 @@ void main() {
   });
 
   testWidgets('再窄到 160 时只剩删除', (tester) async {
-    // 可用 = 160 - 104 = 56；44 × 2 = 88 > 56，44 × 1 = 44 ≤ 56。
+    // 可用 = 160 - 88 = 72；44 × 2 = 88 > 72，44 × 1 = 44 ≤ 72。
     await _pumpRail(tester, 160);
 
     expect(_visibleLabels(tester), const ['删除']);

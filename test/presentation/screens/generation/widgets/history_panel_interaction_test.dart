@@ -523,6 +523,13 @@ void main() {
       expect(checkbox.right, lessThanOrEqualTo(copy.left));
       final cardRect = tester.getRect(card);
       expect(favorite.right, lessThanOrEqualTo(cardRect.right));
+      // 整条轨道必须留在卡片里：只给 right 的 Positioned 不给宽度约束，
+      // 轨道的宽度自适应会失效、一路画到卡片外被 Stack 裁掉。
+      final rail = tester.getRect(
+        find.byKey(const ValueKey('image-card-corner-action-rail')),
+      );
+      expect(rail.left, greaterThanOrEqualTo(cardRect.left));
+      expect(rail.right, lessThanOrEqualTo(cardRect.right));
       expect(tester.takeException(), isNull);
     });
 
@@ -545,14 +552,14 @@ void main() {
       final delete = tester.getRect(_cardAction(card, '删除'));
       final favorite = tester.getRect(_cardAction(card, '收藏'));
 
-      // 顺序：保存 · 图生图 · 复制 · 删除 · 收藏（收藏固定在最右）。
+      // 顺序：复制 · 保存 · 图生图 · 删除 · 收藏（收藏固定在最右）。
+      expect(copy.right, lessThanOrEqualTo(save.left));
       expect(save.right, lessThanOrEqualTo(img2img.left));
-      expect(img2img.right, lessThanOrEqualTo(copy.left));
-      expect(copy.right, lessThanOrEqualTo(delete.left));
+      expect(img2img.right, lessThanOrEqualTo(delete.left));
       expect(delete.right, lessThanOrEqualTo(favorite.left));
 
       final cardRect = tester.getRect(card);
-      expect(save.left, greaterThanOrEqualTo(cardRect.left));
+      expect(copy.left, greaterThanOrEqualTo(cardRect.left));
       expect(favorite.right, lessThanOrEqualTo(cardRect.right));
       expect(tester.takeException(), isNull);
     });
