@@ -6,6 +6,7 @@ import '../../../../core/utils/bigman_mod_flags.dart';
 import '../../../../core/utils/localization_extension.dart';
 import '../../../providers/bigman/bigman_mod_settings.dart';
 import '../../../providers/generation/generation_settings_notifiers.dart';
+import '../../../widgets/common/horizontal_segmented_control.dart';
 import '../widgets/settings_card.dart';
 import '../widgets/settings_page_layout.dart';
 
@@ -92,10 +93,10 @@ class _BigmanModSettingsSectionState
                     .read(autoFormatPromptSettingsProvider.notifier)
                     .set(value),
               ),
-              ListTile(
-                title: Text(l10n.bigmanMod_promptTagFormat),
-                subtitle: Text(l10n.bigmanMod_promptTagFormatSubtitle),
-                trailing: SegmentedButton<BigmanPromptTagFormat>(
+              _SegmentedSettingRow(
+                title: l10n.bigmanMod_promptTagFormat,
+                description: l10n.bigmanMod_promptTagFormatSubtitle,
+                control: SegmentedButton<BigmanPromptTagFormat>(
                   showSelectedIcon: false,
                   segments: [
                     ButtonSegment(
@@ -171,17 +172,16 @@ class _BigmanModSettingsSectionState
                 ),
               ),
               const SizedBox(height: 8),
-              ListTile(
-                title: Text(l10n.bigmanMod_saveNameCounterMode),
-                subtitle: Text(
-                  // 把两种模式的**差别**写出来：删掉的号会不会被回收，
-                  // 光看名字看不出来（用户就是照着这个报过 bug）。
-                  settings.saveNameCounterMode ==
-                          BigmanSaveNameCounterMode.scan
-                      ? l10n.bigmanMod_saveNameCounterScanHint
-                      : l10n.bigmanMod_saveNameCounterGlobalHint,
-                ),
-                trailing: SegmentedButton<BigmanSaveNameCounterMode>(
+              _SegmentedSettingRow(
+                title: l10n.bigmanMod_saveNameCounterMode,
+                description:
+                    // 把两种模式的**差别**写出来：删掉的号会不会被回收，
+                    // 光看名字看不出来（用户就是照着这个报过 bug）。
+                    settings.saveNameCounterMode ==
+                        BigmanSaveNameCounterMode.scan
+                    ? l10n.bigmanMod_saveNameCounterScanHint
+                    : l10n.bigmanMod_saveNameCounterGlobalHint,
+                control: SegmentedButton<BigmanSaveNameCounterMode>(
                   showSelectedIcon: false,
                   segments: [
                     ButtonSegment(
@@ -260,10 +260,10 @@ class _BigmanModSettingsSectionState
           icon: Icons.tune_outlined,
           child: Column(
             children: [
-              ListTile(
-                title: Text(l10n.bigmanMod_historyLimit),
-                subtitle: Text(l10n.bigmanMod_historyLimitSubtitle),
-                trailing: SegmentedButton<int>(
+              _SegmentedSettingRow(
+                title: l10n.bigmanMod_historyLimit,
+                description: l10n.bigmanMod_historyLimitSubtitle,
+                control: SegmentedButton<int>(
                   showSelectedIcon: false,
                   segments: [
                     for (final option in BigmanModFlags.historyLimitOptions)
@@ -287,6 +287,47 @@ class _BigmanModSettingsSectionState
           ),
         ),
       ],
+    );
+  }
+}
+
+/// 一行「标题 + 说明 + 分段选择」。
+///
+/// 分段按钮**不能**塞进 `ListTile.trailing`：它会被撑到整行宽度，直接命中
+/// ListTile 的断言（"Trailing widget consumes the entire tile width"），
+/// 窄屏 / 大字号下还会把标题挤没。改成标题一行、控件一行，并交给
+/// [HorizontalSegmentedControl] 保证不换行、放不下时可横向滚动。
+class _SegmentedSettingRow extends StatelessWidget {
+  const _SegmentedSettingRow({
+    required this.title,
+    required this.description,
+    required this.control,
+  });
+
+  final String title;
+  final String description;
+  final Widget control;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(title, style: theme.textTheme.titleSmall),
+          const SizedBox(height: 4),
+          Text(
+            description,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+          const SizedBox(height: 12),
+          HorizontalSegmentedControl(child: control),
+        ],
+      ),
     );
   }
 }
