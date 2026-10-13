@@ -105,7 +105,12 @@ class HistoryPanel extends ConsumerStatefulWidget {
 }
 
 class _HistoryPanelState extends ConsumerState<HistoryPanel> {
+  /// 历史缩略图悬停时固定显示的操作，顺序即从左到右。
+  ///
+  /// 右侧常驻的收藏是第五个 —— 它固定在轨道最右，位置不随悬停移动。
   static const _pinnedHoverActions = [
+    ImageCardActionId.save,
+    ImageCardActionId.imageToImage,
     ImageCardActionId.copy,
     ImageCardActionId.delete,
   ];

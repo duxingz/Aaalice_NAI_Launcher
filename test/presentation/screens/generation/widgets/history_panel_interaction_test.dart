@@ -526,6 +526,37 @@ void main() {
       expect(tester.takeException(), isNull);
     });
 
+    testWidgets('wide cards pin save and img2img as well, all left of favorite', (
+      tester,
+    ) async {
+      final container = _createContainer([_image('wide')]);
+      addTearDown(container.dispose);
+      // 320 宽放得下四个固定动作 + 常驻收藏（总共约需要 280）。
+      await tester.pumpWidget(_cardActionApp(container, width: 320));
+      await tester.pump();
+
+      final card = find.byKey(const ValueKey('wide'));
+      final gesture = await _hover(tester, card);
+      addTearDown(gesture.removePointer);
+
+      final save = tester.getRect(_cardAction(card, '保存'));
+      final img2img = tester.getRect(_cardAction(card, '图生图'));
+      final copy = tester.getRect(_cardAction(card, '复制'));
+      final delete = tester.getRect(_cardAction(card, '删除'));
+      final favorite = tester.getRect(_cardAction(card, '收藏'));
+
+      // 顺序：保存 · 图生图 · 复制 · 删除 · 收藏（收藏固定在最右）。
+      expect(save.right, lessThanOrEqualTo(img2img.left));
+      expect(img2img.right, lessThanOrEqualTo(copy.left));
+      expect(copy.right, lessThanOrEqualTo(delete.left));
+      expect(delete.right, lessThanOrEqualTo(favorite.left));
+
+      final cardRect = tester.getRect(card);
+      expect(save.left, greaterThanOrEqualTo(cardRect.left));
+      expect(favorite.right, lessThanOrEqualTo(cardRect.right));
+      expect(tester.takeException(), isNull);
+    });
+
     testWidgets('failed snapshots expose delete without copy or favorite', (
       tester,
     ) async {
