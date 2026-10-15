@@ -3896,6 +3896,16 @@
       "count": {}
     }
   },
+  "settings_queuePipelineInterval": "流水线间隔（仅队列生效）",
+  "settings_queuePipelineIntervalDescription": "队列里每张图之间至少隔这么久，在该区间内随机取值。出图本身的时间算在里面；两个都填 0 表示不等。",
+  "settings_queuePipelineIntervalMin": "最小秒数",
+  "settings_queuePipelineIntervalMax": "最大秒数",
+  "settings_queuePipelineIntervalValue": "{seconds} 秒",
+  "@settings_queuePipelineIntervalValue": {
+    "placeholders": {
+      "seconds": {}
+    }
+  },
   "settings_queueRetryIntervalValue": "{seconds} 秒",
   "@settings_queueRetryIntervalValue": {
     "placeholders": {

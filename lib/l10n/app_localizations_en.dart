@@ -8273,6 +8273,24 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get settings_queuePipelineInterval => 'Pipeline interval (queue only)';
+
+  @override
+  String get settings_queuePipelineIntervalDescription =>
+      'Keeps at least this long between images in the queue, picked randomly inside the range. Generation time counts toward it; set both to 0 to disable.';
+
+  @override
+  String get settings_queuePipelineIntervalMin => 'Minimum seconds';
+
+  @override
+  String get settings_queuePipelineIntervalMax => 'Maximum seconds';
+
+  @override
+  String settings_queuePipelineIntervalValue(Object seconds) {
+    return '$seconds seconds';
+  }
+
+  @override
   String settings_queueRetryIntervalValue(Object seconds) {
     return '$seconds seconds';
   }

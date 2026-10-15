@@ -14623,6 +14623,36 @@ abstract class AppLocalizations {
   /// **'Max {count} times'**
   String settings_queueRetryCountMax(Object count);
 
+  /// No description provided for @settings_queuePipelineInterval.
+  ///
+  /// In en, this message translates to:
+  /// **'Pipeline interval (queue only)'**
+  String get settings_queuePipelineInterval;
+
+  /// No description provided for @settings_queuePipelineIntervalDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Keeps at least this long between images in the queue, picked randomly inside the range. Generation time counts toward it; set both to 0 to disable.'**
+  String get settings_queuePipelineIntervalDescription;
+
+  /// No description provided for @settings_queuePipelineIntervalMin.
+  ///
+  /// In en, this message translates to:
+  /// **'Minimum seconds'**
+  String get settings_queuePipelineIntervalMin;
+
+  /// No description provided for @settings_queuePipelineIntervalMax.
+  ///
+  /// In en, this message translates to:
+  /// **'Maximum seconds'**
+  String get settings_queuePipelineIntervalMax;
+
+  /// No description provided for @settings_queuePipelineIntervalValue.
+  ///
+  /// In en, this message translates to:
+  /// **'{seconds} seconds'**
+  String settings_queuePipelineIntervalValue(Object seconds);
+
   /// No description provided for @settings_queueRetryIntervalValue.
   ///
   /// In en, this message translates to:

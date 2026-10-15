@@ -5,6 +5,7 @@ import 'package:hive_flutter/hive_flutter.dart';
 import 'package:nai_launcher/core/constants/storage_keys.dart';
 import 'package:nai_launcher/core/storage/queue_state_storage.dart';
 import 'package:nai_launcher/core/storage/replication_queue_storage.dart';
+import 'package:nai_launcher/core/utils/pipeline_interval.dart';
 import 'package:nai_launcher/data/models/character/character_prompt.dart';
 import 'package:nai_launcher/data/models/queue/failure_handling_strategy.dart';
 import 'package:nai_launcher/data/models/queue/replication_task.dart';
@@ -122,7 +123,8 @@ void main() {
   test('队列执行设置使用预打开的 String Box 持久化', () async {
     const expected = QueueExecutionStateData(
       autoExecuteEnabled: true,
-      taskIntervalSeconds: 1.5,
+      taskIntervalMinSeconds: 12,
+      taskIntervalMaxSeconds: 24,
       failureStrategy: FailureHandlingStrategy.pauseAndWait,
     );
 
@@ -133,7 +135,44 @@ void main() {
 
     final restored = QueueStateStorage().loadExecutionState();
     expect(restored.autoExecuteEnabled, isTrue);
-    expect(restored.taskIntervalSeconds, 1.5);
+    expect(restored.taskIntervalMinSeconds, 12);
+    expect(restored.taskIntervalMaxSeconds, 24);
     expect(restored.failureStrategy, FailureHandlingStrategy.pauseAndWait);
+  });
+
+  // 旧存档只有一个 `taskIntervalSeconds`（那时默认 0＝关闭）：
+  //  >0 的老值当作 min=max 保留；0 或没有字段则落到**新的默认区间**。
+  group('流水线间隔的存档迁移', () {
+    test('老值 >0 → min=max=老值', () {
+      final data = QueueExecutionStateData.fromJson(const {
+        'taskIntervalSeconds': 7.0,
+      });
+      expect(data.taskIntervalMinSeconds, 7.0);
+      expect(data.taskIntervalMaxSeconds, 7.0);
+    });
+
+    test('老值 0 → 新的默认区间', () {
+      final data = QueueExecutionStateData.fromJson(const {
+        'taskIntervalSeconds': 0.0,
+      });
+      expect(data.taskIntervalMinSeconds, kDefaultQueueTaskIntervalMinSeconds);
+      expect(data.taskIntervalMaxSeconds, kDefaultQueueTaskIntervalMaxSeconds);
+    });
+
+    test('完全没有字段 → 新的默认区间', () {
+      final data = QueueExecutionStateData.fromJson(const {});
+      expect(data.taskIntervalMinSeconds, kDefaultQueueTaskIntervalMinSeconds);
+      expect(data.taskIntervalMaxSeconds, kDefaultQueueTaskIntervalMaxSeconds);
+    });
+
+    test('已写新字段 → 原样保留（忽略老字段）', () {
+      final data = QueueExecutionStateData.fromJson(const {
+        'taskIntervalSeconds': 7.0,
+        'taskIntervalMinSeconds': 0.0,
+        'taskIntervalMaxSeconds': 0.0,
+      });
+      expect(data.taskIntervalMinSeconds, 0.0);
+      expect(data.taskIntervalMaxSeconds, 0.0);
+    });
   });
 }

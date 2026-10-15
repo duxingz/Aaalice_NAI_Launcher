@@ -5,6 +5,7 @@ import 'package:hive_flutter/hive_flutter.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../constants/storage_keys.dart';
+import '../utils/pipeline_interval.dart';
 import '../../data/models/queue/replication_task.dart';
 import '../../data/models/queue/failure_handling_strategy.dart';
 import 'base_hive_storage.dart';
@@ -17,7 +18,8 @@ class QueueExecutionStateData {
   final int failedCount;
   final int skippedCount;
   final bool autoExecuteEnabled;
-  final double taskIntervalSeconds;
+  final double taskIntervalMinSeconds;
+  final double taskIntervalMaxSeconds;
   final FailureHandlingStrategy failureStrategy;
   final bool isPaused;
   final String? currentTaskId;
@@ -28,7 +30,8 @@ class QueueExecutionStateData {
     this.failedCount = 0,
     this.skippedCount = 0,
     this.autoExecuteEnabled = false,
-    this.taskIntervalSeconds = 0.0,
+    this.taskIntervalMinSeconds = kDefaultQueueTaskIntervalMinSeconds,
+    this.taskIntervalMaxSeconds = kDefaultQueueTaskIntervalMaxSeconds,
     this.failureStrategy = FailureHandlingStrategy.skip,
     this.isPaused = false,
     this.currentTaskId,
@@ -40,7 +43,8 @@ class QueueExecutionStateData {
     'failedCount': failedCount,
     'skippedCount': skippedCount,
     'autoExecuteEnabled': autoExecuteEnabled,
-    'taskIntervalSeconds': taskIntervalSeconds,
+    'taskIntervalMinSeconds': taskIntervalMinSeconds,
+    'taskIntervalMaxSeconds': taskIntervalMaxSeconds,
     'failureStrategy': failureStrategy.index,
     'isPaused': isPaused,
     'currentTaskId': currentTaskId,
@@ -53,8 +57,8 @@ class QueueExecutionStateData {
       failedCount: json['failedCount'] as int? ?? 0,
       skippedCount: json['skippedCount'] as int? ?? 0,
       autoExecuteEnabled: json['autoExecuteEnabled'] as bool? ?? false,
-      taskIntervalSeconds:
-          (json['taskIntervalSeconds'] as num?)?.toDouble() ?? 0.0,
+      taskIntervalMinSeconds: _migratedMin(json),
+      taskIntervalMaxSeconds: _migratedMax(json),
       failureStrategy:
           FailureHandlingStrategy.values[json['failureStrategy'] as int? ?? 1],
       isPaused: json['isPaused'] as bool? ?? false,
@@ -64,12 +68,34 @@ class QueueExecutionStateData {
     );
   }
 
+  /// 旧存档只有单个 `taskIntervalSeconds`（默认 0＝当时等于关闭）。
+  ///
+  /// 迁移规则：写了新字段就用新的；只有旧字段且 >0 时，把它当成 min=max；
+  /// 其余（老字段为 0 或没有字段）落到**新的默认区间**。
+  static double _legacyTaskInterval(Map<String, dynamic> json) =>
+      (json['taskIntervalSeconds'] as num?)?.toDouble() ?? 0;
+
+  static double _migratedMin(Map<String, dynamic> json) {
+    final min = (json['taskIntervalMinSeconds'] as num?)?.toDouble();
+    if (min != null) return min;
+    final legacy = _legacyTaskInterval(json);
+    return legacy > 0 ? legacy : kDefaultQueueTaskIntervalMinSeconds;
+  }
+
+  static double _migratedMax(Map<String, dynamic> json) {
+    final max = (json['taskIntervalMaxSeconds'] as num?)?.toDouble();
+    if (max != null) return max;
+    final legacy = _legacyTaskInterval(json);
+    return legacy > 0 ? legacy : kDefaultQueueTaskIntervalMaxSeconds;
+  }
+
   QueueExecutionStateData copyWith({
     int? completedCount,
     int? failedCount,
     int? skippedCount,
     bool? autoExecuteEnabled,
-    double? taskIntervalSeconds,
+    double? taskIntervalMinSeconds,
+    double? taskIntervalMaxSeconds,
     FailureHandlingStrategy? failureStrategy,
     bool? isPaused,
     String? currentTaskId,
@@ -80,7 +106,10 @@ class QueueExecutionStateData {
       failedCount: failedCount ?? this.failedCount,
       skippedCount: skippedCount ?? this.skippedCount,
       autoExecuteEnabled: autoExecuteEnabled ?? this.autoExecuteEnabled,
-      taskIntervalSeconds: taskIntervalSeconds ?? this.taskIntervalSeconds,
+      taskIntervalMinSeconds:
+          taskIntervalMinSeconds ?? this.taskIntervalMinSeconds,
+      taskIntervalMaxSeconds:
+          taskIntervalMaxSeconds ?? this.taskIntervalMaxSeconds,
       failureStrategy: failureStrategy ?? this.failureStrategy,
       isPaused: isPaused ?? this.isPaused,
       currentTaskId: currentTaskId ?? this.currentTaskId,
