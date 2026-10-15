@@ -44,6 +44,13 @@ enum QueueExecutionStatus {
 
 enum QueueStartResult { started, empty, busy, authRequired }
 
+/// 队列重试的默认值。
+///
+/// 原来 10 次 × 1 秒：对 429（并发/频率限制）连打 10 次短间隔对账号不友好，
+/// 改成 5 次 × 5 秒（429 再叠加指数退避）。
+const int kDefaultQueueRetryCount = 5;
+const double kDefaultQueueRetryIntervalSeconds = 5.0;
+
 
 /// 队列执行状态
 class QueueExecutionState {
@@ -276,15 +283,15 @@ class QueueExecutionNotifier extends _$QueueExecutionNotifier {
     final retryCount =
         storage.getSetting<int>(
           StorageKeys.queueRetryCount,
-          defaultValue: 10,
+          defaultValue: kDefaultQueueRetryCount,
         ) ??
-        10;
+        kDefaultQueueRetryCount;
     final retryInterval =
         storage.getSetting<double>(
           StorageKeys.queueRetryInterval,
-          defaultValue: 1.0,
+          defaultValue: kDefaultQueueRetryIntervalSeconds,
         ) ??
-        1.0;
+        kDefaultQueueRetryIntervalSeconds;
     return QueueSettings(
       retryCount: retryCount,
       retryIntervalSeconds: retryInterval,
@@ -772,8 +779,9 @@ class QueueExecutionNotifier extends _$QueueExecutionNotifier {
       // 重试
       state = state.copyWith(retryCount: state.retryCount + 1);
 
-      // 等待重试间隔
-      await Future.delayed(settings.retryInterval);
+      // 等重试间隔：普通错误用设置里的固定值；429（并发/频率限制）改用指数
+      // 退避 —— 对 429 连打固定短间隔对账号不友好。
+      await Future.delayed(_retryDelay(settings));
 
       // 检查是否仍在运行或暂停
       if (state.status != QueueExecutionStatus.running) return;
@@ -787,6 +795,28 @@ class QueueExecutionNotifier extends _$QueueExecutionNotifier {
       await _handleFailedTask();
     }
   }
+
+  /// 上限：429 退避最多等这么久。
+  static const Duration _maxRetryBackoff = Duration(seconds: 60);
+
+  /// 本次重试要等多久。
+  ///
+  /// - 普通错误：设置里的固定间隔。
+  /// - 429（`API_ERROR_429`）：指数退避 `间隔 × 2^(第几次-1)`，封顶
+  ///   [_maxRetryBackoff]。判据与 `ImageGenerationCoordinator` 里的一致。
+  Duration _retryDelay(QueueSettings settings) {
+    final base = settings.retryInterval;
+    final message = ref.read(imageGenerationNotifierProvider).errorMessage;
+    if (message == null || !_looksRateLimited(message)) return base;
+    final attempt = state.retryCount < 1
+        ? 1
+        : (state.retryCount > 5 ? 5 : state.retryCount);
+    final scaled = base * (1 << (attempt - 1));
+    return scaled > _maxRetryBackoff ? _maxRetryBackoff : scaled;
+  }
+
+  static bool _looksRateLimited(String text) =>
+      text.contains('API_ERROR_429') || text.contains(' 429');
 
   /// 处理失败任务
   Future<void> _handleFailedTask({
@@ -973,15 +1003,15 @@ QueueSettings queueSettings(Ref ref) {
     retryCount:
         storage.getSetting<int>(
           StorageKeys.queueRetryCount,
-          defaultValue: 10,
+          defaultValue: kDefaultQueueRetryCount,
         ) ??
-        10,
+        kDefaultQueueRetryCount,
     retryIntervalSeconds:
         storage.getSetting<double>(
           StorageKeys.queueRetryInterval,
-          defaultValue: 1.0,
+          defaultValue: kDefaultQueueRetryIntervalSeconds,
         ) ??
-        1.0,
+        kDefaultQueueRetryIntervalSeconds,
     autoExecuteEnabled: executionState.autoExecuteEnabled,
     failureStrategy: executionState.failureStrategy,
   );

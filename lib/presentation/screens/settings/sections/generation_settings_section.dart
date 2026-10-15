@@ -169,15 +169,15 @@ class _GenerationSettingsSectionState
     final retryCount =
         storage.getSetting<int>(
           StorageKeys.queueRetryCount,
-          defaultValue: 10,
+          defaultValue: kDefaultQueueRetryCount,
         ) ??
-        10;
+        kDefaultQueueRetryCount;
     final retryInterval =
         storage.getSetting<double>(
           StorageKeys.queueRetryInterval,
-          defaultValue: 1.0,
+          defaultValue: kDefaultQueueRetryIntervalSeconds,
         ) ??
-        1.0;
+        kDefaultQueueRetryIntervalSeconds;
 
     if (_retryCountController.text != '$retryCount') {
       _retryCountController.text = '$retryCount';

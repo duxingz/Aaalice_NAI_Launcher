@@ -75,7 +75,9 @@ Map<String, dynamic> generationPreparationProperties({
     'type': 'array',
     'description':
         'Complete ordered character snapshot for this call. Omit to inherit '
-        'the current character editor state. Characters without positions use '
+        'the current character editor state (see inherit_characters). The '
+        'response always reports characters_inherited so you can tell which '
+        'happened. Characters without positions use '
         'NovelAI AI placement. Only when the user explicitly requests manual '
         'placement may you provide a complete x/y pair or legacy A1-E5 '
         'position for every character; never estimate coordinates proactively. '
@@ -115,6 +117,16 @@ Map<String, dynamic> generationPreparationProperties({
       'required': ['prompt'],
     },
     'maxItems': ModelCapabilityRegistry.maximumCharacterCount,
+  },
+  'inherit_characters': {
+    'type': 'boolean',
+    'description':
+        "Only matters when `characters` is omitted. Omitted or true keeps "
+        "today's behaviour: the launcher character editor state is inherited, "
+        "and the response reports how many were taken as "
+        "`characters_inherited`. Pass false to prepare with no characters at "
+        "all — do that for queue batches unless you really want the editor "
+        "characters on every task.",
   },
   'strength': {'type': 'number'},
   'noise': {'type': 'number'},
