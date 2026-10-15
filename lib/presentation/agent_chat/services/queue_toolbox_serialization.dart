@@ -46,6 +46,18 @@ Map<String, dynamic> replicationTaskJson(
   ],
 };
 
+/// `brief` 模式的精简摘要。
+///
+/// 50 条任务的完整摘要会到 30KB 级、被外部客户端落盘，而调用方往往只要
+/// task_id / status / 错误；要提交或删除时这几项就够了。
+Map<String, dynamic> replicationTaskBriefJson(ReplicationTask task) => {
+  'task_id': task.id,
+  'status': task.status.name,
+  'created_at': task.createdAt.toIso8601String(),
+  'seed': task.seed,
+  'error': task.errorMessage,
+};
+
 Map<String, dynamic> _generationSnapshotSummary(Map<String, dynamic> snapshot) {
   try {
     final params = ReplicationTaskGenerationSnapshot.decode(snapshot);

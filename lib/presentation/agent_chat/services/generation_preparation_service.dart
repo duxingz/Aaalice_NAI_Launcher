@@ -336,6 +336,8 @@ class GenerationPreparationService {
       }
     }
     final hasExplicitCharacters = args.containsKey('characters');
+    // 只能按值判断：MCP 客户端会把 schema 默认值实例化进 arguments。
+    final inheritCharacters = args['inherit_characters'] != false;
     if (!hasExplicitCharacters) {
       // MCP 客户端会把 schema 默认值实例化进 arguments，key 是否存在不代表调用方
       // 意图，只能按值判断：继承的编辑器状态无坐标可用，custom 会被静默丢弃。
@@ -358,6 +360,8 @@ class GenerationPreparationService {
 
     late final List<CharacterPrompt> characters;
     late final bool useCoords;
+    /// 从编辑器（或快照覆盖）继承来的角色数；显式传入或明确不继承时为 0。
+    var charactersInherited = 0;
     if (hasExplicitCharacters) {
       try {
         final snapshot = GenerationCharacterOrchestrator.normalizeExplicit(
@@ -370,6 +374,10 @@ class GenerationPreparationService {
       } on GenerationCharacterValidationException catch (error) {
         return agentToolError(error.code, error.message);
       }
+    } else if (!inheritCharacters) {
+      // 显式声明「不继承」：框里就算有两个角色块也不带进来。
+      characters = const <CharacterPrompt>[];
+      useCoords = false;
     } else {
       final override = characterSnapshotOverride;
       if (override != null) {
@@ -385,6 +393,7 @@ class GenerationPreparationService {
         characters = conversion.characters;
         useCoords = conversion.useCoords;
       }
+      charactersInherited = characters.length;
       final limit = ModelCapabilityRegistry.of(base.model).maxCharacters;
       if (characters.isNotEmpty && limit == 0) {
         return agentToolError(
@@ -449,6 +458,7 @@ class GenerationPreparationService {
         count: count,
         autoStart: args['auto_start'] as bool? ?? true,
         estimatedAnlas: estimate,
+        charactersInherited: charactersInherited,
         arguments: canonicalArgs,
         savePath: savePathResult.valueOrNull?.path,
         savePathSource: savePathResult.valueOrNull?.source,

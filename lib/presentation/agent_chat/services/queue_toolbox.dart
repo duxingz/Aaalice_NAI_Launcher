@@ -71,41 +71,69 @@ class QueueToolbox {
     _retryAllFailed(),
     _clearFailed(),
     _clearCompleted(),
+    _clearQueue(),
   ];
 
   DefinedAgentTool _inspectQueue() => DefinedAgentTool(
     name: 'inspect_generation_queue',
     label: 'Inspect Generation Queue',
     description:
-        'Inspect queue execution state and safe summaries of pending, failed, and completed tasks.',
+        'Inspect queue execution state and safe summaries of pending, failed, and completed tasks. '
+        'Pass brief=true to get only task_id/status/seed/error per task '
+        '(a 50-task queue is otherwise tens of KB).',
     parameters: toolboxObject(
       properties: {
         'include_completed': {'type': 'boolean'},
         'limit': {'type': 'integer', 'minimum': 1, 'maximum': 100},
+        'brief': {
+          'type': 'boolean',
+          'description':
+              'Return only task_id, status, created_at, seed and error per '
+              'task. Use this whenever you only need IDs to act on.',
+        },
       },
     ),
     executeFn: (_, params) async {
       final queue = _ref.read(replicationQueueNotifierProvider);
       final execution = _ref.read(queueExecutionNotifierProvider);
       final limit = (params['limit'] as int? ?? 50).clamp(1, 100);
+      final brief = params['brief'] == true;
+      Map<String, dynamic> taskJson(ReplicationTask task) =>
+          brief ? replicationTaskBriefJson(task) : replicationTaskJson(task);
       return agentToolJsonResult({
         'ok': true,
         'execution': queueExecutionJson(execution),
         'capacity': kMaxQueueCapacity,
         'remaining_capacity': queue.remainingCapacity,
-        'pending': [
-          for (final task in queue.tasks.take(limit)) replicationTaskJson(task),
-        ],
+        'pending': [for (final task in queue.tasks.take(limit)) taskJson(task)],
         'failed': [
-          for (final task in queue.failedTasks.take(limit))
-            replicationTaskJson(task),
+          for (final task in queue.failedTasks.take(limit)) taskJson(task),
         ],
         if (params['include_completed'] == true)
           'completed': [
             for (final task in queue.completedTasks.reversed.take(limit))
-              replicationTaskJson(task),
+              taskJson(task),
           ],
       });
+    },
+  );
+
+  /// 清空待办（UI 上「清空队列」按钮的 agent 版本）。
+  ///
+  /// 没有这个工具时，外部客户端只能逐条 `delete_generation_queue_task` ——
+  /// 50 条就是 50 次调用（还撞上并发上限）。
+  DefinedAgentTool _clearQueue() => DefinedAgentTool(
+    name: 'clear_generation_queue_tasks',
+    label: 'Clear Generation Queue',
+    description:
+        'Stop queue execution and permanently remove every pending task. '
+        'Failed and completed records are kept; clear them with their own '
+        'tools. This cannot be undone.',
+    parameters: toolboxObject(),
+    executeFn: (_, __) async {
+      final pending = _ref.read(replicationQueueNotifierProvider).tasks.length;
+      await _ref.read(queueExecutionNotifierProvider.notifier).clearQueue();
+      return agentToolJsonResult({'ok': true, 'cleared': pending});
     },
   );
 
@@ -231,6 +259,11 @@ class QueueToolbox {
         'action': kind.name,
         'task_count': tasks.length,
         'estimated_anlas': estimate,
+        // 与 prepare_generation 一致：0 是真实估算，不是"算不出"。
+        if (estimate == 0)
+          'anlas_note':
+              'computed_zero (subscription may cover this model; an '
+              'uncomputable estimate is reported as invalid_cost instead)',
         'confirmation_required': true,
       });
     },

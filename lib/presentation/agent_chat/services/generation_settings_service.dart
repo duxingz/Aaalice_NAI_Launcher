@@ -3,6 +3,7 @@ import '../../../core/agent/agent_types.dart';
 import '../../../core/constants/api_constants.dart';
 import '../../../core/enums/generation_effort.dart';
 import '../../../core/enums/image_model_mode.dart';
+import '../../../core/storage/local_storage_service.dart';
 import '../../../data/models/image/image_params.dart';
 import '../../providers/image_generation_provider.dart';
 import 'defined_agent_tool.dart';
@@ -25,6 +26,8 @@ class GenerationSettingsService {
   Map<String, dynamic> settingsJson() {
     final params = _ref.read(generationParamsNotifierProvider);
     return {
+      // 跑批前最需要确认的一项：关掉自动保存时队列出的图不会落盘。
+      'auto_save': _ref.read(localStorageServiceProvider).getAutoSaveImages(),
       'model': params.model,
       'effort': ImageModels.effortOf(params.model)?.name,
       'model_mode': params.modelMode.name,
@@ -181,6 +184,13 @@ class GenerationSettingsService {
     applyBool('transparent_background', notifier.updateTransparentBackground);
     applyBool('smea', notifier.updateSmea);
     applyBool('smea_dyn', notifier.updateSmeaDyn);
+
+    // 自动保存不改 params，写在设置存储里；必须 await，否则回读到的还是旧值。
+    final autoSave = args['auto_save'];
+    if (autoSave is bool) {
+      await _ref.read(localStorageServiceProvider).setAutoSaveImages(autoSave);
+      applied['auto_save'] = autoSave;
+    }
 
     if (applied.isEmpty) {
       return agentToolError(
