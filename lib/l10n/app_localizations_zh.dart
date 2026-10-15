@@ -7963,6 +7963,9 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
+  String get settings_queueAutoLoopRounds => '整批循环轮数';
+
+  @override
   String settings_queueRetryIntervalValue(Object seconds) {
     return '$seconds 秒';
   }
@@ -23466,6 +23469,9 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
   String settings_queuePipelineIntervalValue(Object seconds) {
     return '$seconds 秒';
   }
+
+  @override
+  String get settings_queueAutoLoopRounds => '整批循環輪數';
 
   @override
   String settings_queueRetryIntervalValue(Object seconds) {

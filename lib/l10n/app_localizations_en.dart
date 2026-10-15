@@ -8291,6 +8291,9 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get settings_queueAutoLoopRounds => 'Batch loop rounds';
+
+  @override
   String settings_queueRetryIntervalValue(Object seconds) {
     return '$seconds seconds';
   }

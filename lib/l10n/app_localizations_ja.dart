@@ -8093,6 +8093,9 @@ class AppLocalizationsJa extends AppLocalizations {
   }
 
   @override
+  String get settings_queueAutoLoopRounds => 'バッチの繰り返し回数';
+
+  @override
   String settings_queueRetryIntervalValue(Object seconds) {
     return '$seconds 秒';
   }

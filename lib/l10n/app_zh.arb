@@ -3901,6 +3901,7 @@
   "settings_queuePipelineIntervalMin": "最小秒数",
   "settings_queuePipelineIntervalMax": "最大秒数",
   "settings_queuePipelineIntervalValue": "{seconds} 秒",
+  "settings_queueAutoLoopRounds": "整批循环轮数",
   "@settings_queuePipelineIntervalValue": {
     "placeholders": {
       "seconds": {}

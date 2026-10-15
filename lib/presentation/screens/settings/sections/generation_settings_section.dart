@@ -10,6 +10,7 @@ import '../../../../core/storage/local_storage_service.dart';
 import '../../../../core/utils/app_logger.dart';
 import '../../../../core/utils/localization_extension.dart';
 import '../../../../core/utils/pipeline_interval.dart';
+import '../../../../core/utils/queue_auto_loop.dart';
 import '../../../providers/generation/generation_params_notifier.dart';
 import '../../../providers/generation/generation_settings_notifiers.dart';
 import '../../../providers/notification_settings_provider.dart';
@@ -75,6 +76,7 @@ class _GenerationSettingsSectionState
   late final TextEditingController _retryIntervalController;
   late final TextEditingController _pipelineMinController;
   late final TextEditingController _pipelineMaxController;
+  late final TextEditingController _autoLoopRoundsController;
 
   @override
   void initState() {
@@ -83,6 +85,7 @@ class _GenerationSettingsSectionState
     _retryIntervalController = TextEditingController();
     _pipelineMinController = TextEditingController();
     _pipelineMaxController = TextEditingController();
+    _autoLoopRoundsController = TextEditingController();
   }
 
   @override
@@ -91,7 +94,15 @@ class _GenerationSettingsSectionState
     _retryIntervalController.dispose();
     _pipelineMinController.dispose();
     _pipelineMaxController.dispose();
+    _autoLoopRoundsController.dispose();
     super.dispose();
+  }
+
+  /// 写整批循环轮数（1 = 只跑一遍）。
+  void _updateAutoLoopRounds(int rounds) async {
+    await ref
+        .read(queueExecutionNotifierProvider.notifier)
+        .setAutoLoopRounds(rounds);
   }
 
   /// 写流水线间隔。非法区间（min > max）由 notifier 自己交换，写完状态回读。
@@ -194,6 +205,10 @@ class _GenerationSettingsSectionState
     }
     if (_pipelineMaxController.text != '${pipelineMax.round()}') {
       _pipelineMaxController.text = '${pipelineMax.round()}';
+    }
+    final autoLoopRounds = queueExecution.autoLoopRounds;
+    if (_autoLoopRoundsController.text != '$autoLoopRounds') {
+      _autoLoopRoundsController.text = '$autoLoopRounds';
     }
 
     return SettingsPageLayout(
@@ -458,6 +473,34 @@ class _GenerationSettingsSectionState
                   _updatePipelineInterval(min: pipelineMin, max: parsed);
                 } else {
                   _pipelineMaxController.text = '${pipelineMax.round()}';
+                }
+              },
+            ),
+            _RetrySlider(
+              label: l10n.settings_queueAutoLoopRounds,
+              valueText: (value) =>
+                  l10n.settings_queueRetryCountMax('${value.round()}'),
+              value: autoLoopRounds.toDouble(),
+              min: 1,
+              max: kMaxQueueAutoLoopRounds.toDouble(),
+              divisions: kMaxQueueAutoLoopRounds - 1,
+              unit: l10n.unit_times,
+              inputText: (value) => '${value.round()}',
+              controller: _autoLoopRoundsController,
+              onDecrease: autoLoopRounds > 1
+                  ? () => _updateAutoLoopRounds(autoLoopRounds - 1)
+                  : null,
+              onIncrease: autoLoopRounds < kMaxQueueAutoLoopRounds
+                  ? () => _updateAutoLoopRounds(autoLoopRounds + 1)
+                  : null,
+              onSliderChanged: (value) =>
+                  _updateAutoLoopRounds(value.round()),
+              onSubmitted: (value) {
+                final parsed = int.tryParse(value);
+                if (parsed != null) {
+                  _updateAutoLoopRounds(parsed);
+                } else {
+                  _autoLoopRoundsController.text = '$autoLoopRounds';
                 }
               },
             ),

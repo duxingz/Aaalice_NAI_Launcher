@@ -3808,6 +3808,7 @@
   "settings_queuePipelineIntervalMin": "最小秒数",
   "settings_queuePipelineIntervalMax": "最大秒数",
   "settings_queuePipelineIntervalValue": "{seconds} 秒",
+  "settings_queueAutoLoopRounds": "バッチの繰り返し回数",
   "@settings_queuePipelineIntervalValue": {
     "placeholders": {
       "seconds": {}
