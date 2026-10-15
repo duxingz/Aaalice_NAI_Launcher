@@ -25,6 +25,9 @@ class QueueExecutionStateData {
   final String? currentTaskId;
   final List<String> failedTaskIds;
 
+  /// 整批循环的总轮数（1 = 只跑一遍）。
+  final int autoLoopRounds;
+
   const QueueExecutionStateData({
     this.completedCount = 0,
     this.failedCount = 0,
@@ -36,6 +39,7 @@ class QueueExecutionStateData {
     this.isPaused = false,
     this.currentTaskId,
     this.failedTaskIds = const [],
+    this.autoLoopRounds = 1,
   });
 
   Map<String, dynamic> toJson() => {
@@ -49,6 +53,7 @@ class QueueExecutionStateData {
     'isPaused': isPaused,
     'currentTaskId': currentTaskId,
     'failedTaskIds': failedTaskIds,
+    'autoLoopRounds': autoLoopRounds,
   };
 
   factory QueueExecutionStateData.fromJson(Map<String, dynamic> json) {
@@ -65,6 +70,7 @@ class QueueExecutionStateData {
       currentTaskId: json['currentTaskId'] as String?,
       failedTaskIds:
           (json['failedTaskIds'] as List<dynamic>?)?.cast<String>() ?? [],
+      autoLoopRounds: (json['autoLoopRounds'] as num?)?.toInt() ?? 1,
     );
   }
 
@@ -100,6 +106,7 @@ class QueueExecutionStateData {
     bool? isPaused,
     String? currentTaskId,
     List<String>? failedTaskIds,
+    int? autoLoopRounds,
   }) {
     return QueueExecutionStateData(
       completedCount: completedCount ?? this.completedCount,
@@ -114,6 +121,7 @@ class QueueExecutionStateData {
       isPaused: isPaused ?? this.isPaused,
       currentTaskId: currentTaskId ?? this.currentTaskId,
       failedTaskIds: failedTaskIds ?? this.failedTaskIds,
+      autoLoopRounds: autoLoopRounds ?? this.autoLoopRounds,
     );
   }
 }

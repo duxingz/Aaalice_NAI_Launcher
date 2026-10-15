@@ -14653,6 +14653,12 @@ abstract class AppLocalizations {
   /// **'{seconds} seconds'**
   String settings_queuePipelineIntervalValue(Object seconds);
 
+  /// No description provided for @settings_queueAutoLoopRounds.
+  ///
+  /// In en, this message translates to:
+  /// **'Batch loop rounds'**
+  String get settings_queueAutoLoopRounds;
+
   /// No description provided for @settings_queueRetryIntervalValue.
   ///
   /// In en, this message translates to:

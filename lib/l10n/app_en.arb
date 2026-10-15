@@ -3874,6 +3874,7 @@
   "settings_queuePipelineIntervalMin": "Minimum seconds",
   "settings_queuePipelineIntervalMax": "Maximum seconds",
   "settings_queuePipelineIntervalValue": "{seconds} seconds",
+  "settings_queueAutoLoopRounds": "Batch loop rounds",
   "@settings_queuePipelineIntervalValue": {
     "placeholders": {
       "seconds": {}

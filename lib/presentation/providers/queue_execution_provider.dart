@@ -3,6 +3,7 @@ import 'dart:math';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:uuid/uuid.dart';
 
 import '../../core/constants/storage_keys.dart';
 import '../../core/platform/platform_capabilities.dart';
@@ -10,6 +11,7 @@ import '../../core/storage/local_storage_service.dart';
 import '../../core/storage/queue_state_storage.dart';
 import '../../core/utils/app_logger.dart';
 import '../../core/utils/pipeline_interval.dart';
+import '../../core/utils/queue_auto_loop.dart';
 import '../../data/models/queue/replication_task.dart';
 import '../../data/models/queue/replication_task_generation_snapshot.dart';
 import '../../data/models/queue/replication_task_status.dart';
@@ -69,6 +71,9 @@ class QueueExecutionState {
   final int totalTasksInSession;
   final DateTime? sessionStartTime;
 
+  /// 整批循环的总轮数：1 = 只跑一遍（默认），0 = 关闭，>1 = 跑完再灌下一轮。
+  final int autoLoopRounds;
+
   const QueueExecutionState({
     this.status = QueueExecutionStatus.idle,
     this.completedCount = 0,
@@ -84,6 +89,7 @@ class QueueExecutionState {
     this.failureStrategy = FailureHandlingStrategy.skip,
     this.totalTasksInSession = 0,
     this.sessionStartTime,
+    this.autoLoopRounds = 1,
   });
 
   QueueExecutionState copyWith({
@@ -103,6 +109,7 @@ class QueueExecutionState {
     FailureHandlingStrategy? failureStrategy,
     int? totalTasksInSession,
     DateTime? sessionStartTime,
+    int? autoLoopRounds,
   }) {
     return QueueExecutionState(
       status: status ?? this.status,
@@ -125,6 +132,7 @@ class QueueExecutionState {
       failureStrategy: failureStrategy ?? this.failureStrategy,
       totalTasksInSession: totalTasksInSession ?? this.totalTasksInSession,
       sessionStartTime: sessionStartTime ?? this.sessionStartTime,
+      autoLoopRounds: autoLoopRounds ?? this.autoLoopRounds,
     );
   }
 
@@ -205,6 +213,15 @@ class QueueExecutionNotifier extends _$QueueExecutionNotifier {
   /// 流水线间隔在区间内随机取样用的随机源。
   final Random _intervalRandom = Random();
 
+  /// 本轮要循环的整批任务快照（开始跑时抓一次）。
+  ///
+  /// 不持久化：重启后队列会恢复成暂停态，快照丢失即不再续轮 —— 比拿一个
+  /// 过期的快照去灌队列安全。
+  List<ReplicationTask>? _autoLoopBatch;
+
+  /// 已经跑完的轮数（0 = 第一轮还没跑完）。
+  int _autoLoopCompletedRounds = 0;
+
   @override
   QueueExecutionState build() {
     _stateStorage = ref.read(queueStateStorageProvider);
@@ -244,6 +261,7 @@ class QueueExecutionNotifier extends _$QueueExecutionNotifier {
         autoExecuteEnabled: data.autoExecuteEnabled,
         taskIntervalMinSeconds: data.taskIntervalMinSeconds,
         taskIntervalMaxSeconds: data.taskIntervalMaxSeconds,
+        autoLoopRounds: data.autoLoopRounds,
         failureStrategy: data.failureStrategy,
         totalTasksInSession:
             data.completedCount +
@@ -265,6 +283,7 @@ class QueueExecutionNotifier extends _$QueueExecutionNotifier {
       autoExecuteEnabled: state.autoExecuteEnabled,
       taskIntervalMinSeconds: state.taskIntervalMinSeconds,
       taskIntervalMaxSeconds: state.taskIntervalMaxSeconds,
+      autoLoopRounds: state.autoLoopRounds,
       failureStrategy: state.failureStrategy,
       isPaused: state.isPaused,
       currentTaskId: state.currentTaskId,
@@ -325,6 +344,24 @@ class QueueExecutionNotifier extends _$QueueExecutionNotifier {
       taskIntervalMinSeconds: min,
       taskIntervalMaxSeconds: max,
     );
+    await _saveToStorage();
+  }
+
+  /// 设置整批循环的总轮数（**仅队列生效**）。
+  ///
+  /// 1 = 只跑一遍（默认），0 等同于关闭；>1 时每跑完一批就换新 id 再灌一批，
+  /// 直到跑满轮数。中途 `stop` / `clearQueue` 会立刻终止循环（见 [stopExecution]）。
+  Future<void> setAutoLoopRounds(int rounds) async {
+    final value = rounds < 0
+        ? 0
+        : (rounds > kMaxQueueAutoLoopRounds
+              ? kMaxQueueAutoLoopRounds
+              : rounds);
+    if (value <= 1) {
+      _autoLoopBatch = null;
+      _autoLoopCompletedRounds = 0;
+    }
+    state = state.copyWith(autoLoopRounds: value);
     await _saveToStorage();
   }
 
@@ -593,6 +630,14 @@ class QueueExecutionNotifier extends _$QueueExecutionNotifier {
 
     state = state.copyWith(status: QueueExecutionStatus.running);
 
+    // 第一轮开跑时抓一次整批快照；后续每一轮都用它造副本。
+    if (state.autoLoopRounds > 1 && _autoLoopBatch == null) {
+      _autoLoopBatch = List<ReplicationTask>.of(
+        ref.read(replicationQueueNotifierProvider).tasks,
+      );
+      _autoLoopCompletedRounds = 0;
+    }
+
     // 实际开始执行时，更新当前任务状态为 running
     if (state.currentTaskId != null) {
       ref
@@ -608,6 +653,9 @@ class QueueExecutionNotifier extends _$QueueExecutionNotifier {
   Future<void> stopExecution() async {
     _executionRevision++;
     _generationTriggerPending = false;
+    // 停止即终止整批循环：清掉快照，正在进行的续轮也会被 revision 检查拦下。
+    _autoLoopBatch = null;
+    _autoLoopCompletedRounds = 0;
     final currentTaskId = state.currentTaskId;
     state = state.copyWith(
       status: QueueExecutionStatus.idle,
@@ -907,15 +955,8 @@ class QueueExecutionNotifier extends _$QueueExecutionNotifier {
     final queueState = ref.read(replicationQueueNotifierProvider);
 
     if (queueState.isEmpty) {
-      // 队列清空，执行完成
-      state = state.copyWith(
-        status: QueueExecutionStatus.completed,
-        clearCurrentTaskId: true,
-      );
-      _saveToStorage();
-
-      // 触发队列完成通知
-      _triggerGenerationNotification();
+      // 队列空了：可能还要续下一轮（整批循环），交给异步方法决定。
+      unawaited(_completeOrStartNextRound());
       return;
     }
 
@@ -935,6 +976,44 @@ class QueueExecutionNotifier extends _$QueueExecutionNotifier {
     // 注意：这里不更新任务状态，任务保持 pending 状态；生成状态切换后
     // startExecution() 会将当前任务标记为 running。
     _triggerAutoGenerate();
+  }
+
+  /// 队列跑空时：还有剩余轮数就换新 id 再灌一批，否则按完成收尾。
+  ///
+  /// 续轮期间被 `stop` / `clearQueue` 打断（revision 变化）就**不再推进** ——
+  /// 否则旧回调会把用户刚清掉的队列复活。
+  Future<void> _completeOrStartNextRound() async {
+    final revision = _executionRevision;
+    final batch = _autoLoopBatch;
+    if (shouldStartNextRound(
+      totalRounds: state.autoLoopRounds,
+      completedRounds: _autoLoopCompletedRounds,
+      batchLength: batch?.length ?? 0,
+    )) {
+      final notifier = ref.read(replicationQueueNotifierProvider.notifier);
+      for (final task in batch!) {
+        // 每加一条都查一次：用户在续轮中途点「停止/清空」时，不能把任务
+        // 又加回刚被清掉的队列里（加完再查会漏掉这条路径）。
+        if (revision != _executionRevision) return;
+        await notifier.add(cloneTaskForNewRound(task, id: const Uuid().v4()));
+      }
+      if (revision != _executionRevision) return;
+      _autoLoopCompletedRounds++;
+      await _saveToStorage();
+      _processNextTask();
+      return;
+    }
+
+    _autoLoopBatch = null;
+    _autoLoopCompletedRounds = 0;
+    state = state.copyWith(
+      status: QueueExecutionStatus.completed,
+      clearCurrentTaskId: true,
+    );
+    await _saveToStorage();
+
+    // 触发队列完成通知
+    _triggerGenerationNotification();
   }
 
   /// 手动重试指定的失败任务
