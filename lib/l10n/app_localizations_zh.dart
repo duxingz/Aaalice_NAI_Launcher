@@ -7945,6 +7945,24 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
+  String get settings_queuePipelineInterval => '流水线间隔（仅队列生效）';
+
+  @override
+  String get settings_queuePipelineIntervalDescription =>
+      '队列里每张图之间至少隔这么久，在该区间内随机取值。出图本身的时间算在里面；两个都填 0 表示不等。';
+
+  @override
+  String get settings_queuePipelineIntervalMin => '最小秒数';
+
+  @override
+  String get settings_queuePipelineIntervalMax => '最大秒数';
+
+  @override
+  String settings_queuePipelineIntervalValue(Object seconds) {
+    return '$seconds 秒';
+  }
+
+  @override
   String settings_queueRetryIntervalValue(Object seconds) {
     return '$seconds 秒';
   }
@@ -23429,6 +23447,24 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
   @override
   String settings_queueRetryCountMax(Object count) {
     return '最多 $count 次';
+  }
+
+  @override
+  String get settings_queuePipelineInterval => '流水線間隔（僅佇列生效）';
+
+  @override
+  String get settings_queuePipelineIntervalDescription =>
+      '佇列裡每張圖之間至少隔這麼久，在該區間內隨機取值。出圖本身的時間算在裡面；兩個都填 0 表示不等。';
+
+  @override
+  String get settings_queuePipelineIntervalMin => '最小秒數';
+
+  @override
+  String get settings_queuePipelineIntervalMax => '最大秒數';
+
+  @override
+  String settings_queuePipelineIntervalValue(Object seconds) {
+    return '$seconds 秒';
   }
 
   @override

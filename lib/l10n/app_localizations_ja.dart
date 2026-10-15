@@ -8075,6 +8075,24 @@ class AppLocalizationsJa extends AppLocalizations {
   }
 
   @override
+  String get settings_queuePipelineInterval => 'パイプライン間隔（キューのみ）';
+
+  @override
+  String get settings_queuePipelineIntervalDescription =>
+      'キュー内の画像どうしを少なくともこれだけ空けます（範囲内でランダムに決定）。生成にかかった時間も含まれます。両方 0 で無効。';
+
+  @override
+  String get settings_queuePipelineIntervalMin => '最小秒数';
+
+  @override
+  String get settings_queuePipelineIntervalMax => '最大秒数';
+
+  @override
+  String settings_queuePipelineIntervalValue(Object seconds) {
+    return '$seconds 秒';
+  }
+
+  @override
   String settings_queueRetryIntervalValue(Object seconds) {
     return '$seconds 秒';
   }

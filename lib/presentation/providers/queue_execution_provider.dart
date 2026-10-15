@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
@@ -8,6 +9,7 @@ import '../../core/platform/platform_capabilities.dart';
 import '../../core/storage/local_storage_service.dart';
 import '../../core/storage/queue_state_storage.dart';
 import '../../core/utils/app_logger.dart';
+import '../../core/utils/pipeline_interval.dart';
 import '../../data/models/queue/replication_task.dart';
 import '../../data/models/queue/replication_task_generation_snapshot.dart';
 import '../../data/models/queue/replication_task_status.dart';
@@ -42,6 +44,7 @@ enum QueueExecutionStatus {
 
 enum QueueStartResult { started, empty, busy, authRequired }
 
+
 /// 队列执行状态
 class QueueExecutionState {
   final QueueExecutionStatus status;
@@ -52,7 +55,9 @@ class QueueExecutionState {
   final int retryCount;
   final List<String> failedTaskIds;
   final bool autoExecuteEnabled;
-  final double taskIntervalSeconds;
+  final double taskIntervalMinSeconds;
+  final double taskIntervalMaxSeconds;
+  final DateTime? pipelineWaitUntil;
   final FailureHandlingStrategy failureStrategy;
   final int totalTasksInSession;
   final DateTime? sessionStartTime;
@@ -66,7 +71,9 @@ class QueueExecutionState {
     this.retryCount = 0,
     this.failedTaskIds = const [],
     this.autoExecuteEnabled = false,
-    this.taskIntervalSeconds = 0.0,
+    this.taskIntervalMinSeconds = kDefaultQueueTaskIntervalMinSeconds,
+    this.taskIntervalMaxSeconds = kDefaultQueueTaskIntervalMaxSeconds,
+    this.pipelineWaitUntil,
     this.failureStrategy = FailureHandlingStrategy.skip,
     this.totalTasksInSession = 0,
     this.sessionStartTime,
@@ -82,7 +89,10 @@ class QueueExecutionState {
     int? retryCount,
     List<String>? failedTaskIds,
     bool? autoExecuteEnabled,
-    double? taskIntervalSeconds,
+    double? taskIntervalMinSeconds,
+    double? taskIntervalMaxSeconds,
+    DateTime? pipelineWaitUntil,
+    bool clearPipelineWaitUntil = false,
     FailureHandlingStrategy? failureStrategy,
     int? totalTasksInSession,
     DateTime? sessionStartTime,
@@ -98,12 +108,21 @@ class QueueExecutionState {
       retryCount: retryCount ?? this.retryCount,
       failedTaskIds: failedTaskIds ?? this.failedTaskIds,
       autoExecuteEnabled: autoExecuteEnabled ?? this.autoExecuteEnabled,
-      taskIntervalSeconds: taskIntervalSeconds ?? this.taskIntervalSeconds,
+      taskIntervalMinSeconds:
+          taskIntervalMinSeconds ?? this.taskIntervalMinSeconds,
+      taskIntervalMaxSeconds:
+          taskIntervalMaxSeconds ?? this.taskIntervalMaxSeconds,
+      pipelineWaitUntil: clearPipelineWaitUntil
+          ? null
+          : (pipelineWaitUntil ?? this.pipelineWaitUntil),
       failureStrategy: failureStrategy ?? this.failureStrategy,
       totalTasksInSession: totalTasksInSession ?? this.totalTasksInSession,
       sessionStartTime: sessionStartTime ?? this.sessionStartTime,
     );
   }
+
+  /// 流水线间隔是否生效（上限为 0 即视作关闭）。
+  bool get hasTaskInterval => taskIntervalMaxSeconds > 0;
 
   bool get isRunning => status == QueueExecutionStatus.running;
   bool get isReady => status == QueueExecutionStatus.ready;
@@ -122,39 +141,36 @@ class QueueExecutionState {
 }
 
 /// 队列设置
+///
+/// 流水线间隔（`taskInterval*`）不在这里：它随执行状态走
+/// （见 [QueueExecutionState]）—— 原先这里有个 `taskIntervalSeconds` 字段
+/// 和一个 `taskInterval` getter，**没有任何调用点**，已删除以免改错地方。
 class QueueSettings {
   final int retryCount;
   final double retryIntervalSeconds;
   final bool autoExecuteEnabled;
-  final double taskIntervalSeconds;
   final FailureHandlingStrategy failureStrategy;
 
   const QueueSettings({
     this.retryCount = 10,
     this.retryIntervalSeconds = 1.0,
     this.autoExecuteEnabled = false,
-    this.taskIntervalSeconds = 0.0,
     this.failureStrategy = FailureHandlingStrategy.skip,
   });
 
   Duration get retryInterval =>
       Duration(milliseconds: (retryIntervalSeconds * 1000).toInt());
 
-  Duration get taskInterval =>
-      Duration(milliseconds: (taskIntervalSeconds * 1000).toInt());
-
   QueueSettings copyWith({
     int? retryCount,
     double? retryIntervalSeconds,
     bool? autoExecuteEnabled,
-    double? taskIntervalSeconds,
     FailureHandlingStrategy? failureStrategy,
   }) {
     return QueueSettings(
       retryCount: retryCount ?? this.retryCount,
       retryIntervalSeconds: retryIntervalSeconds ?? this.retryIntervalSeconds,
       autoExecuteEnabled: autoExecuteEnabled ?? this.autoExecuteEnabled,
-      taskIntervalSeconds: taskIntervalSeconds ?? this.taskIntervalSeconds,
       failureStrategy: failureStrategy ?? this.failureStrategy,
     );
   }
@@ -175,6 +191,12 @@ class QueueExecutionNotifier extends _$QueueExecutionNotifier {
   bool _generationTriggerPending = false;
   Future<void> _pendingStateWrite = Future.value();
   int _executionRevision = 0;
+
+  /// 上一张任务**开始出图**的时刻。流水线间隔按它计时（「至少」语义）。
+  DateTime? _lastTaskStartedAt;
+
+  /// 流水线间隔在区间内随机取样用的随机源。
+  final Random _intervalRandom = Random();
 
   @override
   QueueExecutionState build() {
@@ -213,7 +235,8 @@ class QueueExecutionNotifier extends _$QueueExecutionNotifier {
         currentTaskId: currentTaskStillExists ? data.currentTaskId : null,
         failedTaskIds: data.failedTaskIds,
         autoExecuteEnabled: data.autoExecuteEnabled,
-        taskIntervalSeconds: data.taskIntervalSeconds,
+        taskIntervalMinSeconds: data.taskIntervalMinSeconds,
+        taskIntervalMaxSeconds: data.taskIntervalMaxSeconds,
         failureStrategy: data.failureStrategy,
         totalTasksInSession:
             data.completedCount +
@@ -233,7 +256,8 @@ class QueueExecutionNotifier extends _$QueueExecutionNotifier {
       failedCount: state.failedCount,
       skippedCount: state.skippedCount,
       autoExecuteEnabled: state.autoExecuteEnabled,
-      taskIntervalSeconds: state.taskIntervalSeconds,
+      taskIntervalMinSeconds: state.taskIntervalMinSeconds,
+      taskIntervalMaxSeconds: state.taskIntervalMaxSeconds,
       failureStrategy: state.failureStrategy,
       isPaused: state.isPaused,
       currentTaskId: state.currentTaskId,
@@ -265,7 +289,6 @@ class QueueExecutionNotifier extends _$QueueExecutionNotifier {
       retryCount: retryCount,
       retryIntervalSeconds: retryInterval,
       autoExecuteEnabled: state.autoExecuteEnabled,
-      taskIntervalSeconds: state.taskIntervalSeconds,
       failureStrategy: state.failureStrategy,
     );
   }
@@ -276,9 +299,25 @@ class QueueExecutionNotifier extends _$QueueExecutionNotifier {
     await _saveToStorage();
   }
 
-  /// 设置任务间隔
-  Future<void> setTaskInterval(double seconds) async {
-    state = state.copyWith(taskIntervalSeconds: seconds.clamp(0.0, 10.0));
+  /// 设置流水线间隔区间（**仅队列生效**）。
+  ///
+  /// 两个值都钳到 `0~600`；`min > max` 时自动交换（界面填反了不该变成"永远按
+  /// max 等"）。上限为 0 表示关闭 —— 队列跑完一张就不额外等。
+  Future<void> setTaskIntervalRange({
+    required double minSeconds,
+    required double maxSeconds,
+  }) async {
+    var min = minSeconds.clamp(0.0, kMaxQueueTaskIntervalSeconds);
+    var max = maxSeconds.clamp(0.0, kMaxQueueTaskIntervalSeconds);
+    if (min > max) {
+      final swapped = min;
+      min = max;
+      max = swapped;
+    }
+    state = state.copyWith(
+      taskIntervalMinSeconds: min,
+      taskIntervalMaxSeconds: max,
+    );
     await _saveToStorage();
   }
 
@@ -494,6 +533,8 @@ class QueueExecutionNotifier extends _$QueueExecutionNotifier {
       // generate() 在首次异步让出前会把状态切到 generating；此后由生成状态
       // 本身阻止重复提交，不要让该锁跨越整次生成而吞掉下一任务的触发。
       _generationTriggerPending = false;
+      // 流水线间隔从「这一张开始出图」计时。
+      _lastTaskStartedAt = DateTime.now();
       await generationNotifier.generate(
         params,
         batchSizeOverride: batchSizeOverride,
@@ -686,15 +727,41 @@ class QueueExecutionNotifier extends _$QueueExecutionNotifier {
     // 运行中点击暂停表示“当前任务完成后暂停”。
     if (state.isPaused) return;
 
-    // 等待任务间隔
-    if (state.taskIntervalSeconds > 0) {
-      await Future.delayed(
-        Duration(milliseconds: (state.taskIntervalSeconds * 1000).toInt()),
-      );
-    }
+    // 流水线间隔（仅队列生效）：从上一张「开始出图」算起至少隔 d 秒，
+    // 出图本身的时间算在里面；等待中暂停/停止要在 1 秒内响应。
+    await _waitForPipelineInterval(revision);
     if (revision != _executionRevision) return;
 
     _processNextTask();
+  }
+
+  /// 等到流水线间隔满足；暂停或停止时立即返回（不再额外等待）。
+  ///
+  /// 只被队列调用 —— 手动生成路径读不到这两个字段。
+  Future<void> _waitForPipelineInterval(int revision) async {
+    final lastStartedAt = _lastTaskStartedAt;
+    if (lastStartedAt == null) return;
+    final interval = PipelineInterval.resolve(
+      minSeconds: state.taskIntervalMinSeconds,
+      maxSeconds: state.taskIntervalMaxSeconds,
+      randomFraction: _intervalRandom.nextDouble(),
+    );
+    if (interval == null) return;
+
+    state = state.copyWith(
+      pipelineWaitUntil: lastStartedAt.add(interval),
+    );
+    try {
+      await PipelineInterval.waitAtLeast(
+        lastStartedAt: lastStartedAt,
+        interval: interval,
+        shouldAbort: () => revision != _executionRevision || state.isPaused,
+      );
+    } finally {
+      if (revision == _executionRevision && state.pipelineWaitUntil != null) {
+        state = state.copyWith(clearPipelineWaitUntil: true);
+      }
+    }
   }
 
   /// 任务错误处理
@@ -916,7 +983,6 @@ QueueSettings queueSettings(Ref ref) {
         ) ??
         1.0,
     autoExecuteEnabled: executionState.autoExecuteEnabled,
-    taskIntervalSeconds: executionState.taskIntervalSeconds,
     failureStrategy: executionState.failureStrategy,
   );
 }

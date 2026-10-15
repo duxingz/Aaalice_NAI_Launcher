@@ -3869,6 +3869,16 @@
       "count": {}
     }
   },
+  "settings_queuePipelineInterval": "Pipeline interval (queue only)",
+  "settings_queuePipelineIntervalDescription": "Keeps at least this long between images in the queue, picked randomly inside the range. Generation time counts toward it; set both to 0 to disable.",
+  "settings_queuePipelineIntervalMin": "Minimum seconds",
+  "settings_queuePipelineIntervalMax": "Maximum seconds",
+  "settings_queuePipelineIntervalValue": "{seconds} seconds",
+  "@settings_queuePipelineIntervalValue": {
+    "placeholders": {
+      "seconds": {}
+    }
+  },
   "settings_queueRetryIntervalValue": "{seconds} seconds",
   "@settings_queueRetryIntervalValue": {
     "placeholders": {

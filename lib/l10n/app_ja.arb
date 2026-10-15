@@ -3803,6 +3803,16 @@
       "count": {}
     }
   },
+  "settings_queuePipelineInterval": "パイプライン間隔（キューのみ）",
+  "settings_queuePipelineIntervalDescription": "キュー内の画像どうしを少なくともこれだけ空けます（範囲内でランダムに決定）。生成にかかった時間も含まれます。両方 0 で無効。",
+  "settings_queuePipelineIntervalMin": "最小秒数",
+  "settings_queuePipelineIntervalMax": "最大秒数",
+  "settings_queuePipelineIntervalValue": "{seconds} 秒",
+  "@settings_queuePipelineIntervalValue": {
+    "placeholders": {
+      "seconds": {}
+    }
+  },
   "settings_queueRetryIntervalValue": "{seconds} 秒",
   "@settings_queueRetryIntervalValue": {
     "placeholders": {

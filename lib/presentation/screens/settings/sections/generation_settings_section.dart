@@ -9,9 +9,11 @@ import '../../../../core/constants/storage_keys.dart';
 import '../../../../core/storage/local_storage_service.dart';
 import '../../../../core/utils/app_logger.dart';
 import '../../../../core/utils/localization_extension.dart';
+import '../../../../core/utils/pipeline_interval.dart';
 import '../../../providers/generation/generation_params_notifier.dart';
 import '../../../providers/generation/generation_settings_notifiers.dart';
 import '../../../providers/notification_settings_provider.dart';
+import '../../../providers/queue_execution_provider.dart';
 import '../../../themes/core/input_surface_style.dart';
 import '../../../utils/single_line_text_width.dart';
 import '../../../widgets/common/app_toast.dart';
@@ -71,19 +73,35 @@ class _GenerationSettingsSectionState
     extends ConsumerState<GenerationSettingsSection> {
   late final TextEditingController _retryCountController;
   late final TextEditingController _retryIntervalController;
+  late final TextEditingController _pipelineMinController;
+  late final TextEditingController _pipelineMaxController;
 
   @override
   void initState() {
     super.initState();
     _retryCountController = TextEditingController();
     _retryIntervalController = TextEditingController();
+    _pipelineMinController = TextEditingController();
+    _pipelineMaxController = TextEditingController();
   }
 
   @override
   void dispose() {
     _retryCountController.dispose();
     _retryIntervalController.dispose();
+    _pipelineMinController.dispose();
+    _pipelineMaxController.dispose();
     super.dispose();
+  }
+
+  /// 写流水线间隔。非法区间（min > max）由 notifier 自己交换，写完状态回读。
+  void _updatePipelineInterval({
+    required double min,
+    required double max,
+  }) async {
+    await ref
+        .read(queueExecutionNotifierProvider.notifier)
+        .setTaskIntervalRange(minSeconds: min, maxSeconds: max);
   }
 
   void _updateRetryCount(int value) async {
@@ -166,6 +184,16 @@ class _GenerationSettingsSectionState
     }
     if (_retryIntervalController.text != retryInterval.toStringAsFixed(1)) {
       _retryIntervalController.text = retryInterval.toStringAsFixed(1);
+    }
+
+    final queueExecution = ref.watch(queueExecutionNotifierProvider);
+    final pipelineMin = queueExecution.taskIntervalMinSeconds;
+    final pipelineMax = queueExecution.taskIntervalMaxSeconds;
+    if (_pipelineMinController.text != '${pipelineMin.round()}') {
+      _pipelineMinController.text = '${pipelineMin.round()}';
+    }
+    if (_pipelineMaxController.text != '${pipelineMax.round()}') {
+      _pipelineMaxController.text = '${pipelineMax.round()}';
     }
 
     return SettingsPageLayout(
@@ -352,6 +380,84 @@ class _GenerationSettingsSectionState
                   _retryIntervalController.text = retryInterval.toStringAsFixed(
                     1,
                   );
+                }
+              },
+            ),
+          ]),
+        ),
+        SettingsCard(
+          title: l10n.settings_queuePipelineInterval,
+          description: l10n.settings_queuePipelineIntervalDescription,
+          child: _buildRetryRows(theme, [
+            _RetrySlider(
+              label: l10n.settings_queuePipelineIntervalMin,
+              valueText: (value) =>
+                  l10n.settings_queuePipelineIntervalValue('${value.round()}'),
+              value: pipelineMin,
+              min: 0,
+              max: kMaxQueueTaskIntervalSeconds,
+              divisions: kMaxQueueTaskIntervalSeconds.round(),
+              unit: l10n.unit_seconds,
+              inputText: (value) => '${value.round()}',
+              controller: _pipelineMinController,
+              onDecrease: pipelineMin > 0
+                  ? () => _updatePipelineInterval(
+                      min: pipelineMin - 1,
+                      max: pipelineMax,
+                    )
+                  : null,
+              onIncrease: pipelineMin < kMaxQueueTaskIntervalSeconds
+                  ? () => _updatePipelineInterval(
+                      min: pipelineMin + 1,
+                      max: pipelineMax,
+                    )
+                  : null,
+              onSliderChanged: (value) => _updatePipelineInterval(
+                min: value.roundToDouble(),
+                max: pipelineMax,
+              ),
+              onSubmitted: (value) {
+                final parsed = double.tryParse(value);
+                if (parsed != null) {
+                  _updatePipelineInterval(min: parsed, max: pipelineMax);
+                } else {
+                  _pipelineMinController.text = '${pipelineMin.round()}';
+                }
+              },
+            ),
+            _RetrySlider(
+              label: l10n.settings_queuePipelineIntervalMax,
+              valueText: (value) =>
+                  l10n.settings_queuePipelineIntervalValue('${value.round()}'),
+              value: pipelineMax,
+              min: 0,
+              max: kMaxQueueTaskIntervalSeconds,
+              divisions: kMaxQueueTaskIntervalSeconds.round(),
+              unit: l10n.unit_seconds,
+              inputText: (value) => '${value.round()}',
+              controller: _pipelineMaxController,
+              onDecrease: pipelineMax > 0
+                  ? () => _updatePipelineInterval(
+                      min: pipelineMin,
+                      max: pipelineMax - 1,
+                    )
+                  : null,
+              onIncrease: pipelineMax < kMaxQueueTaskIntervalSeconds
+                  ? () => _updatePipelineInterval(
+                      min: pipelineMin,
+                      max: pipelineMax + 1,
+                    )
+                  : null,
+              onSliderChanged: (value) => _updatePipelineInterval(
+                min: pipelineMin,
+                max: value.roundToDouble(),
+              ),
+              onSubmitted: (value) {
+                final parsed = double.tryParse(value);
+                if (parsed != null) {
+                  _updatePipelineInterval(min: pipelineMin, max: parsed);
+                } else {
+                  _pipelineMaxController.text = '${pipelineMax.round()}';
                 }
               },
             ),

@@ -3898,6 +3898,16 @@
       "count": {}
     }
   },
+  "settings_queuePipelineInterval": "流水線間隔（僅佇列生效）",
+  "settings_queuePipelineIntervalDescription": "佇列裡每張圖之間至少隔這麼久，在該區間內隨機取值。出圖本身的時間算在裡面；兩個都填 0 表示不等。",
+  "settings_queuePipelineIntervalMin": "最小秒數",
+  "settings_queuePipelineIntervalMax": "最大秒數",
+  "settings_queuePipelineIntervalValue": "{seconds} 秒",
+  "@settings_queuePipelineIntervalValue": {
+    "placeholders": {
+      "seconds": {}
+    }
+  },
   "settings_queueRetryIntervalValue": "{seconds} 秒",
   "@settings_queueRetryIntervalValue": {
     "placeholders": {
