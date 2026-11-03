@@ -452,4 +452,37 @@ class StorageKeys {
 
   // 旧版资产保护 key，保留读取兼容。
   static const String assetProtectionMode = 'asset_protection_mode';
+  static const String bigmanPromptWeightShortcut =
+      'bigman_prompt_weight_shortcut';
+  static const String bigmanPromptMoveShortcut = 'bigman_prompt_move_shortcut';
+  static const String bigmanQualityPresetEnabled =
+      'bigman_quality_preset_enabled';
+  static const String bigmanUcPresetEnabled = 'bigman_uc_preset_enabled';
+  static const String bigmanRandomPromptEnabled =
+      'bigman_random_prompt_enabled';
+  static const String bigmanAutoDateFolder = 'bigman_auto_date_folder';
+  static const String bigmanSaveNameTemplate = 'bigman_save_name_template';
+  static const String bigmanSaveNameCounterMode =
+      'bigman_save_name_counter_mode';
+  static const String bigmanSaveNameCounterValue =
+      'bigman_save_name_counter_value';
+  static const String bigmanSaveNamePadding = 'bigman_save_name_padding';
+  static const String bigmanSaveNameStart = 'bigman_save_name_start';
+  static const String bigmanImportPrompt = 'bigman_import_prompt';
+  static const String bigmanImportNegative = 'bigman_import_negative';
+  static const String bigmanImportCharacters = 'bigman_import_characters';
+  static const String bigmanImportSettings = 'bigman_import_settings';
+  static const String bigmanImportSeed = 'bigman_import_seed';
+  static const String bigmanPromptInboxEnabled = 'bigman_prompt_inbox_enabled';
+  static const String bigmanMergeMultiSelectWeight =
+      'bigman_merge_multiselect_weight';
+  /// 标签格式：`space` = 空格（下划线转空格），`underscore` = 下划线（空格转下划线）。
+  static const String bigmanPromptTagFormat = 'bigman_prompt_tag_format';
+
+  /// 生成历史保留张数档位：50 / 100 / 150 / 200，读不到或非法时按 50。
+  static const String bigmanHistoryLimit = 'bigman_history_limit';
+
+  /// 精简快捷编辑：开启后卡片悬浮条只留高频编辑操作，右键菜单不受影响。
+  static const String bigmanCompactQuickActions =
+      'bigman_compact_quick_actions';
 }

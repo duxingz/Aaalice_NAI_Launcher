@@ -171,26 +171,33 @@ class ImageCardSurface extends StatelessWidget {
               if (!capabilities.selectionMode &&
                   (capabilities.onFavoriteToggle != null ||
                       pinnedActions.isNotEmpty))
+                // 必须同时给 left：只给 right 时 Stack 不施加宽度约束，
+                // 轨道拿到的是无限宽，里面的宽度自适应就永远不会生效，
+                // 窄卡片上会一路画到卡片外被裁掉。
                 Positioned(
                   top: 8,
+                  left: 0,
                   right: 8,
-                  child: ImageCardCornerActionRail(
-                    pinnedActions: pinnedActions,
-                    favorite: capabilities.onFavoriteToggle == null
-                        ? null
-                        : CardFavoriteButton(
-                            isFavorite: data.isFavorite,
-                            onToggle: () => unawaited(
-                              dispatchImageCardAction(
-                                context,
-                                actions.firstWhere(
-                                  (a) => a.id == ImageCardActionId.favorite,
+                  child: Align(
+                    alignment: AlignmentDirectional.centerEnd,
+                    child: ImageCardCornerActionRail(
+                      pinnedActions: pinnedActions,
+                      favorite: capabilities.onFavoriteToggle == null
+                          ? null
+                          : CardFavoriteButton(
+                              isFavorite: data.isFavorite,
+                              onToggle: () => unawaited(
+                                dispatchImageCardAction(
+                                  context,
+                                  actions.firstWhere(
+                                    (a) => a.id == ImageCardActionId.favorite,
+                                  ),
                                 ),
                               ),
+                              size: 16,
+                              borderRadius: 999,
                             ),
-                            size: 16,
-                            borderRadius: 999,
-                          ),
+                    ),
                   ),
                 ),
               if (showHoverBar)
@@ -350,6 +357,10 @@ class ImageCardHoverActionBar extends StatelessWidget {
 }
 
 /// 右上角操作轨：悬停动作按顺序排在常驻收藏左侧，收藏位置不随悬停移动。
+///
+/// 卡片过窄时按优先级少显示：轨道靠右锚定，放不下就会画到卡片外、或压住
+/// 左上角的多选框，所以宁可少一个。舍弃顺序（越靠前越先丢）：
+/// 图生图 → 保存 → 复制；**删除与收藏始终保留**。
 class ImageCardCornerActionRail extends StatelessWidget {
   const ImageCardCornerActionRail({
     super.key,
@@ -360,20 +371,59 @@ class ImageCardCornerActionRail extends StatelessWidget {
   static const _extent = 40.0;
   static const _spacing = 4.0;
 
+  /// 左侧要避开的宽度：多选框 40 + 卡片左内边距 8。
+  static const _leadingReserve = 48.0;
+
+  /// 常驻收藏的宽度（触屏下命中区更大）。
+  static double _favoriteReserve(BuildContext context) =>
+      context.interactionPolicy.touchAvailable ? 48 : 40;
+
+  /// 放不下时最先舍弃的动作，越靠前越先丢。
+  static const _dropOrder = <ImageCardActionId>[
+    ImageCardActionId.imageToImage,
+    ImageCardActionId.save,
+    ImageCardActionId.copy,
+  ];
+
   final List<ImageCardAction> pinnedActions;
   final Widget? favorite;
 
   @override
-  Widget build(BuildContext context) => Row(
-    key: const ValueKey('image-card-corner-action-rail'),
-    mainAxisSize: MainAxisSize.min,
-    spacing: _spacing,
-    children: [
-      for (final action in pinnedActions)
-        ImageCardOverlayActionButton(config: action, extent: _extent),
-      if (favorite case final favorite?) favorite,
-    ],
+  Widget build(BuildContext context) => LayoutBuilder(
+    builder: (context, constraints) => Row(
+      key: const ValueKey('image-card-corner-action-rail'),
+      mainAxisSize: MainAxisSize.min,
+      spacing: _spacing,
+      children: [
+        for (final action in _fitting(
+          constraints.maxWidth,
+          favorite == null ? 0 : _favoriteReserve(context),
+        ))
+          ImageCardOverlayActionButton(config: action, extent: _extent),
+        if (favorite case final favorite?) favorite,
+      ],
+    ),
   );
+
+  /// 当前宽度放得下的那些固定动作（保持原有顺序）。
+  List<ImageCardAction> _fitting(double maxWidth, double favoriteExtent) {
+    if (maxWidth.isInfinite) return pinnedActions;
+    final available = maxWidth - _leadingReserve - favoriteExtent;
+    final visible = List<ImageCardAction>.of(pinnedActions);
+    while (visible.isNotEmpty) {
+      final needed =
+          visible.length * _extent +
+          (visible.length - 1) * _spacing +
+          (favoriteExtent == 0 ? 0 : _spacing);
+      if (needed <= available) break;
+      final victim = _dropOrder.firstWhere(
+        (id) => visible.any((action) => action.id == id),
+        orElse: () => visible.last.id,
+      );
+      visible.removeWhere((action) => action.id == victim);
+    }
+    return visible;
+  }
 }
 
 class _DragPreparationOverlay extends StatelessWidget {

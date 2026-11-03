@@ -161,7 +161,8 @@ void main() {
         '1.05::year_2025 ::, other_tags',
       );
       expect(NaiPromptFormatter.format('1.5:: rain ::'), '1.5:: rain ::');
-      expect(NaiPromptFormatter.format('artist: foo bar'), 'artist:_foo_bar');
+      // 本改版保护冒号：artist: 前缀后的空格保留，词组内部照常转下划线。
+      expect(NaiPromptFormatter.format('artist: foo bar'), 'artist: foo_bar');
     });
 
     test('SD conversion separates its closings only when asked', () {

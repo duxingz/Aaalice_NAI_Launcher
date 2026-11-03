@@ -6,7 +6,7 @@ import 'package:super_drag_and_drop/super_drag_and_drop.dart';
 import '../../utils/clipboard_image.dart';
 import '../../utils/internal_drag_protocol.dart';
 import '../../utils/card_drop_reader.dart';
-import '../../utils/native_drop_callback.dart';
+import '../../../core/utils/app_logger.dart';
 
 class GlobalDropController extends ChangeNotifier {
   GlobalDropController({
@@ -24,6 +24,14 @@ class GlobalDropController extends ChangeNotifier {
   bool _isProcessing = false;
   bool _isReadingClipboard = false;
   bool _isDisposed = false;
+  Timer? _processingTimer;
+
+  /// 「处理中」遮罩的兜底时长。
+  ///
+  /// 该遮罩是**吃掉全部点击**的全屏半透明层，正常处理是毫秒级。万一某条
+  /// 等待链没能在预算内结束，这里兜底放掉遮罩，避免界面永久点不动
+  /// （用户报告的「拖图卡住、只能重启」就是这个形态）。
+  static const Duration _processingWatchdog = Duration(minutes: 2);
 
   bool get isDragging => _isDragging;
   bool get isProcessing => _isProcessing;
@@ -50,13 +58,29 @@ class GlobalDropController extends ChangeNotifier {
 
   void onDropLeave(DropEvent event) => _setDragging(false);
 
-  Future<void> onPerformDrop(PerformDropEvent event) {
+  Future<void> onPerformDrop(PerformDropEvent event) async {
     _setDragging(false);
     _setProcessing(true);
-    return releaseNativeDropCallback(
-      () => _processDroppedFiles(_readDrop(event)),
-      library: 'GlobalDropController',
-    );
+    try {
+      // The native reader belongs to the drop session. Finish taking all data
+      // before returning, but release the OS drag loop before opening dialogs.
+      final files = await _readDrop(event);
+      unawaited(Future<void>(() => _processDroppedFiles(Future.value(files))));
+    } catch (error, stack) {
+      // 绝不 rethrow：这个回调是原生拖放会话的一部分，把异常抛回
+      // super_drag_and_drop 会被当成未处理错误上报 —— 用户本机就留下过
+      // 「Bad state: Drop item has no readable contents」的崩溃转储。
+      // 就地报错并放行，让拖放会话干净结束。
+      _setProcessing(false);
+      FlutterError.reportError(
+        FlutterErrorDetails(
+          exception: error,
+          stack: stack,
+          library: 'GlobalDropController',
+          context: ErrorDescription('while reading a dropped item'),
+        ),
+      );
+    }
   }
 
   Future<void> handlePasteShortcut(VoidCallback? fallbackTextPaste) async {
@@ -110,9 +134,31 @@ class GlobalDropController extends ChangeNotifier {
   }
 
   void _setProcessing(bool value) {
-    if (_isProcessing == value) return;
+    if (_isProcessing == value) {
+      if (value) _armProcessingWatchdog();
+      return;
+    }
     _isProcessing = value;
+    if (value) {
+      _armProcessingWatchdog();
+    } else {
+      _processingTimer?.cancel();
+      _processingTimer = null;
+    }
     if (!_isDisposed) notifyListeners();
+  }
+
+  void _armProcessingWatchdog() {
+    _processingTimer?.cancel();
+    _processingTimer = Timer(_processingWatchdog, () {
+      _processingTimer = null;
+      if (_isDisposed) return;
+      AppLogger.w(
+        'Drop processing watchdog fired; releasing the blocking overlay',
+        'GlobalDropController',
+      );
+      _setProcessing(false);
+    });
   }
 
   void _setReadingClipboard(bool value) {
@@ -124,6 +170,8 @@ class GlobalDropController extends ChangeNotifier {
   @override
   void dispose() {
     _isDisposed = true;
+    _processingTimer?.cancel();
+    _processingTimer = null;
     super.dispose();
   }
 }

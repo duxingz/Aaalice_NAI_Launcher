@@ -3997,6 +3997,17 @@
       "count": {}
     }
   },
+  "settings_queuePipelineInterval": "流水線間隔（僅佇列生效）",
+  "settings_queuePipelineIntervalDescription": "佇列裡每張圖之間至少隔這麼久，在該區間內隨機取值。出圖本身的時間算在裡面；兩個都填 0 表示不等。",
+  "settings_queuePipelineIntervalMin": "最小秒數",
+  "settings_queuePipelineIntervalMax": "最大秒數",
+  "settings_queuePipelineIntervalValue": "{seconds} 秒",
+  "settings_queueAutoLoopRounds": "整批循環輪數",
+  "@settings_queuePipelineIntervalValue": {
+    "placeholders": {
+      "seconds": {}
+    }
+  },
   "settings_queueRetryIntervalValue": "{seconds} 秒",
   "@settings_queueRetryIntervalValue": {
     "placeholders": {
@@ -7746,5 +7757,59 @@
         "format": "yMMMd"
       }
     }
-  }
+  },
+  "bigmanMod_settingsTitle": "胖大叔自用改",
+  "bigmanMod_promptSectionTitle": "提示詞編輯",
+  "bigmanMod_promptSectionDescription": "輸入框內的鍵盤快速鍵；自動規範格式與工具列上的按鈕共用同一個開關。",
+  "bigmanMod_promptWeightShortcut": "Ctrl+↑/↓ 調整標籤權重",
+  "bigmanMod_promptWeightShortcutSubtitle": "游標所在或選取的標籤每次增減 0.05；降到 1.0 時自動移除權重語法，權重範圍 −10 ~ 10（可一路減到負權重做抑制）。",
+  "bigmanMod_mergeMultiSelectWeight": "多選調權重時合併成一個權重塊",
+  "bigmanMod_mergeMultiSelectWeightSubtitle": "開啟後，選取多個標籤調權重會寫成一個塊 0.95::a, b, c::；關閉則保留舊行為，每個標籤各自套權重。去尾零與「數字結尾補保護逗號」始終生效。",
+  "bigmanMod_promptMoveShortcut": "Ctrl+←/→ 移動標籤位置",
+  "bigmanMod_promptMoveShortcutSubtitle": "與相鄰標籤交換位置；權重組只有一個標籤時整組一起移動。",
+  "bigmanMod_autoFormat": "自動規範格式（失焦時）",
+  "bigmanMod_autoFormatSubtitle": "離開輸入框時整理中文逗號、空格與分隔符號。與工具列按鈕連動。",
+  "bigmanMod_promptTagFormat": "標籤格式",
+  "bigmanMod_promptTagFormatSubtitle": "格式化時標籤內部用什麼分隔：下劃線（long_hair，與官方一致）或空格（long hair）。",
+  "bigmanMod_promptTagFormatUnderscore": "下劃線",
+  "bigmanMod_promptTagFormatSpace": "空格",
+  "bigmanMod_disableSectionTitle": "功能停用",
+  "bigmanMod_disableSectionDescription": "關閉後介面保留原來的圖示，但點擊不再有任何反應。",
+  "bigmanMod_qualityPreset": "啟用質量詞預設",
+  "bigmanMod_qualityPresetSubtitle": "關閉後不再向生成請求注入官方質量詞，介面上的顯示與選擇保持不變。",
+  "bigmanMod_ucPreset": "啟用負面提示詞預設",
+  "bigmanMod_ucPresetSubtitle": "關閉後不再注入負面預設內容，介面上的顯示與選擇保持不變。",
+  "bigmanMod_randomPrompt": "啟用隨機提示詞工具",
+  "bigmanMod_randomPromptSubtitle": "關閉後隨機按鈕、Ctrl+R 快速鍵與抽卡模式開關都不再回應。",
+  "bigmanMod_saveNameSectionTitle": "儲存檔案名稱規則",
+  "bigmanMod_saveNameSectionDescription": "範本留空表示保持原來的「時間-種子」命名。",
+  "bigmanMod_saveNameTemplate": "命名範本",
+  "bigmanMod_saveNameTemplateHint": "例如 {n} 或 胖大叔_{n}",
+  "bigmanMod_saveNameVariables": "可用變數：{n} 序號 · {seed} 種子 · {date} 日期 · {time} 時間",
+  "bigmanMod_saveNameCounterMode": "序號來源",
+  "bigmanMod_saveNameCounterGlobal": "全域連續計數",
+  "bigmanMod_saveNameCounterScan": "每次掃描目錄取最大號",
+  "bigmanMod_saveNameCounterScanHint": "每次儲存掃描儲存目錄，取最大號 +1；刪掉的號會被回收重複使用。",
+  "bigmanMod_saveNameCounterGlobalHint": "本機計數器，跨日期資料夾持續遞增；號只增不回收，刪了圖也不會重複使用。",
+  "bigmanMod_saveNamePadding": "補零位數",
+  "bigmanMod_saveNamePaddingHint": "0 表示不補零",
+  "bigmanMod_saveNameStart": "起始序號",
+  "bigmanMod_autoDateFolder": "自動新增日期資料夾",
+  "bigmanMod_autoDateFolderSubtitle": "關閉後圖片直接儲存在目標目錄，不再按日期分子資料夾。",
+  "bigmanMod_promptInbox": "DSH 提示詞收件箱",
+  "bigmanMod_promptInboxSubtitle": "輪詢約定檔案，把 DSH 寫好的提示詞自動填入輸入框（含負面詞與角色分區），省掉手動複製貼上。",
+  "bigmanMod_uiSectionTitle": "介面與歷史",
+  "bigmanMod_uiSectionDescription": "歷史區保留多少張圖，以及卡片懸浮時顯示哪些快捷按鈕。",
+  "bigmanMod_historyLimit": "歷史記錄保留數量",
+  "bigmanMod_historyLimitSubtitle": "調大後能往回翻更多張。每張都按原圖存一份，佔用的記憶體與磁碟會同步變大（約每張 1.8MB）。",
+  "bigmanMod_compactQuickActions": "精簡快捷編輯",
+  "bigmanMod_compactQuickActionsSubtitle": "懸浮時只顯示常用的編輯操作：儲存、複製、編輯影象、區域性重繪、增強、圖生圖、生成變體、導演工具、放大。其餘操作仍在右鍵選單裡。",
+  "drop_importOptions": "匯入選項",
+  "drop_importPrompt": "正面提示詞",
+  "drop_importNegativePrompt": "負面提示詞",
+  "drop_importCharacters": "角色提示詞",
+  "drop_importSettings": "生成設定",
+  "drop_importSeed": "種子",
+  "drop_img2imgWithPrompts": "圖生圖 + 匯入提示詞",
+  "drop_img2imgWithPromptsSubtitle": "設為圖生圖來源圖，並匯入正面提示詞與角色提示詞"
 }

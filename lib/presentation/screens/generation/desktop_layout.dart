@@ -31,6 +31,7 @@ import 'widgets/main_workspace.dart';
 import 'widgets/prompt_input_controller.dart';
 import 'widgets/right_panel.dart';
 import 'package:nai_launcher/core/utils/localization_extension.dart';
+import '../../../core/utils/bigman_mod_flags.dart';
 
 /// 桌面端三栏布局
 class DesktopGenerationLayout extends ConsumerStatefulWidget {
@@ -107,6 +108,8 @@ class _DesktopGenerationLayoutState
     },
     // 随机提示词
     ShortcutIds.randomPrompt: () {
+        // 胖大叔自用改：关闭随机提示词时快捷键静默无效。
+        if (!BigmanModFlags.randomPromptEnabled()) return;
       if (ref.read(randomPromptToolsVisibilityProvider)) {
         ref.read(randomPromptModeProvider.notifier).toggle();
       } else {

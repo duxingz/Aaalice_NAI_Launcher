@@ -122,10 +122,10 @@ class TagEditorCommands {
         plan,
         shell.substring(0, split),
         suffix == NumericWeightClosing.plain
-            ? NumericWeightClosing.closingFor(
-                plan.selected.text,
-                separate: separate,
-              )
+            ? (separate &&
+                    RegExp(r'\d\s*$').hasMatch(plan.selected.text)
+                ? ', ::'
+                : NumericWeightClosing.plain)
             : suffix,
       );
       return;

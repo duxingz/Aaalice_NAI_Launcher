@@ -120,7 +120,7 @@ void main() {
     storage = _MemoryLocalStorage();
   });
 
-  testWidgets('设置页导航为 11 个稳定分类并包含备份与恢复', (tester) async {
+  testWidgets('设置页导航为 12 个稳定分类并包含备份与恢复', (tester) async {
     debugDefaultTargetPlatformOverride = TargetPlatform.windows;
     await tester.binding.setSurfaceSize(const Size(1280, 900));
     addTearDown(() => tester.binding.setSurfaceSize(null));
@@ -161,7 +161,7 @@ void main() {
 
     _expectSettingsLayeredChrome(tester, hasNavigation: true);
     final rail = tester.widget<NavigationRail>(find.byType(NavigationRail));
-    expect(rail.destinations.length, 11);
+    expect(rail.destinations.length, 12);
 
     final sectionScrollView = find.byKey(
       const ValueKey('settings-section-scroll-view'),
@@ -204,6 +204,7 @@ void main() {
       '网络',
       '快捷键',
       '集成',
+      '胖大叔自用改',
       '关于',
     ]);
 
@@ -221,6 +222,7 @@ void main() {
       Icons.network_check_outlined,
       Icons.keyboard_outlined,
       Icons.extension_outlined,
+      Icons.construction_outlined,
       Icons.info_outlined,
     ]);
 
@@ -238,6 +240,7 @@ void main() {
       Icons.network_check,
       Icons.keyboard,
       Icons.extension,
+      Icons.construction,
       Icons.info,
     ]);
 
@@ -359,7 +362,7 @@ void main() {
           )
           .toList();
 
-      expect(iconLefts.length, 11, reason: '$locale');
+      expect(iconLefts.length, 12, reason: '$locale');
       for (final left in iconLefts) {
         expect(
           left,

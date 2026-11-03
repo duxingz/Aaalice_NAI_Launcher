@@ -25,15 +25,9 @@ void main() {
           ..selection = TextSelection(baseOffset: 0, extentOffset: body.length);
         addTearDown(controller.dispose);
 
-        for (final (expected, label) in [
-          (0.95, '0.95'),
-          (0.90, '0.9'),
-          (0.95, '0.95'),
-          (1.0, ''),
-          (1.05, '1.05'),
-          (1.10, '1.1'),
-          (1.05, '1.05'),
-        ]) {
+        // 权重数值的规范写法（去尾零）由 PromptWeightEditing.formatWeight 负责，
+        // 这里直接沿用，避免测试里再抄一份格式规则。
+        for (final expected in [0.95, 0.90, 0.95, 1.0, 1.05, 1.10, 1.05]) {
           final current = PromptWeightEditing.parseSelection(controller).weight;
           expect(
             PromptWeightEditing.stepWeight(
@@ -42,7 +36,12 @@ void main() {
             ),
             isTrue,
           );
-          expect(controller.text, label.isEmpty ? body : '$label::$body::');
+          expect(
+            controller.text,
+            expected == 1
+                ? body
+                : '${PromptWeightEditing.formatWeight(expected)}::$body::',
+          );
           expect(
             PromptWeightEditing.parseSelection(controller).weight,
             closeTo(expected, 0.00001),
@@ -172,7 +171,7 @@ void main() {
     test('written weights separate number endings only when enabled', () {
       expect(
         PromptWeightEditing.withWeight('year_2025', 1.05),
-        '1.05::year_2025::',
+        '1.05::year_2025, ::',
       );
       expect(
         PromptWeightEditing.withWeight(
@@ -180,7 +179,7 @@ void main() {
           1.05,
           separateNumericWeightClosing: true,
         ),
-        '1.05::year_2025 ::',
+        '1.05::year_2025, ::',
       );
       expect(
         PromptWeightEditing.withWeight(
@@ -192,10 +191,10 @@ void main() {
       );
     });
 
-    test('rewriting keeps a space the user already added', () {
+    test('rewriting re-parses the guard without piling it up', () {
       expect(
         PromptWeightEditing.withWeight('1.05::year_2025 ::', 1.1),
-        '1.1::year_2025 ::',
+        '1.1::year_2025, ::',
       );
       expect(
         PromptWeightEditing.withWeight('1.05::year_2025 ::', 1),
@@ -203,7 +202,7 @@ void main() {
       );
       expect(
         PromptWeightEditing.withWeight('1.2::cat ::', 1.25),
-        '1.25::cat ::',
+        '1.25::cat::',
       );
     });
 
@@ -216,9 +215,9 @@ void main() {
       addTearDown(controller.dispose);
 
       expect(PromptWeightEditing.stepWeight(controller, 0.05), isTrue);
-      expect(controller.text, '1.05::year_2025 ::, other_tags');
+      expect(controller.text, '1.05::year_2025, ::, other_tags');
       expect(PromptWeightEditing.stepWeight(controller, 0.05), isTrue);
-      expect(controller.text, '1.1::year_2025 ::, other_tags');
+      expect(controller.text, '1.1::year_2025, ::, other_tags');
     });
   });
 }

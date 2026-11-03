@@ -15025,6 +15025,42 @@ abstract class AppLocalizations {
   /// **'Max {count} times'**
   String settings_queueRetryCountMax(Object count);
 
+  /// No description provided for @settings_queuePipelineInterval.
+  ///
+  /// In en, this message translates to:
+  /// **'Pipeline interval (queue only)'**
+  String get settings_queuePipelineInterval;
+
+  /// No description provided for @settings_queuePipelineIntervalDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Keeps at least this long between images in the queue, picked randomly inside the range. Generation time counts toward it; set both to 0 to disable.'**
+  String get settings_queuePipelineIntervalDescription;
+
+  /// No description provided for @settings_queuePipelineIntervalMin.
+  ///
+  /// In en, this message translates to:
+  /// **'Minimum seconds'**
+  String get settings_queuePipelineIntervalMin;
+
+  /// No description provided for @settings_queuePipelineIntervalMax.
+  ///
+  /// In en, this message translates to:
+  /// **'Maximum seconds'**
+  String get settings_queuePipelineIntervalMax;
+
+  /// No description provided for @settings_queuePipelineIntervalValue.
+  ///
+  /// In en, this message translates to:
+  /// **'{seconds} seconds'**
+  String settings_queuePipelineIntervalValue(Object seconds);
+
+  /// No description provided for @settings_queueAutoLoopRounds.
+  ///
+  /// In en, this message translates to:
+  /// **'Batch loop rounds'**
+  String get settings_queueAutoLoopRounds;
+
   /// No description provided for @settings_queueRetryIntervalValue.
   ///
   /// In en, this message translates to:
@@ -28197,6 +28233,335 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Subscription expiry: {date}'**
   String settings_subscriptionExpiresOn(DateTime date);
+
+  /// No description provided for @bigmanMod_settingsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'胖大叔自用改'**
+  String get bigmanMod_settingsTitle;
+
+  /// No description provided for @bigmanMod_promptSectionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Prompt editing'**
+  String get bigmanMod_promptSectionTitle;
+
+  /// No description provided for @bigmanMod_promptSectionDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Keyboard shortcuts inside the prompt box. Auto-format shares its switch with the toolbar button.'**
+  String get bigmanMod_promptSectionDescription;
+
+  /// No description provided for @bigmanMod_promptWeightShortcut.
+  ///
+  /// In en, this message translates to:
+  /// **'Ctrl+↑/↓ adjust tag weight'**
+  String get bigmanMod_promptWeightShortcut;
+
+  /// No description provided for @bigmanMod_promptWeightShortcutSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Adds or removes 0.05 on the tag at the caret or in the selection. Dropping to 1.0 removes the weight syntax. Range -10 to 10, so weights can go negative for suppression.'**
+  String get bigmanMod_promptWeightShortcutSubtitle;
+
+  /// No description provided for @bigmanMod_mergeMultiSelectWeight.
+  ///
+  /// In en, this message translates to:
+  /// **'Merge a multi-selection into one weight block'**
+  String get bigmanMod_mergeMultiSelectWeight;
+
+  /// No description provided for @bigmanMod_mergeMultiSelectWeightSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'When on, adjusting a multi-selection writes a single block such as 0.95::a, b, c::. When off, the previous behaviour is kept and every tag gets its own weight. Dropping trailing zeros and adding the guard comma after a trailing digit always apply.'**
+  String get bigmanMod_mergeMultiSelectWeightSubtitle;
+
+  /// No description provided for @bigmanMod_promptMoveShortcut.
+  ///
+  /// In en, this message translates to:
+  /// **'Ctrl+←/→ move tag position'**
+  String get bigmanMod_promptMoveShortcut;
+
+  /// No description provided for @bigmanMod_promptMoveShortcutSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Swaps with the neighbouring tag. A weight group holding a single tag moves as a whole.'**
+  String get bigmanMod_promptMoveShortcutSubtitle;
+
+  /// No description provided for @bigmanMod_autoFormat.
+  ///
+  /// In en, this message translates to:
+  /// **'Auto-format on blur'**
+  String get bigmanMod_autoFormat;
+
+  /// No description provided for @bigmanMod_autoFormatSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Tidies Chinese commas, spaces and separators when the field loses focus. Linked with the toolbar button.'**
+  String get bigmanMod_autoFormatSubtitle;
+
+  /// No description provided for @bigmanMod_promptTagFormat.
+  ///
+  /// In en, this message translates to:
+  /// **'Tag format'**
+  String get bigmanMod_promptTagFormat;
+
+  /// No description provided for @bigmanMod_promptTagFormatSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Separator used inside a tag when formatting: underscore (long_hair, same as upstream) or space (long hair).'**
+  String get bigmanMod_promptTagFormatSubtitle;
+
+  /// No description provided for @bigmanMod_promptTagFormatUnderscore.
+  ///
+  /// In en, this message translates to:
+  /// **'Underscore'**
+  String get bigmanMod_promptTagFormatUnderscore;
+
+  /// No description provided for @bigmanMod_promptTagFormatSpace.
+  ///
+  /// In en, this message translates to:
+  /// **'Space'**
+  String get bigmanMod_promptTagFormatSpace;
+
+  /// No description provided for @bigmanMod_disableSectionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Disabled features'**
+  String get bigmanMod_disableSectionTitle;
+
+  /// No description provided for @bigmanMod_disableSectionDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Turning a feature off keeps its icon visible, but clicking it no longer does anything.'**
+  String get bigmanMod_disableSectionDescription;
+
+  /// No description provided for @bigmanMod_qualityPreset.
+  ///
+  /// In en, this message translates to:
+  /// **'Enable quality tag preset'**
+  String get bigmanMod_qualityPreset;
+
+  /// No description provided for @bigmanMod_qualityPresetSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'When off, official quality tags are no longer injected into requests. The display keeps its current selection.'**
+  String get bigmanMod_qualityPresetSubtitle;
+
+  /// No description provided for @bigmanMod_ucPreset.
+  ///
+  /// In en, this message translates to:
+  /// **'Enable undesired content preset'**
+  String get bigmanMod_ucPreset;
+
+  /// No description provided for @bigmanMod_ucPresetSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'When off, the preset content is no longer injected. The display keeps its current selection.'**
+  String get bigmanMod_ucPresetSubtitle;
+
+  /// No description provided for @bigmanMod_randomPrompt.
+  ///
+  /// In en, this message translates to:
+  /// **'Enable random prompt tools'**
+  String get bigmanMod_randomPrompt;
+
+  /// No description provided for @bigmanMod_randomPromptSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'When off, the random button, the Ctrl+R shortcut and the random-mode toggle stop responding.'**
+  String get bigmanMod_randomPromptSubtitle;
+
+  /// No description provided for @bigmanMod_saveNameSectionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved file name rule'**
+  String get bigmanMod_saveNameSectionTitle;
+
+  /// No description provided for @bigmanMod_saveNameSectionDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Leave the template empty to keep the original time-seed naming.'**
+  String get bigmanMod_saveNameSectionDescription;
+
+  /// No description provided for @bigmanMod_saveNameTemplate.
+  ///
+  /// In en, this message translates to:
+  /// **'Name template'**
+  String get bigmanMod_saveNameTemplate;
+
+  /// No description provided for @bigmanMod_saveNameTemplateHint.
+  ///
+  /// In en, this message translates to:
+  /// **'For example {n} or Bigman_{n}'**
+  String bigmanMod_saveNameTemplateHint(Object n);
+
+  /// No description provided for @bigmanMod_saveNameVariables.
+  ///
+  /// In en, this message translates to:
+  /// **'Variables: {n} index · {seed} seed · {date} date · {time} time'**
+  String bigmanMod_saveNameVariables(
+    Object date,
+    Object n,
+    Object seed,
+    Object time,
+  );
+
+  /// No description provided for @bigmanMod_saveNameCounterMode.
+  ///
+  /// In en, this message translates to:
+  /// **'Index source'**
+  String get bigmanMod_saveNameCounterMode;
+
+  /// No description provided for @bigmanMod_saveNameCounterGlobal.
+  ///
+  /// In en, this message translates to:
+  /// **'Global counter'**
+  String get bigmanMod_saveNameCounterGlobal;
+
+  /// No description provided for @bigmanMod_saveNameCounterScan.
+  ///
+  /// In en, this message translates to:
+  /// **'Scan folder for the highest index'**
+  String get bigmanMod_saveNameCounterScan;
+
+  /// No description provided for @bigmanMod_saveNameCounterScanHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Scans the save folder on every save and continues from the highest index; numbers of deleted images are reused.'**
+  String get bigmanMod_saveNameCounterScanHint;
+
+  /// No description provided for @bigmanMod_saveNameCounterGlobalHint.
+  ///
+  /// In en, this message translates to:
+  /// **'A local counter that keeps increasing across date folders; numbers are never reused, not even after deleting an image.'**
+  String get bigmanMod_saveNameCounterGlobalHint;
+
+  /// No description provided for @bigmanMod_saveNamePadding.
+  ///
+  /// In en, this message translates to:
+  /// **'Zero padding'**
+  String get bigmanMod_saveNamePadding;
+
+  /// No description provided for @bigmanMod_saveNamePaddingHint.
+  ///
+  /// In en, this message translates to:
+  /// **'0 means no padding'**
+  String get bigmanMod_saveNamePaddingHint;
+
+  /// No description provided for @bigmanMod_saveNameStart.
+  ///
+  /// In en, this message translates to:
+  /// **'Start index'**
+  String get bigmanMod_saveNameStart;
+
+  /// No description provided for @bigmanMod_autoDateFolder.
+  ///
+  /// In en, this message translates to:
+  /// **'Auto-create date folder'**
+  String get bigmanMod_autoDateFolder;
+
+  /// No description provided for @bigmanMod_autoDateFolderSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'When off, images are saved directly in the target folder without a per-day subfolder.'**
+  String get bigmanMod_autoDateFolderSubtitle;
+
+  /// No description provided for @bigmanMod_promptInbox.
+  ///
+  /// In en, this message translates to:
+  /// **'DSH prompt inbox'**
+  String get bigmanMod_promptInbox;
+
+  /// No description provided for @bigmanMod_promptInboxSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Watches an agreed file and fills prompts written by DSH into the input box (including negative prompt and character sections), so you can skip copy-paste.'**
+  String get bigmanMod_promptInboxSubtitle;
+
+  /// No description provided for @bigmanMod_uiSectionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Interface and history'**
+  String get bigmanMod_uiSectionTitle;
+
+  /// No description provided for @bigmanMod_uiSectionDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'How many images the history keeps, and which quick buttons appear when hovering a card.'**
+  String get bigmanMod_uiSectionDescription;
+
+  /// No description provided for @bigmanMod_historyLimit.
+  ///
+  /// In en, this message translates to:
+  /// **'History limit'**
+  String get bigmanMod_historyLimit;
+
+  /// No description provided for @bigmanMod_historyLimitSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'A larger value lets you scroll further back. Every entry keeps a full-resolution copy, so memory and disk use grow with it (about 1.8 MB each).'**
+  String get bigmanMod_historyLimitSubtitle;
+
+  /// No description provided for @bigmanMod_compactQuickActions.
+  ///
+  /// In en, this message translates to:
+  /// **'Compact quick edit'**
+  String get bigmanMod_compactQuickActions;
+
+  /// No description provided for @bigmanMod_compactQuickActionsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'On hover, show only the common editing actions: save, copy, edit image, inpaint, enhance, image to image, generate variations, director tools, upscale. All other actions remain in the right-click menu.'**
+  String get bigmanMod_compactQuickActionsSubtitle;
+
+  /// No description provided for @drop_importOptions.
+  ///
+  /// In en, this message translates to:
+  /// **'Import options'**
+  String get drop_importOptions;
+
+  /// No description provided for @drop_importPrompt.
+  ///
+  /// In en, this message translates to:
+  /// **'Positive prompt'**
+  String get drop_importPrompt;
+
+  /// No description provided for @drop_importNegativePrompt.
+  ///
+  /// In en, this message translates to:
+  /// **'Negative prompt'**
+  String get drop_importNegativePrompt;
+
+  /// No description provided for @drop_importCharacters.
+  ///
+  /// In en, this message translates to:
+  /// **'Character prompts'**
+  String get drop_importCharacters;
+
+  /// No description provided for @drop_importSettings.
+  ///
+  /// In en, this message translates to:
+  /// **'Generation settings'**
+  String get drop_importSettings;
+
+  /// No description provided for @drop_importSeed.
+  ///
+  /// In en, this message translates to:
+  /// **'Seed'**
+  String get drop_importSeed;
+
+  /// No description provided for @drop_img2imgWithPrompts.
+  ///
+  /// In en, this message translates to:
+  /// **'Img2img + prompts'**
+  String get drop_img2imgWithPrompts;
+
+  /// No description provided for @drop_img2imgWithPromptsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Use as the img2img source and import the positive prompt and character prompts'**
+  String get drop_img2imgWithPromptsSubtitle;
 }
 
 class _AppLocalizationsDelegate

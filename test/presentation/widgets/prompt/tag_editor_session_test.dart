@@ -5,6 +5,7 @@ import 'package:nai_launcher/core/utils/prompt_edit_document.dart';
 import 'package:nai_launcher/presentation/widgets/prompt/tag_editor_commands.dart';
 import 'package:nai_launcher/presentation/widgets/prompt/tag_editor_session.dart';
 import 'package:nai_launcher/presentation/widgets/prompt/nai_syntax_controller.dart';
+import 'package:nai_launcher/presentation/widgets/prompt/prompt_weight_editing.dart';
 
 void main() {
   late TextEditingController source;
@@ -57,6 +58,7 @@ void main() {
     expect(source.text, '1.25::cat, 0.80::dog::::, bird');
     expect(session.selected, ids.toSet());
     commands.adjustWeight(step: 0.05);
+    // 权重数值去尾零：1.30 写成 1.3；块内原有的 0.80 是内容，原样保留。
     expect(source.text, '1.3::cat, 0.80::dog::::, bird');
     session.undo();
     expect(source.text, '1.25::cat, 0.80::dog::::, bird');
@@ -191,13 +193,15 @@ void main() {
     final ids = session.tags.first.leaves.map((tag) => tag.id).toSet();
     session.setSelection(ids);
     final commands = TagEditorCommands(session);
-    for (final expected in [1.0, 0.95, 0.90]) {
+    // 权重数值的规范写法（去尾零）由 PromptWeightEditing.formatWeight 负责，
+    // 这里直接沿用，避免测试里再抄一份格式规则。
+    for (final expected in [1.0, 0.95, 0.9]) {
       commands.adjustWeight(step: -0.05);
       expect(
         source.text,
         expected == 1
             ? 'cat, dog, bird'
-            : '${formatEmphasisWeight(expected)}::cat, dog::, bird',
+            : '${PromptWeightEditing.formatWeight(expected)}::cat, dog::, bird',
       );
       expect(session.selected, ids);
       expect(session.selectedGroup, expected == 1 ? isNull : isNotNull);
@@ -437,9 +441,9 @@ void main() {
       createSyntax('year_2025, other_tags');
       editor.setSelection([editor.leaves.first.id]);
       TagEditorCommands(editor).adjustWeight(step: 0.05);
-      expect(controller.text, '1.05::year_2025 ::, other_tags');
+      expect(controller.text, '1.05::year_2025, ::, other_tags');
       TagEditorCommands(editor).adjustWeight(step: 0.05);
-      expect(controller.text, '1.1::year_2025 ::, other_tags');
+      expect(controller.text, '1.1::year_2025, ::, other_tags');
       TagEditorCommands(editor).adjustWeight(value: 1);
       expect(controller.text, 'year_2025, other_tags');
     });
@@ -448,14 +452,14 @@ void main() {
       createSyntax('1.2::cat, year_2025::, bird');
       editor.selectGroup(editor.tags.first);
       TagEditorCommands(editor).adjustWeight(step: 0.05);
-      expect(controller.text, '1.25::cat, year_2025 ::, bird');
+      expect(controller.text, '1.25::cat, year_2025, ::, bird');
     });
 
     test('a new multi-selection group closes after its last tag', () {
       createSyntax('year_2025, cat, a1');
       editor.setSelection(editor.leaves.skip(1).map((tag) => tag.id));
       TagEditorCommands(editor).adjustWeight(step: 0.05);
-      expect(controller.text, 'year_2025, 1.05::cat, a1 ::');
+      expect(controller.text, 'year_2025, 1.05::cat, a1, ::');
     });
 
     test('splitting a numeric group re-closes the part left behind', () {
@@ -463,21 +467,21 @@ void main() {
       final leaves = editor.leaves.toList();
       editor.setSelection([leaves[2].id, leaves[3].id]);
       TagEditorCommands(editor).adjustWeight(step: 0.05);
-      expect(controller.text, '{1.2::dog::, bird}, 1.2::cat, year_2025 ::');
+      expect(controller.text, '{1.2::dog::, bird}, 1.2::cat, year_2025, ::');
     });
 
-    test('a space the user already added survives with the option off', () {
+    test('用户已加的空格被规范成保护逗号', () {
       createSyntax('1.05::year_2025 ::, cat', separate: false);
       editor.setSelection([editor.leaves.first.id]);
       TagEditorCommands(editor).adjustWeight(step: 0.05);
-      expect(controller.text, '1.1::year_2025 ::, cat');
+      expect(controller.text, '1.1::year_2025, ::, cat');
     });
 
-    test('the option off keeps the previous output', () {
+    test('数字结尾一律补保护逗号', () {
       createSyntax('year_2025, cat', separate: false);
       editor.setSelection([editor.leaves.first.id]);
       TagEditorCommands(editor).adjustWeight(step: 0.05);
-      expect(controller.text, '1.05::year_2025::, cat');
+      expect(controller.text, '1.05::year_2025, ::, cat');
     });
   });
 }

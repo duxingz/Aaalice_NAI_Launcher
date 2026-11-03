@@ -171,6 +171,8 @@ Future<DroppedImageMetadataDetection> detectDroppedImageMetadata(
       }
     }
 
+    // 这条分支是「完整像素解码」，是全项目最重的入口之一，而它跑在拖图
+    // 的关键路径上：必须给预算，否则对话框永远不弹。
     if ((metadata == null || !metadata.hasData) &&
         inspectOtherContainerStealth &&
         !UnifiedMetadataParser.readsStealthPayload(bytes)) {
@@ -178,6 +180,7 @@ Future<DroppedImageMetadataDetection> detectDroppedImageMetadata(
         _parseStealthMetadataFromImageBytes,
         bytes,
         debugLabel: 'dropped_image_stealth_metadata',
+        timeout: const Duration(seconds: 20),
       );
     }
     if (metadata != null && metadata.hasData) {
@@ -251,6 +254,7 @@ NaiImageMetadata? _parseStealthMetadataFromImageBytes(Uint8List bytes) {
 bool imageDestinationRequiresOriginalBytes(ImageDestination destination) {
   return switch (destination) {
     ImageDestination.img2img ||
+    ImageDestination.img2imgWithPrompts ||
     ImageDestination.reversePrompt ||
     ImageDestination.vibeTransfer ||
     ImageDestination.vibeTransferRaw ||

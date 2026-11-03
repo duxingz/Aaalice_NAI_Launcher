@@ -1,29 +1,52 @@
+import 'bigman_mod_flags.dart';
 import 'character_prompt_block_parser.dart';
 import 'prompt_literal_mask.dart';
-import 'text_space_converter.dart';
 import 'prompt_edit_document.dart';
+import 'text_space_converter.dart';
 
 /// NAI 提示词格式化工具
-/// 统一逗号与标签空格风格；引号文字、text: 段、别名与颜文字原样保留。
+///
+/// - 中文逗号 → 英文逗号
+/// - 标签之间统一成「逗号 + 空格」
+/// - 去掉多余的首尾空白
+/// - 标签内部的空格 / 下划线二选一（见 [format] 的 `useUnderscores`）：
+///   - 下划线格式（默认，与官方一致）：`long hair` → `long_hair`
+///   - 空格格式：`long_hair` → `long hair`
+///   - 表情类标签（`x_x` / `^_^` / `>_<`）两种模式下都保持原样
 class NaiPromptFormatter {
+  static final RegExp _alphanumericPattern = RegExp(r'[A-Za-z0-9]');
   static final RegExp _lineBreakPattern = RegExp(r'\r\n|\r|\n');
   static final RegExp _horizontalWhitespacePattern = RegExp(r'[ \t\f\u00a0]+');
   static final RegExp _leadingHorizontalWhitespacePattern = RegExp(r'^[ \t]*');
   static final RegExp _trailingHorizontalWhitespacePattern = RegExp(r'[ \t]*$');
   static final RegExp _leadingSeparatorPattern = RegExp(r'^[ \t]*[,，][ \t]*');
 
-  static const Set<String> _protectChars = {
-    ...TextSpaceConverter.naiFormat,
-    PromptLiteralMask.tokenStart,
-    PromptLiteralMask.tokenEnd,
-  };
+  /// 规范化单个标签：统一空白，再按标签格式统一分隔符（表情类标签除外）。
+  /// [useUnderscores] 为 true 用下划线格式，false 用空格格式，null 按本机设置。
+  static String formatTag(String tag, {bool? useUnderscores}) => _normalizeTag(
+    _normalizeHorizontalWhitespace(tag),
+    useUnderscores ?? BigmanModFlags.promptTagsUseUnderscores(),
+  );
+
+  /// 当前该用哪种标签格式。
+  ///
+  /// [replaceUnderscores] 沿用上游语义：true = 下划线换成空格（空格格式），
+  /// false = 空格换成下划线（下划线格式），null = 按本机设置。
+  static bool _resolveUnderscoreMode(bool? replaceUnderscores) =>
+      replaceUnderscores == null
+      ? BigmanModFlags.promptTagsUseUnderscores()
+      : !replaceUnderscores;
 
   /// 格式化整个提示词
   /// - 将中文逗号转换为英文逗号
-  /// - 按 [replaceUnderscores] 统一标签使用空格或下划线
-  /// - 官网会渲染的引号文字、手写 text: 段、别名与颜文字保持原样
+  /// - 按标签格式统一分隔符：下划线格式把标签内空格换成下划线，
+  ///   空格格式把标签内下划线换成空格（两种都保留逗号后的空格和尖括号内的空格）
   /// - 保留用户用于分组的换行、空行和行首缩进
-  static String format(String prompt, {bool replaceUnderscores = false}) {
+  /// - 官网会渲染的引号文字、手写 text: 段、别名与颜文字保持原样
+  ///
+  /// [useUnderscores] 省略时按本机设置（默认下划线）。
+  static String format(String prompt, {bool? replaceUnderscores}) {
+    final underscoreMode = _resolveUnderscoreMode(replaceUnderscores);
     final mask = PromptLiteralMask.of(prompt);
     var followsDisabled = false;
     final formatted = PromptEditDocument.mapActiveText(mask.text, (fragment) {
@@ -33,14 +56,14 @@ class NaiPromptFormatter {
           ? _leadingSeparatorPattern.firstMatch(fragment)
           : null;
       followsDisabled = true;
-      if (separator == null) return _formatActive(fragment, replaceUnderscores);
+      if (separator == null) return _formatActive(fragment, underscoreMode);
       return '${separator.group(0)!.replaceAll('，', ',')}'
-          '${_formatActive(fragment.substring(separator.end), replaceUnderscores)}';
+          '${_formatActive(fragment.substring(separator.end), underscoreMode)}';
     });
     return mask.restore(formatted);
   }
 
-  static String _formatActive(String prompt, bool replaceUnderscores) {
+  static String _formatActive(String prompt, bool underscoreMode) {
     if (prompt.isEmpty) return prompt;
 
     // Format block contents through the same path as positive tags while the
@@ -55,22 +78,22 @@ class NaiPromptFormatter {
       prepared = prepared.replaceRange(
         block.contentRange.start,
         block.contentRange.end,
-        _formatPromptText(content, replaceUnderscores),
+        _formatPromptText(content, underscoreMode),
       );
     }
 
-    return _formatPromptText(prepared, replaceUnderscores);
+    return _formatPromptText(prepared, underscoreMode);
   }
 
-  static String _formatPromptText(String prompt, bool replaceUnderscores) {
+  static String _formatPromptText(String prompt, bool underscoreMode) {
     return prompt.splitMapJoin(
       _lineBreakPattern,
       onMatch: (match) => match.group(0)!,
-      onNonMatch: (line) => _formatLine(line, replaceUnderscores),
+      onNonMatch: (line) => _formatLine(line, underscoreMode),
     );
   }
 
-  static String _formatLine(String line, bool replaceUnderscores) {
+  static String _formatLine(String line, bool underscoreMode) {
     if (line.isEmpty) return line;
 
     final leadingWhitespace =
@@ -86,17 +109,11 @@ class NaiPromptFormatter {
     content = _normalizeHorizontalWhitespace(content).replaceAll('，', ',');
     final keepsTrailingComma = content.endsWith(',');
 
+    // 胖大叔自用改：标签格式由设置决定（默认下划线，与官方一致）。
+    // 表情类标签（x_x / o_o / ^_^ / >_< / <o>_<o>）两种模式都保持原样。
     final tags = content
         .split(',')
-        .map((tag) {
-          final trimmed = tag.trim();
-          if (trimmed.isEmpty) return '';
-          if (replaceUnderscores) return _toSpaceStyle(trimmed);
-          return TextSpaceConverter.convert(
-            trimmed,
-            protectChars: _protectChars,
-          );
-        })
+        .map((tag) => _normalizeTag(tag, underscoreMode))
         .where((tag) => tag.isNotEmpty)
         .toList();
 
@@ -108,14 +125,70 @@ class NaiPromptFormatter {
     return '$leadingWhitespace$formatted$trailingWhitespace';
   }
 
-  // 颜文字已被遮罩，这里可以整段替换；合并空白保证再次格式化结果不变
-  static String _toSpaceStyle(String tag) =>
-      _normalizeHorizontalWhitespace(tag.replaceAll('_', ' ')).trim();
-
   /// 统一行内空白字符，不跨越或删除换行。
   static String _normalizeHorizontalWhitespace(String text) {
     var result = text.replaceAll('　', ' ');
     result = result.replaceAll(_horizontalWhitespacePattern, ' ');
     return result;
+  }
+
+  /// 单个标签的规范化；表情类标签原样返回。
+  ///
+  /// 下划线格式（[underscoreMode] = true）：
+  ///   `soft dramatic lighting` → `soft_dramatic_lighting`
+  ///   复用 [TextSpaceConverter]，按 [TextSpaceConverter.danbooruStyle] 保护：
+  ///   逗号 / 冒号 / 花括号 / 方括号 / 竖线 / 尖括号旁与尖括号内部的空格留着，
+  ///   **圆括号不保护** —— `hong (white_spider)` 属于同一个标签，
+  ///   要连成 `hong_(white_spider)`。
+  ///
+  /// 空格格式（[underscoreMode] = false）：
+  ///   `soft_dramatic_lighting` → `soft dramatic lighting`
+  ///
+  /// 两种模式下 `x_x`、`o_o`、`^_^`、`>_<`、`<o>_<o>` 都保持不变。
+  static String _normalizeTag(String tag, bool underscoreMode) {
+    final trimmed = tag.trim();
+    if (trimmed.isEmpty) return trimmed;
+    if (_isFaceLikeTag(trimmed)) return trimmed;
+    if (underscoreMode) {
+      if (!trimmed.contains(' ')) return trimmed;
+      return TextSpaceConverter.convert(
+        trimmed,
+        protectChars: _tagProtectChars,
+      );
+    }
+    if (!trimmed.contains('_')) return trimmed;
+    return _normalizeHorizontalWhitespace(
+      trimmed.replaceAll('_', ' '),
+    ).trim();
+  }
+
+  /// 下划线格式用的保护字符集：沿用 danbooru 口径（**不保护圆括号**），
+  /// 另外加上字面量遮罩的边界 —— 否则 `sign 'Hello World'` 会被连成
+  /// `sign_'Hello World'`，破坏官网的引号渲染规则。
+  static final Set<String> _tagProtectChars = {
+    ...TextSpaceConverter.danbooruStyle,
+    PromptLiteralMask.tokenStart,
+    PromptLiteralMask.tokenEnd,
+  };
+
+  /// 判断是否为「表情类」标签 —— 其中的下划线是符号本身，不能换成空格。
+  ///
+  /// 规则一：下划线两侧完全相同（忽略大小写）
+  ///         `x_x` `o_o` `O_o` `0_0` `T_T` `+_+` `._.` `^_^` `|_|` `<o>_<o>`
+  /// 规则二：整串很短且至少一侧不是字母数字
+  ///         `>_<` `>_o` `;_;`
+  static bool _isFaceLikeTag(String tag) {
+    if (tag.length > 8) return false;
+    final parts = tag.split('_');
+    if (parts.length < 2) return false;
+    final first = parts.first.toLowerCase();
+    if (parts.every((part) => part.toLowerCase() == first)) return true;
+    if (tag.length <= 5 &&
+        parts.any(
+          (part) => part.isNotEmpty && !_alphanumericPattern.hasMatch(part),
+        )) {
+      return true;
+    }
+    return false;
   }
 }

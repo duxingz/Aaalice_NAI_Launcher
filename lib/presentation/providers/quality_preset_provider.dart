@@ -3,8 +3,10 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../core/constants/api_constants.dart';
 import '../../core/storage/local_storage_service.dart';
+import '../../core/utils/bigman_mod_flags.dart';
 import '../../data/models/prompt/prompt_preset_mode.dart';
 import '../../data/models/tag_library/tag_library_entry.dart';
+import 'bigman/bigman_mod_settings.dart';
 import 'generation/generation_params_notifier.dart';
 import 'tag_library_page_provider.dart';
 
@@ -65,6 +67,19 @@ class QualityPresetNotifier extends _$QualityPresetNotifier {
 
   @override
   QualityPresetState build() {
+    // 胖大叔自用改：功能停用时对全体消费者表现为「无」。
+    // 这样负面/质量文本拼接、请求里的 qualityToggle 字段、token 计数
+    // 会一并停止，而不是只关掉 UI —— 否则官网仍会按该字段自己补质量词。
+    if (!ref.watch(
+      bigmanModSettingsProvider.select((s) => s.qualityPresetEnabled),
+    )) {
+      return QualityPresetState(
+        mode: PromptPresetMode.none,
+        naiTierId: _storage.getQualityPresetNaiTier(),
+        customEntryId: _storage.getQualityPresetCustomId(),
+        customEntryIds: _storage.getQualityPresetCustomIds(),
+      );
+    }
     // 读取自定义条目列表
     final customIds = _storage.getQualityPresetCustomIds();
 
@@ -194,6 +209,9 @@ class QualityPresetNotifier extends _$QualityPresetNotifier {
   /// [model] 当前选择的模型
   /// 返回 null 表示不添加质量词
   String? getEffectiveContent(String model) {
+    // 胖大叔自用改：质量词预设关闭时视为「无」，
+    // 界面上的图标与选择保持不变，只是不再注入生成请求。
+    if (!BigmanModFlags.qualityPresetEnabled()) return null;
     switch (state.mode) {
       case PromptPresetMode.naiDefault:
         return QualityTags.getQualityTagsForTier(model, state.naiTierId);

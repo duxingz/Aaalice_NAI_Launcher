@@ -1,0 +1,89 @@
+import 'package:hive/hive.dart';
+
+import '../constants/storage_keys.dart';
+
+/// 胖大叔自用改：非 UI 层读取开关。
+///
+/// UI 层用 `bigmanModSettingsProvider` 以获得响应式刷新；provider、
+/// 快捷键回调等拿不到 Riverpod 容器的地方用这里的静态读取，两者读同一
+/// 份存储键，取值一致。存储未就绪时一律返回关闭默认值。
+class BigmanModFlags {
+  BigmanModFlags._();
+
+  static bool? _readBool(String key) {
+    try {
+      if (!Hive.isBoxOpen(StorageKeys.settingsBox)) return null;
+      return Hive.box(StorageKeys.settingsBox).get(key) as bool?;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  static String? _readString(String key) {
+    try {
+      if (!Hive.isBoxOpen(StorageKeys.settingsBox)) return null;
+      return Hive.box(StorageKeys.settingsBox).get(key) as String?;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  static int? _readInt(String key) {
+    try {
+      if (!Hive.isBoxOpen(StorageKeys.settingsBox)) return null;
+      return Hive.box(StorageKeys.settingsBox).get(key) as int?;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  /// 质量词预设是否启用；默认关闭（不注入官方质量词）。
+  static bool qualityPresetEnabled() =>
+      _readBool(StorageKeys.bigmanQualityPresetEnabled) ?? false;
+
+  /// 负面提示词预设是否启用；默认关闭（不注入负面预设）。
+  static bool ucPresetEnabled() =>
+      _readBool(StorageKeys.bigmanUcPresetEnabled) ?? false;
+
+  /// 随机提示词工具是否启用；默认关闭。
+  static bool randomPromptEnabled() =>
+      _readBool(StorageKeys.bigmanRandomPromptEnabled) ?? false;
+
+  /// 多选调权重时是否把整段合并成**一个权重块**（`0.95::a, b, c::`）。
+  ///
+  /// 默认开启＝新的合并行为；关闭后回到旧行为：选中的每个标签各自套权重
+  /// （`0.95::a::, 0.95::b::`）。每次按键都会重新读取，改设置立即生效。
+  static bool mergeMultiSelectWeight() =>
+      _readBool(StorageKeys.bigmanMergeMultiSelectWeight) ?? true;
+
+  /// 格式化提示词时标签内用什么：`true` = 下划线（空格换下划线），
+  /// `false` = 空格（下划线换空格）。
+  ///
+  /// 默认下划线 —— 与官方格式化一致；存储缺失、旧值、类型不符都按默认。
+  static bool promptTagsUseUnderscores() =>
+      _readString(StorageKeys.bigmanPromptTagFormat) != _spaceTagFormat;
+
+  /// 生成历史保留张数的可选档位。
+  static const List<int> historyLimitOptions = <int>[50, 100, 150, 200];
+
+  /// 生成历史保留张数的默认档位。
+  static const int defaultHistoryLimit = 50;
+
+  /// 生成历史保留张数；缺失或非法（手改存储、旧值）一律回落到默认档。
+  ///
+  /// 内存里的历史列表与 Hive 里的历史记录用同一个取值，否则会出现
+  /// 「界面上留着 100 张、落盘只存 50 张」这类不一致。
+  static int historyLimit() {
+    final value = _readInt(StorageKeys.bigmanHistoryLimit);
+    return value != null && historyLimitOptions.contains(value)
+        ? value
+        : defaultHistoryLimit;
+  }
+
+  /// 精简快捷编辑是否开启；默认关闭（保持上游满配悬浮条）。
+  static bool compactQuickActionsEnabled() =>
+      _readBool(StorageKeys.bigmanCompactQuickActions) ?? false;
+}
+
+/// 设置里表示「空格格式」的存储值。
+const String _spaceTagFormat = 'space';

@@ -156,10 +156,13 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(
-      tester.widgetList<Slider>(find.byType(Slider)).map((s) => s.divisions),
-      [29, 19],
-    );
+    // 本改版在回退设置里另加了「流水线间隔」「整批循环」滑块，
+    // 这里只钉住重试相关的两个，其余滑块单独覆盖。
+    final divisions = tester
+        .widgetList<Slider>(find.byType(Slider))
+        .map((s) => s.divisions)
+        .toList();
+    expect(divisions.take(2), [29, 19]);
     final interval = _sliderNode('重试间隔');
     expect(interval.value, endsWith('秒'));
     expect(find.text(interval.value), findsOneWidget);
@@ -364,9 +367,10 @@ void main() {
             }
           }
           for (final unit in [l10n.unit_times, l10n.unit_seconds]) {
+            // 本改版的流水线间隔滑块也用「秒」，这里只要求首个单位文本完整可见。
             expectFullyVisible(
               tester,
-              labeledRowText(unit),
+              labeledRowText(unit).first,
               reason: '$unit $scenario',
             );
           }

@@ -4,10 +4,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/platform/platform_capabilities.dart';
+import '../../../core/services/bigman_prompt_inbox.dart';
+import '../../../data/models/character/character_prompt.dart';
 import '../../adaptive/adaptive_layout.dart';
+import '../../providers/bigman/bigman_mod_settings.dart';
+import '../../providers/character_prompt_provider.dart';
 import '../../providers/generation_layout_mode_provider.dart';
 import '../../providers/image_generation_provider.dart';
 import '../../providers/layout_state_provider.dart';
+import '../../widgets/common/app_toast.dart';
 import '../../widgets/common/owned_scroll_controller.dart';
 import '../../widgets/drop/global_drop_handler.dart';
 import 'desktop_layout.dart';
@@ -31,6 +36,13 @@ class _GenerationScreenState extends ConsumerState<GenerationScreen> {
   final _promptInputKey = GlobalKey(debugLabel: 'generation-prompt-input');
   late final PromptInputController _promptInputController;
 
+  /// 胖大叔自用改：DSH 提示词收件箱。
+  ///
+  /// 挂在生成页（三种布局的共同父级）而不是某个具体布局里 —— 否则用户
+  /// 切换到 Web 风格布局时轮询就不会启动。
+  PromptInboxWatcher? _promptInbox;
+
+
   @override
   void initState() {
     super.initState();
@@ -40,10 +52,63 @@ class _GenerationScreenState extends ConsumerState<GenerationScreen> {
       negativePrompt: params.negativePrompt,
       negativeModeNotifier: _webNegativeMode,
     );
+    _promptInbox =
+        PromptInboxWatcher(
+          setPrompt: (value) => ref
+              .read(generationParamsNotifierProvider.notifier)
+              .updatePrompt(value),
+          setNegativePrompt: (value) => ref
+              .read(generationParamsNotifierProvider.notifier)
+              .updateNegativePrompt(value),
+          setCharacters: (characters) {
+            final notifier = ref.read(
+              characterPromptNotifierProvider.notifier,
+            );
+            notifier.clearAllCharacters();
+            for (final character in characters) {
+              notifier.addCharacter(
+                CharacterGender.female,
+                name: character.name,
+                prompt: character.prompt,
+              );
+            }
+          },
+          isEnabled: () =>
+              ref.read(bigmanModSettingsProvider).promptInboxEnabled,
+          isBusy: () => ref.read(imageGenerationNotifierProvider).isBusy,
+          onApplied: (summary) {
+            if (!mounted) return;
+            AppToast.info(context, '已从 DSH 填入：$summary');
+          },
+          // 覆盖前备份：把当前各区拼成同格式文本存盘，误覆盖后能找回。
+          snapshotCurrent: () {
+            final params = ref.read(generationParamsNotifierProvider);
+            final characters = ref
+                .read(characterPromptNotifierProvider)
+                .characters;
+            final buffer = StringBuffer()
+              ..writeln('---POSITIVE---')
+              ..writeln(params.prompt)
+              ..writeln('---NEGATIVE---')
+              ..writeln(params.negativePrompt);
+            for (final character in characters) {
+              buffer
+                ..writeln('---CHARACTER:${character.name}---')
+                ..writeln(character.prompt);
+            }
+            return buffer.toString();
+          },
+        )
+          ..start();
+
   }
+
+
+
 
   @override
   void dispose() {
+    _promptInbox?.stop();
     _promptInputController.dispose();
     _webNegativeMode.dispose();
     super.dispose();

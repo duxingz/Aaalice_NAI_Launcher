@@ -741,7 +741,11 @@ class _TestQueueExecutionNotifier extends QueueExecutionNotifier {
   @override
   QueueExecutionState build() {
     super.build();
-    return const QueueExecutionState();
+    // 本改版有「流水线间隔」（默认 12~24 秒），测试关注任务推进，这里关掉。
+    return const QueueExecutionState(
+      taskIntervalMinSeconds: 0,
+      taskIntervalMaxSeconds: 0,
+    );
   }
 
   void setStrategyForTest(FailureHandlingStrategy strategy) {

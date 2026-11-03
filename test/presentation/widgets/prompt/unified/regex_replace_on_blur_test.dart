@@ -253,6 +253,7 @@ void main() {
 
     expect(
       controller.text,
+      // 默认标签格式＝下划线（与官方一致）：标签内空格转下划线，换行与缩进保留。
       'quality_tags, best_quality,\n\n  blue_hair, red_eyes',
     );
   });
@@ -277,6 +278,7 @@ void main() {
     await tester.pump(const Duration(seconds: 4));
     await tester.pumpAndSettle();
 
+    // 空格→下划线是一对一替换，字符总数不变，所以光标行列断言照旧成立。
     const formatted = 'masterpiece_tag,\nblue_hair, smile';
     expect(controller.text, formatted);
     expect(

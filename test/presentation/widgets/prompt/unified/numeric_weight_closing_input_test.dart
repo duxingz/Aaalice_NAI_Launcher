@@ -60,7 +60,8 @@ Future<void> _pumpInput(
 }
 
 void main() {
-  testWidgets('wheel weights follow the option, including later toggles', (
+  // 本改版固定补「保护性逗号」，不跟随上游的补空格开关。
+  testWidgets('wheel weights always add the protective comma', (
     tester,
   ) async {
     const text = 'year_2025, b';
@@ -71,13 +72,13 @@ void main() {
     await _pumpInput(tester, host, separate);
 
     await wheelSelectedPart(tester, text, 'year_2025');
-    expect(host.text, '1.05::year_2025::, b');
+    expect(host.text, '1.05::year_2025, ::, b');
 
     host.text = text;
     separate.value = true;
     await tester.pump();
     await wheelSelectedPart(tester, text, 'year_2025');
-    expect(host.text, '1.05::year_2025 ::, b');
+    expect(host.text, '1.05::year_2025, ::, b');
   });
 
   testWidgets('blur separates existing closings only when enabled', (

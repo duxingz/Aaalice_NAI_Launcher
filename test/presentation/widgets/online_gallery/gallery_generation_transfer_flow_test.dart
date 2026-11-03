@@ -127,6 +127,7 @@ void main() {
     await tester.pump(const Duration(milliseconds: 500));
 
     final params = container.read(generationParamsNotifierProvider);
+    // 默认标签格式＝下划线（与官方一致）。
     expect(params.prompt, '1girl, blue_hair');
     expect(params.seed, 123456);
     expect(params.model, ImageModels.animeDiffusionV5Full);

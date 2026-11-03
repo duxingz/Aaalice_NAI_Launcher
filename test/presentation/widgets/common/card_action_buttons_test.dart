@@ -694,6 +694,138 @@ void main() {
       const Size.square(48),
     );
   });
+
+  // 用户点名：悬浮圆钮里没意义用不上的太多，要一个「精简快捷编辑」开关。
+  // 关键约束有两面 —— 悬浮条要精简，但右键菜单里的操作一个都不能少。
+  group('精简快捷编辑（胖大叔自用改）', () {
+    const kept = <ImageCardActionId>[
+      ImageCardActionId.save,
+      ImageCardActionId.copy,
+      ImageCardActionId.editImage,
+      ImageCardActionId.inpaint,
+      ImageCardActionId.enhance,
+      ImageCardActionId.imageToImage,
+      ImageCardActionId.generateVariations,
+      ImageCardActionId.directorTools,
+      ImageCardActionId.upscale,
+    ];
+
+    const hidden = <ImageCardActionId>[
+      ImageCardActionId.addToAgent,
+      ImageCardActionId.saveToLibrary,
+      ImageCardActionId.reversePrompt,
+      ImageCardActionId.vibeTransfer,
+      ImageCardActionId.preciseReference,
+      ImageCardActionId.saveToPreciseRefLibrary,
+      ImageCardActionId.dlssEnhance,
+      ImageCardActionId.sendToKrita,
+    ];
+
+    // 上游满配顺序：被点名的 8 个穿插在中间；删除是危险动作，另有归属。
+    const upstreamOrder = <ImageCardActionId>[
+      ImageCardActionId.save,
+      ImageCardActionId.copy,
+      ImageCardActionId.addToAgent,
+      ImageCardActionId.saveToLibrary,
+      ImageCardActionId.reversePrompt,
+      ImageCardActionId.imageToImage,
+      ImageCardActionId.vibeTransfer,
+      ImageCardActionId.preciseReference,
+      ImageCardActionId.saveToPreciseRefLibrary,
+      ImageCardActionId.editImage,
+      ImageCardActionId.inpaint,
+      ImageCardActionId.generateVariations,
+      ImageCardActionId.directorTools,
+      ImageCardActionId.enhance,
+      ImageCardActionId.dlssEnhance,
+      ImageCardActionId.upscale,
+      ImageCardActionId.sendToKrita,
+      ImageCardActionId.delete,
+    ];
+
+    List<ImageCardAction> allActions() => [
+      for (final id in upstreamOrder)
+        ImageCardAction(
+          id: id,
+          icon: Icons.circle,
+          label: id.name,
+          invoke: () {},
+          isDanger: id == ImageCardActionId.delete,
+        ),
+    ];
+
+    List<ImageCardActionId> idsOf(Iterable<ImageCardAction> actions) =>
+        actions.map((action) => action.id).toList();
+
+    Future<void> pumpButtons(
+      WidgetTester tester, {
+      required bool compact,
+    }) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Center(
+            child: CardActionButtons(
+              visible: true,
+              direction: Axis.horizontal,
+              // 开关直接注入：widget test 的假异步时钟下不能做真实文件 I/O。
+              compactQuickActions: compact,
+              buttons: allActions(),
+            ),
+          ),
+        ),
+      );
+    }
+
+    List<ImageCardActionId> renderedIds(WidgetTester tester) => tester
+        .widgetList<ImageCardOverlayActionButton>(
+          find.byType(ImageCardOverlayActionButton),
+        )
+        .map((widget) => widget.config.id)
+        .toList();
+
+    test('关闭时保持上游满配顺序', () {
+      expect(
+        idsOf(CardActionButtons.hoverButtons(allActions(), compact: false)),
+        upstreamOrder,
+      );
+    });
+
+    test('开启后只留这 9 个，并按用户指定顺序排列', () {
+      // 危险动作由 build 统一排到末尾，所以删除仍在最后。
+      expect(
+        idsOf(CardActionButtons.hoverButtons(allActions(), compact: true)),
+        [...kept, ImageCardActionId.delete],
+      );
+    });
+
+    testWidgets('开启后悬浮条真的只渲染这 9 个 + 删除', (tester) async {
+      await pumpButtons(tester, compact: true);
+
+      expect(renderedIds(tester), [...kept, ImageCardActionId.delete]);
+    });
+
+    testWidgets('关闭时悬浮条与上游一致（老用户升级后行为不变）', (tester) async {
+      await pumpButtons(tester, compact: false);
+
+      expect(renderedIds(tester), upstreamOrder);
+    });
+
+    testWidgets('精简只作用于悬浮条：传入的动作清单一个都没少', (tester) async {
+      await pumpButtons(tester, compact: true);
+
+      // 右键菜单读的就是这份清单，因此被隐藏的操作仍然可达。
+      final widget = tester.widget<CardActionButtons>(
+        find.byType(CardActionButtons),
+      );
+      expect(widget.buttons.map((action) => action.id).toSet(), {
+        ...kept,
+        ...hidden,
+        ImageCardActionId.delete,
+      });
+    });
+  });
 }
 
 double _contrast(Color foreground, Color overlay) {

@@ -8180,6 +8180,27 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
+  String get settings_queuePipelineInterval => '流水线间隔（仅队列生效）';
+
+  @override
+  String get settings_queuePipelineIntervalDescription =>
+      '队列里每张图之间至少隔这么久，在该区间内随机取值。出图本身的时间算在里面；两个都填 0 表示不等。';
+
+  @override
+  String get settings_queuePipelineIntervalMin => '最小秒数';
+
+  @override
+  String get settings_queuePipelineIntervalMax => '最大秒数';
+
+  @override
+  String settings_queuePipelineIntervalValue(Object seconds) {
+    return '$seconds 秒';
+  }
+
+  @override
+  String get settings_queueAutoLoopRounds => '整批循环轮数';
+
+  @override
   String settings_queueRetryIntervalValue(Object seconds) {
     return '$seconds 秒';
   }
@@ -15525,6 +15546,189 @@ class AppLocalizationsZh extends AppLocalizations {
 
     return '会员到期日期：$dateString';
   }
+
+  @override
+  String get bigmanMod_settingsTitle => '胖大叔自用改';
+
+  @override
+  String get bigmanMod_promptSectionTitle => '提示词编辑';
+
+  @override
+  String get bigmanMod_promptSectionDescription =>
+      '输入框内的键盘快捷方式；自动规范格式与工具栏上的按钮共用同一个开关。';
+
+  @override
+  String get bigmanMod_promptWeightShortcut => 'Ctrl+↑/↓ 调整标签权重';
+
+  @override
+  String get bigmanMod_promptWeightShortcutSubtitle =>
+      '光标所在或选中的标签每次增减 0.05；降到 1.0 时自动去掉权重语法，权重范围 −10 ~ 10（可一路减到负权重做抑制）。';
+
+  @override
+  String get bigmanMod_mergeMultiSelectWeight => '多选调权重时合并成一个权重块';
+
+  @override
+  String get bigmanMod_mergeMultiSelectWeightSubtitle =>
+      '开启后，选中多个标签调权重会写成一个块 0.95::a, b, c::；关闭则保留旧行为，每个标签各自套权重。去尾零与「数字结尾补保护逗号」始终生效。';
+
+  @override
+  String get bigmanMod_promptMoveShortcut => 'Ctrl+←/→ 移动标签位置';
+
+  @override
+  String get bigmanMod_promptMoveShortcutSubtitle =>
+      '与相邻标签交换位置；权重组只有一个标签时整组一起移动。';
+
+  @override
+  String get bigmanMod_autoFormat => '自动规范格式（失焦时）';
+
+  @override
+  String get bigmanMod_autoFormatSubtitle => '离开输入框时整理中文逗号、空格与分隔符。与工具栏按钮联动。';
+
+  @override
+  String get bigmanMod_promptTagFormat => '标签格式';
+
+  @override
+  String get bigmanMod_promptTagFormatSubtitle =>
+      '格式化时标签内部用什么分隔：下划线（long_hair，与官方一致）或空格（long hair）。';
+
+  @override
+  String get bigmanMod_promptTagFormatUnderscore => '下划线';
+
+  @override
+  String get bigmanMod_promptTagFormatSpace => '空格';
+
+  @override
+  String get bigmanMod_disableSectionTitle => '功能停用';
+
+  @override
+  String get bigmanMod_disableSectionDescription => '关闭后界面保留原来的图标，但点击不再有任何反应。';
+
+  @override
+  String get bigmanMod_qualityPreset => '启用质量词预设';
+
+  @override
+  String get bigmanMod_qualityPresetSubtitle =>
+      '关闭后不再向生成请求注入官方质量词，界面上的显示与选择保持不变。';
+
+  @override
+  String get bigmanMod_ucPreset => '启用负面提示词预设';
+
+  @override
+  String get bigmanMod_ucPresetSubtitle => '关闭后不再注入负面预设内容，界面上的显示与选择保持不变。';
+
+  @override
+  String get bigmanMod_randomPrompt => '启用随机提示词工具';
+
+  @override
+  String get bigmanMod_randomPromptSubtitle =>
+      '关闭后随机按钮、Ctrl+R 快捷键与抽卡模式开关都不再响应。';
+
+  @override
+  String get bigmanMod_saveNameSectionTitle => '保存文件名规则';
+
+  @override
+  String get bigmanMod_saveNameSectionDescription => '模板留空表示保持原来的「时间-种子」命名。';
+
+  @override
+  String get bigmanMod_saveNameTemplate => '命名模板';
+
+  @override
+  String bigmanMod_saveNameTemplateHint(Object n) {
+    return '例如 $n 或 胖大叔_$n';
+  }
+
+  @override
+  String bigmanMod_saveNameVariables(
+    Object date,
+    Object n,
+    Object seed,
+    Object time,
+  ) {
+    return '可用变量：$n 序号 · $seed 种子 · $date 日期 · $time 时间';
+  }
+
+  @override
+  String get bigmanMod_saveNameCounterMode => '序号来源';
+
+  @override
+  String get bigmanMod_saveNameCounterGlobal => '全局连续计数';
+
+  @override
+  String get bigmanMod_saveNameCounterScan => '每次扫描目录取最大号';
+
+  @override
+  String get bigmanMod_saveNameCounterScanHint =>
+      '每次保存扫描保存目录，取最大号 +1；删掉的号会被回收复用。';
+
+  @override
+  String get bigmanMod_saveNameCounterGlobalHint =>
+      '本机计数器，跨日期目录持续递增；号只增不回收，删了图也不会复用。';
+
+  @override
+  String get bigmanMod_saveNamePadding => '补零位数';
+
+  @override
+  String get bigmanMod_saveNamePaddingHint => '0 表示不补零';
+
+  @override
+  String get bigmanMod_saveNameStart => '起始序号';
+
+  @override
+  String get bigmanMod_autoDateFolder => '自动新建日期文件夹';
+
+  @override
+  String get bigmanMod_autoDateFolderSubtitle => '关闭后图片直接保存在目标目录，不再按日期分子文件夹。';
+
+  @override
+  String get bigmanMod_promptInbox => 'DSH 提示词收件箱';
+
+  @override
+  String get bigmanMod_promptInboxSubtitle =>
+      '轮询约定文件，把 DSH 写好的提示词自动填进输入框（含负面词与角色分区），省掉手动复制粘贴。';
+
+  @override
+  String get bigmanMod_uiSectionTitle => '界面与历史';
+
+  @override
+  String get bigmanMod_uiSectionDescription => '历史区保留多少张图，以及卡片悬浮时显示哪些快捷按钮。';
+
+  @override
+  String get bigmanMod_historyLimit => '历史记录保留数量';
+
+  @override
+  String get bigmanMod_historyLimitSubtitle =>
+      '调大后能往回翻更多张。每张都按原图存一份，占用的内存与磁盘会同步变大（约每张 1.8MB）。';
+
+  @override
+  String get bigmanMod_compactQuickActions => '精简快捷编辑';
+
+  @override
+  String get bigmanMod_compactQuickActionsSubtitle =>
+      '悬浮时只显示常用的编辑操作：保存、复制、编辑图像、局部重绘、增强、图生图、生成变体、导演工具、放大。其余操作仍在右键菜单里。';
+
+  @override
+  String get drop_importOptions => '导入选项';
+
+  @override
+  String get drop_importPrompt => '正面提示词';
+
+  @override
+  String get drop_importNegativePrompt => '负面提示词';
+
+  @override
+  String get drop_importCharacters => '角色提示词';
+
+  @override
+  String get drop_importSettings => '生成设置';
+
+  @override
+  String get drop_importSeed => '种子';
+
+  @override
+  String get drop_img2imgWithPrompts => '图生图 + 导入提示词';
+
+  @override
+  String get drop_img2imgWithPromptsSubtitle => '设为图生图源图，并导入正面提示词与角色提示词';
 }
 
 /// The translations for Chinese, using the Han script (`zh_Hant`).
@@ -23704,6 +23908,27 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
   }
 
   @override
+  String get settings_queuePipelineInterval => '流水線間隔（僅佇列生效）';
+
+  @override
+  String get settings_queuePipelineIntervalDescription =>
+      '佇列裡每張圖之間至少隔這麼久，在該區間內隨機取值。出圖本身的時間算在裡面；兩個都填 0 表示不等。';
+
+  @override
+  String get settings_queuePipelineIntervalMin => '最小秒數';
+
+  @override
+  String get settings_queuePipelineIntervalMax => '最大秒數';
+
+  @override
+  String settings_queuePipelineIntervalValue(Object seconds) {
+    return '$seconds 秒';
+  }
+
+  @override
+  String get settings_queueAutoLoopRounds => '整批循環輪數';
+
+  @override
   String settings_queueRetryIntervalValue(Object seconds) {
     return '$seconds 秒';
   }
@@ -31051,4 +31276,187 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
 
     return '會員到期日期：$dateString';
   }
+
+  @override
+  String get bigmanMod_settingsTitle => '胖大叔自用改';
+
+  @override
+  String get bigmanMod_promptSectionTitle => '提示詞編輯';
+
+  @override
+  String get bigmanMod_promptSectionDescription =>
+      '輸入框內的鍵盤快速鍵；自動規範格式與工具列上的按鈕共用同一個開關。';
+
+  @override
+  String get bigmanMod_promptWeightShortcut => 'Ctrl+↑/↓ 調整標籤權重';
+
+  @override
+  String get bigmanMod_promptWeightShortcutSubtitle =>
+      '游標所在或選取的標籤每次增減 0.05；降到 1.0 時自動移除權重語法，權重範圍 −10 ~ 10（可一路減到負權重做抑制）。';
+
+  @override
+  String get bigmanMod_mergeMultiSelectWeight => '多選調權重時合併成一個權重塊';
+
+  @override
+  String get bigmanMod_mergeMultiSelectWeightSubtitle =>
+      '開啟後，選取多個標籤調權重會寫成一個塊 0.95::a, b, c::；關閉則保留舊行為，每個標籤各自套權重。去尾零與「數字結尾補保護逗號」始終生效。';
+
+  @override
+  String get bigmanMod_promptMoveShortcut => 'Ctrl+←/→ 移動標籤位置';
+
+  @override
+  String get bigmanMod_promptMoveShortcutSubtitle =>
+      '與相鄰標籤交換位置；權重組只有一個標籤時整組一起移動。';
+
+  @override
+  String get bigmanMod_autoFormat => '自動規範格式（失焦時）';
+
+  @override
+  String get bigmanMod_autoFormatSubtitle => '離開輸入框時整理中文逗號、空格與分隔符號。與工具列按鈕連動。';
+
+  @override
+  String get bigmanMod_promptTagFormat => '標籤格式';
+
+  @override
+  String get bigmanMod_promptTagFormatSubtitle =>
+      '格式化時標籤內部用什麼分隔：下劃線（long_hair，與官方一致）或空格（long hair）。';
+
+  @override
+  String get bigmanMod_promptTagFormatUnderscore => '下劃線';
+
+  @override
+  String get bigmanMod_promptTagFormatSpace => '空格';
+
+  @override
+  String get bigmanMod_disableSectionTitle => '功能停用';
+
+  @override
+  String get bigmanMod_disableSectionDescription => '關閉後介面保留原來的圖示，但點擊不再有任何反應。';
+
+  @override
+  String get bigmanMod_qualityPreset => '啟用質量詞預設';
+
+  @override
+  String get bigmanMod_qualityPresetSubtitle =>
+      '關閉後不再向生成請求注入官方質量詞，介面上的顯示與選擇保持不變。';
+
+  @override
+  String get bigmanMod_ucPreset => '啟用負面提示詞預設';
+
+  @override
+  String get bigmanMod_ucPresetSubtitle => '關閉後不再注入負面預設內容，介面上的顯示與選擇保持不變。';
+
+  @override
+  String get bigmanMod_randomPrompt => '啟用隨機提示詞工具';
+
+  @override
+  String get bigmanMod_randomPromptSubtitle =>
+      '關閉後隨機按鈕、Ctrl+R 快速鍵與抽卡模式開關都不再回應。';
+
+  @override
+  String get bigmanMod_saveNameSectionTitle => '儲存檔案名稱規則';
+
+  @override
+  String get bigmanMod_saveNameSectionDescription => '範本留空表示保持原來的「時間-種子」命名。';
+
+  @override
+  String get bigmanMod_saveNameTemplate => '命名範本';
+
+  @override
+  String bigmanMod_saveNameTemplateHint(Object n) {
+    return '例如 $n 或 胖大叔_$n';
+  }
+
+  @override
+  String bigmanMod_saveNameVariables(
+    Object date,
+    Object n,
+    Object seed,
+    Object time,
+  ) {
+    return '可用變數：$n 序號 · $seed 種子 · $date 日期 · $time 時間';
+  }
+
+  @override
+  String get bigmanMod_saveNameCounterMode => '序號來源';
+
+  @override
+  String get bigmanMod_saveNameCounterGlobal => '全域連續計數';
+
+  @override
+  String get bigmanMod_saveNameCounterScan => '每次掃描目錄取最大號';
+
+  @override
+  String get bigmanMod_saveNameCounterScanHint =>
+      '每次儲存掃描儲存目錄，取最大號 +1；刪掉的號會被回收重複使用。';
+
+  @override
+  String get bigmanMod_saveNameCounterGlobalHint =>
+      '本機計數器，跨日期資料夾持續遞增；號只增不回收，刪了圖也不會重複使用。';
+
+  @override
+  String get bigmanMod_saveNamePadding => '補零位數';
+
+  @override
+  String get bigmanMod_saveNamePaddingHint => '0 表示不補零';
+
+  @override
+  String get bigmanMod_saveNameStart => '起始序號';
+
+  @override
+  String get bigmanMod_autoDateFolder => '自動新增日期資料夾';
+
+  @override
+  String get bigmanMod_autoDateFolderSubtitle => '關閉後圖片直接儲存在目標目錄，不再按日期分子資料夾。';
+
+  @override
+  String get bigmanMod_promptInbox => 'DSH 提示詞收件箱';
+
+  @override
+  String get bigmanMod_promptInboxSubtitle =>
+      '輪詢約定檔案，把 DSH 寫好的提示詞自動填入輸入框（含負面詞與角色分區），省掉手動複製貼上。';
+
+  @override
+  String get bigmanMod_uiSectionTitle => '介面與歷史';
+
+  @override
+  String get bigmanMod_uiSectionDescription => '歷史區保留多少張圖，以及卡片懸浮時顯示哪些快捷按鈕。';
+
+  @override
+  String get bigmanMod_historyLimit => '歷史記錄保留數量';
+
+  @override
+  String get bigmanMod_historyLimitSubtitle =>
+      '調大後能往回翻更多張。每張都按原圖存一份，佔用的記憶體與磁碟會同步變大（約每張 1.8MB）。';
+
+  @override
+  String get bigmanMod_compactQuickActions => '精簡快捷編輯';
+
+  @override
+  String get bigmanMod_compactQuickActionsSubtitle =>
+      '懸浮時只顯示常用的編輯操作：儲存、複製、編輯影象、區域性重繪、增強、圖生圖、生成變體、導演工具、放大。其餘操作仍在右鍵選單裡。';
+
+  @override
+  String get drop_importOptions => '匯入選項';
+
+  @override
+  String get drop_importPrompt => '正面提示詞';
+
+  @override
+  String get drop_importNegativePrompt => '負面提示詞';
+
+  @override
+  String get drop_importCharacters => '角色提示詞';
+
+  @override
+  String get drop_importSettings => '生成設定';
+
+  @override
+  String get drop_importSeed => '種子';
+
+  @override
+  String get drop_img2imgWithPrompts => '圖生圖 + 匯入提示詞';
+
+  @override
+  String get drop_img2imgWithPromptsSubtitle => '設為圖生圖來源圖，並匯入正面提示詞與角色提示詞';
 }

@@ -7,7 +7,7 @@ import 'package:nai_launcher/data/models/character/character_prompt.dart'
 
 void main() {
   group('CharacterPromptConfig.addCharacter', () {
-    test('preserves the legacy default UC when no block was supplied', () {
+    test('no longer auto-fills the legacy default UC', () {
       const config = ui_character.CharacterPromptConfig();
 
       final character = config
@@ -16,7 +16,9 @@ void main() {
           .single;
 
       expect(character.prompt, 'girl, blue eyes');
-      expect(character.negativePrompt, 'lowres, aliasing, ');
+      // 本改版行为：新建角色不再自动带上 'lowres, aliasing, '。
+      // 负面词由全局 UC 预设统一负责，不在每个角色里重复一份。
+      expect(character.negativePrompt, '');
     });
 
     test('stores an explicitly parsed independent UC', () {

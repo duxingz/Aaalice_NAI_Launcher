@@ -1,0 +1,249 @@
+import 'dart:io';
+
+import 'package:hive/hive.dart';
+import 'package:path/path.dart' as p;
+
+import '../constants/storage_keys.dart';
+
+/// 胖大叔自用改：保存文件名规则。
+///
+/// 该工具直接从本地设置读取用户配置，因此所有保存入口无需改动调用签名；
+/// 模板为空（未启用）时 [read] 返回 null，保存行为与上游完全一致。
+class BigmanSaveName {
+  BigmanSaveName._();
+
+  /// 扫描模式的遍历上限，按**总条目数**计（不是只数 PNG）。
+  ///
+  /// 只有「自动按日期分文件夹」开启时才会递归整棵子树；此时必须按总条目计数：
+  /// 只数 PNG 的话，混放目录（保存根目录指向「图片和其它文件混在一起」的
+  /// 文件夹、桌面或网盘同步目录）里 PNG 很少却有大量其它文件，上限永远不触发，
+  /// 每次保存都要把整棵树走一遍 —— 表现就是「点保存后卡住」。
+  ///
+  /// ponytail: 上限内是文件系统顺序，超出后可能低估最大编号；真要处理
+  /// 十万级图库时应改为按目录名倒序只扫最近若干天。
+  static const int maxScanEntries = 50000;
+
+  // ==================== 序号来源的存储取值 ====================
+  //
+  // 「序号来源」在设置里是二选一，存的是这两个整数。两个模块（本工具与
+  // 设置 provider）必须用同一套常量与同一个默认值，否则会出现「设置写着扫描、
+  // 实际按全局计数走」这种对不上的情况。
+
+  /// 全局连续计数：本机一个计数器，跨日期目录持续递增，**不回收**删掉的号。
+  static const int globalCounterMode = 0;
+
+  /// 每次扫描保存目录，取最大号 +1；删掉的号会被**回收**复用。
+  static const int scanCounterMode = 1;
+
+  /// 没设置过时的默认值：扫描模式（用户选的；接收方也期望"删号会回收"）。
+  static const int defaultCounterMode = scanCounterMode;
+
+  static Box? settingsBox() {
+    try {
+      if (!Hive.isBoxOpen(StorageKeys.settingsBox)) return null;
+      return Hive.box(StorageKeys.settingsBox);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  /// 读取当前保存命名配置；存储未就绪时返回 null。
+  ///
+  /// 从没设置过时使用默认模板 `{n}`；用户显式清空模板表示关闭自定义命名。
+  static BigmanSaveNameConfig? read() {
+    final box = settingsBox();
+    if (box == null) return null;
+    final rawTemplate = box.get(StorageKeys.bigmanSaveNameTemplate);
+    final template = rawTemplate == null
+        ? '{n}'
+        : (rawTemplate as String).trim();
+    if (template.isEmpty) return null;
+    final padding = (box.get(StorageKeys.bigmanSaveNamePadding) as int?) ?? 0;
+    final start = (box.get(StorageKeys.bigmanSaveNameStart) as int?) ?? 1;
+    final counterMode =
+        (box.get(StorageKeys.bigmanSaveNameCounterMode) as int?) ??
+        defaultCounterMode;
+    final autoDateFolder =
+        (box.get(StorageKeys.bigmanAutoDateFolder) as bool?) ?? false;
+    return BigmanSaveNameConfig(
+      template: template,
+      padding: padding.clamp(0, 8),
+      start: start < 0 ? 0 : start,
+      scanMode: counterMode == scanCounterMode,
+      autoDateFolder: autoDateFolder,
+    );
+  }
+
+  /// 只读「自动新建日期文件夹」开关。
+  ///
+  /// 与命名模板相互独立：模板清空（关闭自定义命名）时它仍然生效，
+  /// 否则用户就没办法在保留原名命名的同时关掉日期文件夹。
+  static bool readAutoDateFolder() {
+    try {
+      final box = settingsBox();
+      if (box == null) return false;
+      return (box.get(StorageKeys.bigmanAutoDateFolder) as bool?) ?? false;
+    } catch (_) {
+      return false;
+    }
+  }
+}
+
+/// 自定义保存命名的解析结果。
+class BigmanSaveNameConfig {
+  const BigmanSaveNameConfig({
+    required this.template,
+    required this.padding,
+    required this.start,
+    required this.scanMode,
+    required this.autoDateFolder,
+  });
+
+  final String template;
+  final int padding;
+  final int start;
+  final bool scanMode;
+  final bool autoDateFolder;
+
+  bool get hasIndex => template.contains('{n}');
+
+  /// 文件名里不允许出现的字符；渲染与扫描必须用**同一套**规则，
+  /// 否则扫描拿模板去匹配实际文件名会永远匹配不上。
+  static final RegExp _illegalFileNameChars = RegExp(r'[<>:"/\\|?*\x00-\x1F]');
+
+  static const String _indexPlaceholder = '{n}';
+  static const String _seedPlaceholder = '{seed}';
+  static const String _datePlaceholder = '{date}';
+  static const String _timePlaceholder = '{time}';
+
+  /// 把一段文本净化成文件名里实际会出现的形状（非法字符换下划线并去首尾空白）。
+  static String _sanitizeFileName(String name) =>
+      name.replaceAll(_illegalFileNameChars, '_').trim();
+
+  static String _two(int value) => value.toString().padLeft(2, '0');
+
+  /// 按模板渲染文件名主干（不含扩展名）。
+  String formatName(int index, {int? seed, DateTime? time}) {
+    final moment = time ?? DateTime.now();
+    final digits = padding <= 0
+        ? '$index'
+        : index.toString().padLeft(padding, '0');
+    var name = template
+        .replaceAll(_indexPlaceholder, digits)
+        .replaceAll(
+          _seedPlaceholder,
+          seed != null && seed >= 0 ? '$seed' : '',
+        )
+        .replaceAll(
+          _datePlaceholder,
+          '${moment.year}-${_two(moment.month)}-${_two(moment.day)}',
+        )
+        .replaceAll(
+          _timePlaceholder,
+          '${_two(moment.hour)}-${_two(moment.minute)}-${_two(moment.second)}',
+        );
+    name = _sanitizeFileName(name);
+    return name.isEmpty ? digits : name;
+  }
+
+  /// 取下一次要使用的序号。
+  ///
+  /// [entryLimit] 是扫描模式的安全上限（遍历的总条目数），默认
+  /// [BigmanSaveName.maxScanEntries]；给个可调入口是为了能对「上限是否按总条目
+  /// 计数」写回归测试。
+  Future<int> resolveNextIndex(
+    String rootPath, {
+    int entryLimit = BigmanSaveName.maxScanEntries,
+  }) async {
+    if (!scanMode) {
+      final box = BigmanSaveName.settingsBox();
+      final current = (box?.get(StorageKeys.bigmanSaveNameCounterValue) as int?);
+      final value = current ?? start;
+      return value < start ? start : value;
+    }
+    final maxUsed = await _scanMaxIndex(rootPath, entryLimit);
+    return maxUsed < start - 1 ? start : maxUsed + 1;
+  }
+
+  /// 记录本次实际使用的序号，让下一次从它继续。
+  Future<void> commitIndex(int usedIndex) async {
+    final box = BigmanSaveName.settingsBox();
+    if (box == null) return;
+    await box.put(StorageKeys.bigmanSaveNameCounterValue, usedIndex + 1);
+  }
+
+  /// 扫描 [rootPath] 下已用的最大编号。
+  ///
+  /// 递归范围**跟随「自动按日期分文件夹」开关**：
+  /// - 开启：图片会分散在 `2026-10-12` 这类日期子文件夹里，必须递归整棵子树，
+  ///   否则每换一天号码就从起始值重来。
+  /// - 关闭：图片全部落在 [rootPath] 本身，只扫这一层。此前无条件递归会把
+  ///   子文件夹里的旧图/备份图一并算进来，导致下一张序号**往上跳**
+  ///   （分享对象报过：日期文件夹没开，序号却从 620 跳到 900）。
+  Future<int> _scanMaxIndex(String rootPath, int entryLimit) async {
+    final root = Directory(rootPath);
+    if (!await root.exists()) return start - 1;
+    final pattern = _namePattern();
+    if (pattern == null) return start - 1;
+    var max = start - 1;
+    var visited = 0;
+    try {
+      await for (final entity in root.list(
+        recursive: autoDateFolder,
+        followLinks: false,
+      )) {
+        // 先计数再筛选：遍历代价由「看过的条目数」决定，与是不是 PNG 无关。
+        visited++;
+        if (visited > entryLimit) break;
+        if (entity is! File) continue;
+        if (p.extension(entity.path).toLowerCase() != '.png') continue;
+        final match = pattern.firstMatch(
+          p.basenameWithoutExtension(entity.path),
+        );
+        if (match == null) continue;
+        final value = int.tryParse(match.group(1) ?? '');
+        if (value != null && value > max) max = value;
+      }
+    } catch (_) {
+      // 目录不可读时退回起始序号，保存仍会靠冲突后缀保证不覆盖。
+      return start - 1;
+    }
+    return max;
+  }
+
+  /// 只匹配按当前模板写出来的文件名；模板没有 `{n}` 时返回 null。
+  ///
+  /// 每个占位符都按 [formatName] 实际写出来的样子建模，否则扫描永远匹配不上
+  /// （表现就是「每次扫描都从起始序号重来、文件一路 -2 -3 叠后缀」）：
+  /// - `{n}` → 一串数字（参与取最大值的那一组）
+  /// - `{seed}` → 允许 0 个数字：解析不到种子时 [formatName] 写的是空串
+  /// - `{date}` / `{time}` → 固定样式的数字
+  /// - 字面部分先做和渲染一样的净化：模板里的 `:` `?` 之类会被写成下划线，
+  ///   拿原字符去匹配同样匹配不上。
+  RegExp? _namePattern() {
+    if (!hasIndex) return null;
+    final source = _sanitizeFileName(template);
+    final buffer = StringBuffer('^');
+    var index = 0;
+    while (index < source.length) {
+      if (source.startsWith(_indexPlaceholder, index)) {
+        buffer.write(r'(\d+)');
+        index += _indexPlaceholder.length;
+      } else if (source.startsWith(_seedPlaceholder, index)) {
+        buffer.write(r'\d*');
+        index += _seedPlaceholder.length;
+      } else if (source.startsWith(_datePlaceholder, index)) {
+        buffer.write(r'\d{4}-\d{2}-\d{2}');
+        index += _datePlaceholder.length;
+      } else if (source.startsWith(_timePlaceholder, index)) {
+        buffer.write(r'\d{2}-\d{2}-\d{2}');
+        index += _timePlaceholder.length;
+      } else {
+        buffer.write(RegExp.escape(source[index]));
+        index++;
+      }
+    }
+    buffer.write(r'$');
+    return RegExp(buffer.toString());
+  }
+}

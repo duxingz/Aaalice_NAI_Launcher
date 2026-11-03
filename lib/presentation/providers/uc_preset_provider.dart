@@ -3,7 +3,9 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../core/constants/api_constants.dart';
 import '../../core/storage/local_storage_service.dart';
+import '../../core/utils/bigman_mod_flags.dart';
 import '../../data/models/tag_library/tag_library_entry.dart';
+import 'bigman/bigman_mod_settings.dart';
 import 'tag_library_page_provider.dart';
 
 part 'uc_preset_provider.g.dart';
@@ -59,6 +61,18 @@ class UcPresetNotifier extends _$UcPresetNotifier {
 
   @override
   UcPresetState build() {
+    // 胖大叔自用改：功能停用时对全体消费者表现为「无」，
+    // 请求里的 ucPreset 字段与负面文本拼接一并停止
+    // （否则官网会按 ucPreset 自己补一套负面预设）。
+    if (!ref.watch(
+      bigmanModSettingsProvider.select((s) => s.ucPresetEnabled),
+    )) {
+      return UcPresetState(
+        presetType: UcPresetType.none,
+        customEntryId: _storage.getUcPresetCustomId(),
+        customEntryIds: _storage.getUcPresetCustomIds(),
+      );
+    }
     // 读取自定义条目列表
     final customIds = _storage.getUcPresetCustomIds();
 
@@ -138,6 +152,8 @@ class UcPresetNotifier extends _$UcPresetNotifier {
   /// [model] 当前选择的模型
   /// 返回 null 表示不添加预设内容
   String? getEffectiveContent(String model) {
+    // 胖大叔自用改：负面预设关闭时不再注入，界面保持不变。
+    if (!BigmanModFlags.ucPresetEnabled()) return null;
     // 如果有自定义条目，使用自定义内容
     if (state.isCustom) {
       final entries = ref.read(tagLibraryPageNotifierProvider).entries;

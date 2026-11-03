@@ -382,6 +382,7 @@ void main() {
 
       expect(
         container.read(generationParamsNotifierProvider).prompt,
+        // 默认标签格式＝下划线：卡片送过来的词组标签按官方规则连成下划线。
         'blue_archive, 1girl',
       );
       expect(router.routeInformationProvider.value.uri.path, '/');

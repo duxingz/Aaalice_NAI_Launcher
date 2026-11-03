@@ -22,6 +22,7 @@ import '../enums/precise_ref_type.dart';
 import '../save_naming/image_save_naming.dart';
 import '../save_naming/save_name_context.dart';
 import 'app_logger.dart';
+import 'bigman_save_name.dart';
 import 'decoded_image_size.dart';
 import 'file_name_sanitizer.dart';
 import 'isolate_pool.dart';
@@ -364,6 +365,9 @@ class ImageSaveUtils {
         source.contains('novelai');
   }
 
+  /// 写元数据的预算：超时就不带元数据保存，绝不拖住保存流程。
+  static const Duration _metadataWriteTimeout = Duration(seconds: 60);
+
   /// 对齐 NAI 官网格式写入 PNG 文本块：
   /// - Comment: 纯参数 JSON（根级含 prompt/seed/...）
   /// - Description/Software/Source: 独立 tEXt 字段，为 null 时不写
@@ -375,19 +379,26 @@ class ImageSaveUtils {
     required String? source,
     bool useStealth = false,
   }) async {
-    final result = await ComputeGate().runCompute(
-      _writeAlignedMetadata,
-      _MetadataWriteRequest(
-        bytes: TransferableTypedData.fromList([imageBytes]),
-        comment: comment,
-        description: description,
-        software: software,
-        source: source,
-        useStealth: useStealth,
-      ),
-      debugLabel: 'save-image-metadata',
-    );
-    return result.materialize().asUint8List();
+    try {
+      final result = await ComputeGate().runCompute(
+        _writeAlignedMetadata,
+        _MetadataWriteRequest(
+          bytes: TransferableTypedData.fromList([imageBytes]),
+          comment: comment,
+          description: description,
+          software: software,
+          source: source,
+          useStealth: useStealth,
+        ),
+        debugLabel: 'save-image-metadata',
+        timeout: _metadataWriteTimeout,
+      );
+      return result.materialize().asUint8List();
+    } on ComputeGateTimeout catch (error) {
+      // 胖大叔自用改：元数据写不进去只是少一层信息，不该把保存本身拖死。
+      AppLogger.w('保存图片：写入元数据超时，改为不带元数据保存（$error）');
+      return imageBytes;
+    }
   }
 
   static Map<String, dynamic>? _tryDecodeJsonMap(String source) {
@@ -413,6 +424,76 @@ class ImageSaveUtils {
   /// - 写入失败时删除占位文件后重新抛出，不留空 PNG 进图库扫描
   /// - 仅名称冲突（候选已存在）才追加 -2、-3 序号；目录只读、磁盘满等
   ///   不可恢复错误直接抛出，避免无限循环
+  static Future<String> saveBytesToDatedPath({
+    required String rootPath,
+    required Uint8List bytes,
+    int? seed,
+    String? preferredFileName,
+    DateTime? now,
+  }) async {
+    final time = now ?? DateTime.now();
+    String two(int v) => v.toString().padLeft(2, '0');
+    // 胖大叔自用改：日期文件夹可关闭，文件名可套用自定义规则。
+    final customName = BigmanSaveName.read();
+    // 日期文件夹开关独立于命名模板：模板清空时它仍然生效。
+    final useDateFolder = BigmanSaveName.readAutoDateFolder();
+    final dateFolder = '${time.year}-${two(time.month)}-${two(time.day)}';
+    final dir = Directory(
+      useDateFolder ? p.join(rootPath, dateFolder) : rootPath,
+    );
+    if (!await dir.exists()) {
+      await dir.create(recursive: true);
+    }
+    final preferredStem = preferredFileName == null
+        ? ''
+        : p
+              .basenameWithoutExtension(p.basename(preferredFileName))
+              .replaceAll(RegExp(r'[<>:"/\\|?*\x00-\x1F]'), '_')
+              .trim();
+    String? baseName;
+    if (preferredStem.isNotEmpty) {
+      baseName = preferredStem;
+    } else if (customName != null) {
+      baseName = await _resolveCustomBaseName(
+        customName,
+        rootPath: rootPath,
+        directoryPath: dir.path,
+        seed: seed,
+        time: time,
+      );
+    } else {
+      baseName = _galleryFileStem(seed: seed, time: time);
+    }
+    var candidate = p.join(dir.path, '$baseName.png');
+    var suffix = 2;
+    File file;
+    while (true) {
+      try {
+        // 阶段一：独占创建。仅此阶段捕获“路径已存在”，
+        // 其他 FileSystemException（权限、只读等）直接抛出，避免无限循环。
+        file = await File(candidate).create(exclusive: true);
+        break;
+      } on FileSystemException {
+        if (!await File(candidate).exists()) rethrow;
+        candidate = p.join(dir.path, '$baseName-$suffix.png');
+        suffix++;
+      }
+    }
+    // 阶段二：写入。失败时尽力删除占位文件，再抛出原始写入异常。
+    // 写入异常不进入创建阶段的冲突重试，避免清理失败时误判为名称冲突而循环。
+    try {
+      await file.writeAsBytes(bytes);
+    } catch (e) {
+      try {
+        await file.delete();
+      } catch (_) {
+        // 清理失败不掩盖原始写入异常
+      }
+      rethrow;
+    }
+    return candidate;
+  }
+
   static Future<String> saveBytesToGallery({
     required String rootPath,
     required Uint8List bytes,
@@ -422,6 +503,39 @@ class ImageSaveUtils {
     String protectedSuffix = '',
     int? maxPathLength,
   }) async {
+    // 胖大叔自用改：有自定义命名规则时走本机规则（日期文件夹可单独关闭、
+    // 序号可取自保存目录的最大编号）；否则用上游的命名模板系统。
+    final customName = BigmanSaveName.read();
+    final Directory dir;
+    final String baseName;
+    if (customName != null) {
+      final time = context.createdAt.toLocal();
+      final useDateFolder = BigmanSaveName.readAutoDateFolder();
+      final month = time.month.toString().padLeft(2, '0');
+      final day = time.day.toString().padLeft(2, '0');
+      final dateFolder = '${time.year}-$month-$day';
+      dir = Directory(useDateFolder ? p.join(rootPath, dateFolder) : rootPath);
+      if (!await dir.exists()) {
+        await dir.create(recursive: true);
+      }
+      final preferredStem = preferredFileName == null
+          ? ''
+          : p
+                .basenameWithoutExtension(p.basename(preferredFileName))
+              .replaceAll(RegExp(r'[<>:"/\\|?*\x00-\x1F]'), '_')
+                .trim();
+      if (preferredStem.isNotEmpty) {
+        baseName = preferredStem;
+      } else {
+        baseName = await _resolveCustomBaseName(
+          customName,
+          rootPath: rootPath,
+          directoryPath: dir.path,
+          seed: context.metadata?.seed,
+          time: time,
+        );
+      }
+    } else {
     final resolved = await resolveNamingContext(
       naming: naming,
       context: context,
@@ -433,16 +547,17 @@ class ImageSaveUtils {
       preferredFileName: preferredFileName,
       protectedSuffix: protectedSuffix,
     );
-    final dir = Directory(p.joinAll([rootPath, ...target.folders]));
+    dir = Directory(p.joinAll([rootPath, ...target.folders]));
     if (!await dir.exists()) {
       await dir.create(recursive: true);
     }
-    final baseName = _fitPathLength(
+    baseName = _fitPathLength(
       dir.path,
       target.stem,
       protectedSuffix: protectedSuffix,
       maxPathLength: maxPathLength ?? _platformMaxPathLength,
     );
+    }
     var candidate = p.join(dir.path, '$baseName.png');
     var suffix = 2;
     File file;
@@ -541,6 +656,44 @@ class ImageSaveUtils {
       math.max(budget, _minStemLength),
       protectedSuffix: protectedSuffix,
     );
+  }
+
+  /// 胖大叔自用改：按用户规则取一个尚未占用的文件名主干。
+  ///
+  /// 序号可以来自本机计数器或保存目录里已用的最大编号；目录里已有同名
+  /// 文件时向后寻找空号，绝不覆盖既有文件。
+  static Future<String> _resolveCustomBaseName(
+    BigmanSaveNameConfig config, {
+    required String rootPath,
+    required String directoryPath,
+    required int? seed,
+    required DateTime time,
+  }) async {
+    if (!config.hasIndex) {
+      return config.formatName(config.start, seed: seed, time: time);
+    }
+    var index = await config.resolveNextIndex(rootPath);
+    // ponytail: 只向后试 1000 个号；正常图库远达不到，纯属防死循环。
+    for (var attempt = 0; attempt < 1000; attempt++) {
+      final name = config.formatName(index, seed: seed, time: time);
+      if (!await File(p.join(directoryPath, '$name.png')).exists()) {
+        await config.commitIndex(index);
+        return name;
+      }
+      index++;
+    }
+    throw FileSystemException(
+      'Cannot find a free file name for the custom save rule.',
+      directoryPath,
+    );
+  }
+
+  static String _galleryFileStem({int? seed, required DateTime time}) {
+    String two(int v) => v.toString().padLeft(2, '0');
+    final seedPart = (seed != null && seed >= 0)
+        ? '$seed'
+        : '${time.millisecondsSinceEpoch}';
+    return '${two(time.hour)}-${two(time.minute)}-${two(time.second)}-$seedPart';
   }
 
   /// 生成结果最终落盘的字节，保存与另存为共用以得到同一份文件。

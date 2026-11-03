@@ -8313,6 +8313,27 @@ class AppLocalizationsJa extends AppLocalizations {
   }
 
   @override
+  String get settings_queuePipelineInterval => 'パイプライン間隔（キューのみ）';
+
+  @override
+  String get settings_queuePipelineIntervalDescription =>
+      'キュー内の画像どうしを少なくともこれだけ空けます（範囲内でランダムに決定）。生成にかかった時間も含まれます。両方 0 で無効。';
+
+  @override
+  String get settings_queuePipelineIntervalMin => '最小秒数';
+
+  @override
+  String get settings_queuePipelineIntervalMax => '最大秒数';
+
+  @override
+  String settings_queuePipelineIntervalValue(Object seconds) {
+    return '$seconds 秒';
+  }
+
+  @override
+  String get settings_queueAutoLoopRounds => 'バッチの繰り返し回数';
+
+  @override
   String settings_queueRetryIntervalValue(Object seconds) {
     return '$seconds 秒';
   }
@@ -15817,4 +15838,193 @@ class AppLocalizationsJa extends AppLocalizations {
 
     return 'メンバーシップ有効期限：$dateString';
   }
+
+  @override
+  String get bigmanMod_settingsTitle => '胖大叔自用改';
+
+  @override
+  String get bigmanMod_promptSectionTitle => 'プロンプト編集';
+
+  @override
+  String get bigmanMod_promptSectionDescription =>
+      '入力欄内のキーボードショートカット。自動整形はツールバーのボタンと同じ設定を共有します。';
+
+  @override
+  String get bigmanMod_promptWeightShortcut => 'Ctrl+↑/↓ タグの重みを調整';
+
+  @override
+  String get bigmanMod_promptWeightShortcutSubtitle =>
+      'カーソル位置または選択中のタグを 0.05 ずつ増減します。1.0 に戻ると重み構文を削除します。範囲は −10〜10 で、負の重みによる抑制も可能です。';
+
+  @override
+  String get bigmanMod_mergeMultiSelectWeight => '複数選択の重みを 1 つのブロックにまとめる';
+
+  @override
+  String get bigmanMod_mergeMultiSelectWeightSubtitle =>
+      'オンにすると、複数選択の重み調整は 0.95::a, b, c:: のような 1 つのブロックになります。オフにすると従来どおりタグごとに個別の重みになります。末尾の 0 の削除と、数字で終わる場合の保護カンマは常に有効です。';
+
+  @override
+  String get bigmanMod_promptMoveShortcut => 'Ctrl+←/→ タグの位置を移動';
+
+  @override
+  String get bigmanMod_promptMoveShortcutSubtitle =>
+      '隣接するタグと入れ替えます。重みグループのタグが 1 つだけの場合はグループごと移動します。';
+
+  @override
+  String get bigmanMod_autoFormat => '自動整形（フォーカスを外した時）';
+
+  @override
+  String get bigmanMod_autoFormatSubtitle =>
+      '入力欄から離れた時に中国語の読点・空白・区切りを整えます。ツールバーのボタンと連動します。';
+
+  @override
+  String get bigmanMod_promptTagFormat => 'タグ形式';
+
+  @override
+  String get bigmanMod_promptTagFormatSubtitle =>
+      '整形時にタグ内部で使う区切り：アンダースコア（long_hair、公式と同じ）または空白（long hair）。';
+
+  @override
+  String get bigmanMod_promptTagFormatUnderscore => 'アンダースコア';
+
+  @override
+  String get bigmanMod_promptTagFormatSpace => '空白';
+
+  @override
+  String get bigmanMod_disableSectionTitle => '機能の停止';
+
+  @override
+  String get bigmanMod_disableSectionDescription =>
+      'オフにしても元のアイコンは残りますが、クリックしても何も起こりません。';
+
+  @override
+  String get bigmanMod_qualityPreset => '品質タグプリセットを有効化';
+
+  @override
+  String get bigmanMod_qualityPresetSubtitle =>
+      'オフにすると公式の品質タグを生成リクエストに追加しません。表示と選択は変わりません。';
+
+  @override
+  String get bigmanMod_ucPreset => '除外したい要素プリセットを有効化';
+
+  @override
+  String get bigmanMod_ucPresetSubtitle => 'オフにするとプリセット内容を追加しません。表示と選択は変わりません。';
+
+  @override
+  String get bigmanMod_randomPrompt => 'ランダムプロンプトツールを有効化';
+
+  @override
+  String get bigmanMod_randomPromptSubtitle =>
+      'オフにするとランダムボタン、Ctrl+R、ランダムモードの切り替えが反応しなくなります。';
+
+  @override
+  String get bigmanMod_saveNameSectionTitle => '保存ファイル名のルール';
+
+  @override
+  String get bigmanMod_saveNameSectionDescription =>
+      'テンプレートを空にすると元の「時刻-シード」命名のままです。';
+
+  @override
+  String get bigmanMod_saveNameTemplate => '名前テンプレート';
+
+  @override
+  String bigmanMod_saveNameTemplateHint(Object n) {
+    return '例：$n または 胖大叔_$n';
+  }
+
+  @override
+  String bigmanMod_saveNameVariables(
+    Object date,
+    Object n,
+    Object seed,
+    Object time,
+  ) {
+    return '使用できる変数：$n 連番 · $seed シード · $date 日付 · $time 時刻';
+  }
+
+  @override
+  String get bigmanMod_saveNameCounterMode => '連番の取得元';
+
+  @override
+  String get bigmanMod_saveNameCounterGlobal => '全体で連続カウント';
+
+  @override
+  String get bigmanMod_saveNameCounterScan => '毎回フォルダを走査して最大値';
+
+  @override
+  String get bigmanMod_saveNameCounterScanHint =>
+      '保存のたびに保存先を走査して最大番号から続けます。削除した番号は再利用されます。';
+
+  @override
+  String get bigmanMod_saveNameCounterGlobalHint =>
+      '端末内のカウンタで日付フォルダをまたいで増え続けます。番号は再利用されません（画像を削除しても）。';
+
+  @override
+  String get bigmanMod_saveNamePadding => 'ゼロ埋め桁数';
+
+  @override
+  String get bigmanMod_saveNamePaddingHint => '0 はゼロ埋めなし';
+
+  @override
+  String get bigmanMod_saveNameStart => '開始番号';
+
+  @override
+  String get bigmanMod_autoDateFolder => '日付フォルダを自動作成';
+
+  @override
+  String get bigmanMod_autoDateFolderSubtitle =>
+      'オフにすると画像は日付のサブフォルダを作らず保存先フォルダに直接保存されます。';
+
+  @override
+  String get bigmanMod_promptInbox => 'DSH プロンプト受信箱';
+
+  @override
+  String get bigmanMod_promptInboxSubtitle =>
+      '共有ファイルを監視し、DSH が書いたプロンプトを入力欄へ自動反映します（ネガティブとキャラクター区画を含む）。コピー＆ペーストが不要になります。';
+
+  @override
+  String get bigmanMod_uiSectionTitle => '画面と履歴';
+
+  @override
+  String get bigmanMod_uiSectionDescription =>
+      '履歴に残す枚数と、カードのホバー時に表示するショートカットボタン。';
+
+  @override
+  String get bigmanMod_historyLimit => '履歴の保持枚数';
+
+  @override
+  String get bigmanMod_historyLimitSubtitle =>
+      '増やすと過去の画像をより多く遡れます。1 枚ごとに元画像をそのまま保存するため、メモリとディスクの使用量も比例して増えます（1 枚あたり約 1.8MB）。';
+
+  @override
+  String get bigmanMod_compactQuickActions => 'クイック編集を簡素化';
+
+  @override
+  String get bigmanMod_compactQuickActionsSubtitle =>
+      'ホバー時に、よく使う編集操作だけを表示します。その他の操作は右クリックメニューに残ります。';
+
+  @override
+  String get drop_importOptions => '取り込みオプション';
+
+  @override
+  String get drop_importPrompt => 'ポジティブプロンプト';
+
+  @override
+  String get drop_importNegativePrompt => 'ネガティブプロンプト';
+
+  @override
+  String get drop_importCharacters => 'キャラクター';
+
+  @override
+  String get drop_importSettings => '生成設定';
+
+  @override
+  String get drop_importSeed => 'シード';
+
+  @override
+  String get drop_img2imgWithPrompts => 'img2img + プロンプト取り込み';
+
+  @override
+  String get drop_img2imgWithPromptsSubtitle =>
+      'img2img の元画像に設定し、ポジティブプロンプトとキャラクターを反映します';
 }

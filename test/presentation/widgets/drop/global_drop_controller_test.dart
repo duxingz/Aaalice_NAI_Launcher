@@ -28,13 +28,18 @@ void main() {
 
     final native = controller.onPerformDrop(_Event());
     expect(readIssued, isTrue);
-    await native;
+    // 本改版：先把原生拖放会话里的数据取完再返回，否则会话结束后读不到；
+    // 但真正的处理要放到事件循环之后，避免在拖放回调里开对话框。
+    await Future<void>.delayed(Duration.zero);
     expect(controller.isProcessing, isTrue);
     expect(processingStarted, isFalse);
 
     acquired.complete([
       DroppedFileData(fileName: 'image.png', bytes: Uint8List(1)),
     ]);
+    await native;
+    expect(processingStarted, isFalse);
+
     await Future<void>.delayed(Duration.zero);
     expect(processingStarted, isTrue);
     expect(controller.isProcessing, isTrue);
@@ -54,9 +59,14 @@ void main() {
     );
     addTearDown(controller.dispose);
 
-    await controller.onPerformDrop(_Event());
-    await Future<void>.delayed(Duration.zero);
+    // 不再向上抛：异常若逃进原生拖放层，只会被 super_drag_and_drop 的
+    // handleError 当成「未处理错误」上报（在 logs/crash_diagnostics 留下转储），
+    // 而原生侧拿到的返回值一样是 null。所以改成就地上报。
 
+    await controller.onPerformDrop(_Event());
+
+    expect(reported, hasLength(1));
+    expect(reported.single.exception, isA<StateError>());
     expect(controller.isProcessing, isFalse);
     expect(reported.single.exception, isA<StateError>());
     expect(reported.single.library, 'GlobalDropController');

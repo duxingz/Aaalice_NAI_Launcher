@@ -1,0 +1,367 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../../../core/constants/storage_keys.dart';
+import '../../../core/storage/local_storage_service.dart';
+import '../../../core/utils/bigman_mod_flags.dart';
+import '../../../core/utils/bigman_save_name.dart';
+
+/// 保存文件名的序号来源。
+enum BigmanSaveNameCounterMode {
+  /// 全局连续计数：本机保存一个计数器，跨日期目录持续递增，删掉的号不回收。
+  global,
+
+  /// 每次保存扫描保存目录里已有的最大编号后 +1；删掉的号会被回收复用。
+  scan,
+}
+
+/// 格式化提示词时的标签内分隔符形式。
+///
+/// 官方行为是「空格 → 下划线」；本改版早期反过来（下划线 → 空格）。
+/// 现在两种都保留，由用户在设置里选，默认下划线（与官方一致）。
+enum BigmanPromptTagFormat {
+  /// 标签内的空格转下划线：`long hair` → `long_hair`。
+  underscore('underscore'),
+
+  /// 标签内的下划线转空格：`long_hair` → `long hair`。
+  space('space');
+
+  const BigmanPromptTagFormat(this.storageValue);
+
+  /// 存进设置里的字符串；读不到时按 [underscore] 处理。
+  final String storageValue;
+
+  static BigmanPromptTagFormat fromStorage(String? value) =>
+      value == space.storageValue ? space : underscore;
+
+  /// 下划线模式走向官方那套「空格转下划线」的转换。
+  bool get convertsSpacesToUnderscores => this == underscore;
+}
+
+/// 胖大叔自用改的全部开关与参数。
+///
+/// 默认值遵循自用改的需求：提示词快捷键默认开启；质量词预设、负面预设与
+/// 随机提示词工具默认关闭；保存命名默认用 {n} 连续编号；日期文件夹默认不新建。
+class BigmanModSettings {
+  const BigmanModSettings({
+    this.promptWeightShortcut = true,
+    this.promptMoveShortcut = true,
+    this.qualityPresetEnabled = false,
+    this.ucPresetEnabled = false,
+    this.randomPromptEnabled = false,
+    this.autoDateFolder = false,
+    this.saveNameTemplate = '{n}',
+    this.saveNameCounterMode = BigmanSaveNameCounterMode.scan,
+    this.saveNamePadding = 0,
+    this.saveNameStart = 1,
+    this.promptInboxEnabled = true,
+    this.mergeMultiSelectWeight = true,
+    this.promptTagFormat = BigmanPromptTagFormat.underscore,
+    this.historyLimit = BigmanModFlags.defaultHistoryLimit,
+    this.compactQuickActions = false,
+  });
+
+  /// Ctrl+↑/↓ 调整光标所在标签的权重。
+  final bool promptWeightShortcut;
+
+  /// Ctrl+←/→ 移动光标所在标签的位置。
+  final bool promptMoveShortcut;
+
+  /// 是否启用质量词预设（关闭时按钮保留但不响应，且生成不再注入）。
+  final bool qualityPresetEnabled;
+
+  /// 是否启用负面提示词预设（关闭时同上）。
+  final bool ucPresetEnabled;
+
+  /// 是否启用随机提示词工具（关闭时按钮保留但不响应，快捷键与抽卡模式同时停用）。
+  final bool randomPromptEnabled;
+
+  /// 是否按日期自动新建子文件夹；关闭时直接保存到目标目录。
+  final bool autoDateFolder;
+
+  /// 保存文件名模板，支持 {n} {seed} {date} {time}；留空表示保持原样。
+  final String saveNameTemplate;
+
+  /// 自定义命名时序号的来源。
+  final BigmanSaveNameCounterMode saveNameCounterMode;
+
+  /// 序号补零位数，0 表示不补零。
+  final int saveNamePadding;
+
+  /// 自定义命名时序号的起始值。
+  final int saveNameStart;
+
+  /// 是否启用「DSH 提示词收件箱」：轮询约定文件，把 DSH 写好的提示词
+  /// 自动填进输入框（省掉手动复制粘贴）。桌面上默认开启。
+  final bool promptInboxEnabled;
+
+  /// 多选调权重时是否把整段合并成**一个权重块**（`0.95::1boy, 1girl, pov::`）。
+  ///
+  /// 默认开启＝新的合并行为；关闭后回到旧行为：选中的每个标签各自套权重
+  /// （`0.95::1boy::, 0.95::1girl::`）。
+  final bool mergeMultiSelectWeight;
+
+  /// 格式化提示词时标签内用什么：默认下划线（空格 → 下划线，与官方一致）。
+  final BigmanPromptTagFormat promptTagFormat;
+
+  /// 生成历史保留张数，可选 [BigmanModFlags.historyLimitOptions] 四档。
+  ///
+  /// 内存列表与 Hive 落盘共用这个值；调大后历史区能往回翻更多张。
+  final int historyLimit;
+
+  /// 精简快捷编辑：卡片悬浮条只留高频编辑操作，右键菜单不受影响。
+  ///
+  /// 默认关闭 —— 关闭时与上游完全一致，开启后才进入精简模式。
+  final bool compactQuickActions;
+
+  /// 塞进生成队列。
+  ///
+
+  /// 空字符串表示用默认目录（与提示词收件箱同目录）。
+
+  bool get hasCustomSaveName => saveNameTemplate.trim().isNotEmpty;
+
+  BigmanModSettings copyWith({
+    bool? promptWeightShortcut,
+    bool? promptMoveShortcut,
+    bool? qualityPresetEnabled,
+    bool? ucPresetEnabled,
+    bool? randomPromptEnabled,
+    bool? autoDateFolder,
+    String? saveNameTemplate,
+    BigmanSaveNameCounterMode? saveNameCounterMode,
+    int? saveNamePadding,
+    int? saveNameStart,
+    bool? promptInboxEnabled,
+    bool? mergeMultiSelectWeight,
+    BigmanPromptTagFormat? promptTagFormat,
+    int? historyLimit,
+    bool? compactQuickActions,
+  }) {
+    return BigmanModSettings(
+      promptWeightShortcut: promptWeightShortcut ?? this.promptWeightShortcut,
+      promptMoveShortcut: promptMoveShortcut ?? this.promptMoveShortcut,
+      qualityPresetEnabled: qualityPresetEnabled ?? this.qualityPresetEnabled,
+      ucPresetEnabled: ucPresetEnabled ?? this.ucPresetEnabled,
+      randomPromptEnabled: randomPromptEnabled ?? this.randomPromptEnabled,
+      autoDateFolder: autoDateFolder ?? this.autoDateFolder,
+      saveNameTemplate: saveNameTemplate ?? this.saveNameTemplate,
+      saveNameCounterMode: saveNameCounterMode ?? this.saveNameCounterMode,
+      saveNamePadding: saveNamePadding ?? this.saveNamePadding,
+      saveNameStart: saveNameStart ?? this.saveNameStart,
+      promptInboxEnabled: promptInboxEnabled ?? this.promptInboxEnabled,
+      mergeMultiSelectWeight:
+          mergeMultiSelectWeight ?? this.mergeMultiSelectWeight,
+      promptTagFormat: promptTagFormat ?? this.promptTagFormat,
+      historyLimit: historyLimit ?? this.historyLimit,
+      compactQuickActions: compactQuickActions ?? this.compactQuickActions,
+    );
+  }
+}
+
+class BigmanModSettingsNotifier extends StateNotifier<BigmanModSettings> {
+  BigmanModSettingsNotifier(this._storage) : super(_load(_storage));
+
+  final LocalStorageService _storage;
+
+  static bool _readBool(
+    LocalStorageService storage,
+    String key,
+    bool fallback,
+  ) => storage.getSetting<bool>(key, defaultValue: fallback) ?? fallback;
+
+  static int _readInt(LocalStorageService storage, String key, int fallback) =>
+      storage.getSetting<int>(key, defaultValue: fallback) ?? fallback;
+
+  static BigmanModSettings _load(LocalStorageService storage) {
+    return BigmanModSettings(
+      promptWeightShortcut: _readBool(
+        storage,
+        StorageKeys.bigmanPromptWeightShortcut,
+        true,
+      ),
+      promptMoveShortcut: _readBool(
+        storage,
+        StorageKeys.bigmanPromptMoveShortcut,
+        true,
+      ),
+      qualityPresetEnabled: _readBool(
+        storage,
+        StorageKeys.bigmanQualityPresetEnabled,
+        false,
+      ),
+      ucPresetEnabled: _readBool(
+        storage,
+        StorageKeys.bigmanUcPresetEnabled,
+        false,
+      ),
+      randomPromptEnabled: _readBool(
+        storage,
+        StorageKeys.bigmanRandomPromptEnabled,
+        false,
+      ),
+      autoDateFolder: _readBool(
+        storage,
+        StorageKeys.bigmanAutoDateFolder,
+        false,
+      ),
+      saveNameTemplate:
+          storage.getSetting<String>(StorageKeys.bigmanSaveNameTemplate) ??
+          '{n}',
+      // 默认扫描模式：读不到设置（老用户首次升级）时也按扫描走，
+      // 与 BigmanSaveName.read() 用同一套常量与默认值。
+      saveNameCounterMode:
+          _readInt(
+                storage,
+                StorageKeys.bigmanSaveNameCounterMode,
+                BigmanSaveName.defaultCounterMode,
+              ) ==
+              BigmanSaveName.scanCounterMode
+          ? BigmanSaveNameCounterMode.scan
+          : BigmanSaveNameCounterMode.global,
+      saveNamePadding: _readInt(storage, StorageKeys.bigmanSaveNamePadding, 0),
+      saveNameStart: _readInt(storage, StorageKeys.bigmanSaveNameStart, 1),
+      promptInboxEnabled: _readBool(
+        storage,
+        StorageKeys.bigmanPromptInboxEnabled,
+        true,
+      ),
+      mergeMultiSelectWeight: _readBool(
+        storage,
+        StorageKeys.bigmanMergeMultiSelectWeight,
+        true,
+      ),
+      // 默认下划线（空格 → 下划线），与官方格式化一致。
+      promptTagFormat: BigmanPromptTagFormat.fromStorage(
+        storage.getSetting<String>(StorageKeys.bigmanPromptTagFormat),
+      ),
+      historyLimit: _readHistoryLimit(storage),
+      compactQuickActions: _readBool(
+        storage,
+        StorageKeys.bigmanCompactQuickActions,
+        false,
+      ),
+    );
+  }
+
+  /// 历史档位只认白名单；手改过存储或写入非法值时回落到默认档。
+  static int _readHistoryLimit(LocalStorageService storage) {
+    final value = _readInt(
+      storage,
+      StorageKeys.bigmanHistoryLimit,
+      BigmanModFlags.defaultHistoryLimit,
+    );
+    return BigmanModFlags.historyLimitOptions.contains(value)
+        ? value
+        : BigmanModFlags.defaultHistoryLimit;
+  }
+
+  Future<void> _write(BigmanModSettings next, Map<String, Object?> values) async {
+    state = next;
+    await _storage.setSettings(values);
+  }
+
+  Future<void> setPromptWeightShortcut(bool value) => _write(
+    state.copyWith(promptWeightShortcut: value),
+    {StorageKeys.bigmanPromptWeightShortcut: value},
+  );
+
+  Future<void> setPromptMoveShortcut(bool value) => _write(
+    state.copyWith(promptMoveShortcut: value),
+    {StorageKeys.bigmanPromptMoveShortcut: value},
+  );
+
+  Future<void> setQualityPresetEnabled(bool value) => _write(
+    state.copyWith(qualityPresetEnabled: value),
+    {StorageKeys.bigmanQualityPresetEnabled: value},
+  );
+
+  Future<void> setUcPresetEnabled(bool value) => _write(
+    state.copyWith(ucPresetEnabled: value),
+    {StorageKeys.bigmanUcPresetEnabled: value},
+  );
+
+  Future<void> setRandomPromptEnabled(bool value) => _write(
+    state.copyWith(randomPromptEnabled: value),
+    {StorageKeys.bigmanRandomPromptEnabled: value},
+  );
+
+  Future<void> setAutoDateFolder(bool value) => _write(
+    state.copyWith(autoDateFolder: value),
+    {StorageKeys.bigmanAutoDateFolder: value},
+  );
+
+  Future<void> setSaveNameTemplate(String value) => _write(
+    state.copyWith(saveNameTemplate: value),
+    {StorageKeys.bigmanSaveNameTemplate: value},
+  );
+
+  Future<void> setSaveNameCounterMode(BigmanSaveNameCounterMode value) => _write(
+    state.copyWith(saveNameCounterMode: value),
+    {
+      StorageKeys.bigmanSaveNameCounterMode:
+          value == BigmanSaveNameCounterMode.scan
+          ? BigmanSaveName.scanCounterMode
+          : BigmanSaveName.globalCounterMode,
+    },
+  );
+
+  Future<void> setSaveNamePadding(int value) => _write(
+    state.copyWith(saveNamePadding: value.clamp(0, 8)),
+    {StorageKeys.bigmanSaveNamePadding: value.clamp(0, 8)},
+  );
+
+  Future<void> setSaveNameStart(int value) => _write(
+    state.copyWith(saveNameStart: value < 0 ? 0 : value),
+    {StorageKeys.bigmanSaveNameStart: value < 0 ? 0 : value},
+  );
+
+  /// 开关「DSH 提示词收件箱」。
+  Future<void> setPromptInboxEnabled(bool value) => _write(
+    state.copyWith(promptInboxEnabled: value),
+    {StorageKeys.bigmanPromptInboxEnabled: value},
+  );
+
+  /// 开关「多选调权重合并成一个块」。
+  Future<void> setMergeMultiSelectWeight(bool value) => _write(
+    state.copyWith(mergeMultiSelectWeight: value),
+    {StorageKeys.bigmanMergeMultiSelectWeight: value},
+  );
+
+  /// 切换标签格式（空格 / 下划线）。
+  Future<void> setPromptTagFormat(BigmanPromptTagFormat value) => _write(
+    state.copyWith(promptTagFormat: value),
+    {StorageKeys.bigmanPromptTagFormat: value.storageValue},
+  );
+
+  /// 设置生成历史保留张数；只接受 [BigmanModFlags.historyLimitOptions] 里的档位。
+  Future<void> setHistoryLimit(int value) {
+    final resolved = BigmanModFlags.historyLimitOptions.contains(value)
+        ? value
+        : BigmanModFlags.defaultHistoryLimit;
+    return _write(
+      state.copyWith(historyLimit: resolved),
+      {StorageKeys.bigmanHistoryLimit: resolved},
+    );
+  }
+
+  /// 开关「精简快捷编辑」。
+  Future<void> setCompactQuickActions(bool value) => _write(
+    state.copyWith(compactQuickActions: value),
+    {StorageKeys.bigmanCompactQuickActions: value},
+  );
+
+
+
+  /// 读取当前自定义命名的计数值；未初始化时返回 [BigmanModSettings.saveNameStart]。
+  int readCounter() =>
+      _storage.getSetting<int>(StorageKeys.bigmanSaveNameCounterValue) ??
+      state.saveNameStart;
+
+  Future<void> writeCounter(int value) =>
+      _storage.setSetting(StorageKeys.bigmanSaveNameCounterValue, value);
+}
+
+final bigmanModSettingsProvider =
+    StateNotifierProvider<BigmanModSettingsNotifier, BigmanModSettings>((ref) {
+      return BigmanModSettingsNotifier(ref.read(localStorageServiceProvider));
+    });

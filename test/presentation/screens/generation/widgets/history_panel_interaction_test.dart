@@ -523,6 +523,44 @@ void main() {
       expect(checkbox.right, lessThanOrEqualTo(copy.left));
       final cardRect = tester.getRect(card);
       expect(favorite.right, lessThanOrEqualTo(cardRect.right));
+      // 整条轨道必须留在卡片里：只给 right 的 Positioned 不给宽度约束，
+      // 轨道的宽度自适应会失效、一路画到卡片外被 Stack 裁掉。
+      final rail = tester.getRect(
+        find.byKey(const ValueKey('image-card-corner-action-rail')),
+      );
+      expect(rail.left, greaterThanOrEqualTo(cardRect.left));
+      expect(rail.right, lessThanOrEqualTo(cardRect.right));
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('wide cards pin save and img2img as well, all left of favorite', (
+      tester,
+    ) async {
+      final container = _createContainer([_image('wide')]);
+      addTearDown(container.dispose);
+      // 320 宽放得下四个固定动作 + 常驻收藏（总共约需要 280）。
+      await tester.pumpWidget(_cardActionApp(container, width: 320));
+      await tester.pump();
+
+      final card = find.byKey(const ValueKey('wide'));
+      final gesture = await _hover(tester, card);
+      addTearDown(gesture.removePointer);
+
+      final save = tester.getRect(_cardAction(card, '保存'));
+      final img2img = tester.getRect(_cardAction(card, '图生图'));
+      final copy = tester.getRect(_cardAction(card, '复制'));
+      final delete = tester.getRect(_cardAction(card, '删除'));
+      final favorite = tester.getRect(_cardAction(card, '收藏'));
+
+      // 顺序：复制 · 保存 · 图生图 · 删除 · 收藏（收藏固定在最右）。
+      expect(copy.right, lessThanOrEqualTo(save.left));
+      expect(save.right, lessThanOrEqualTo(img2img.left));
+      expect(img2img.right, lessThanOrEqualTo(delete.left));
+      expect(delete.right, lessThanOrEqualTo(favorite.left));
+
+      final cardRect = tester.getRect(card);
+      expect(copy.left, greaterThanOrEqualTo(cardRect.left));
+      expect(favorite.right, lessThanOrEqualTo(cardRect.right));
       expect(tester.takeException(), isNull);
     });
 

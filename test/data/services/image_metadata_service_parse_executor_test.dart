@@ -64,27 +64,27 @@ void main() {
     test('getMetadataFromBytes', () async {
       final bytes = await novelAiPngBytes('embedded bytes');
       when(
-        () => executor.parseBytes(any()),
+        () => executor.parseBytes(any(), timeout: any(named: 'timeout')),
       ).thenAnswer((_) async => _parsed('from executor'));
 
       final metadata = await service.getMetadataFromBytes(bytes);
 
       expect(metadata?.prompt, 'from executor');
-      verify(() => executor.parseBytes(bytes)).called(1);
+      verify(() => executor.parseBytes(bytes, timeout: any(named: 'timeout'))).called(1);
       verifyNever(() => executor.parseFile(any()));
     });
 
     test('getMetadataParseResultFromBytes', () async {
       final bytes = await novelAiPngBytes('embedded parse result');
       when(
-        () => executor.parseBytes(any()),
+        () => executor.parseBytes(any(), timeout: any(named: 'timeout')),
       ).thenAnswer((_) async => _parsed('from executor'));
 
       final result = await service.getMetadataParseResultFromBytes(bytes);
 
       expect(result.success, isTrue);
       expect(result.metadata?.prompt, 'from executor');
-      verify(() => executor.parseBytes(bytes)).called(1);
+      verify(() => executor.parseBytes(bytes, timeout: any(named: 'timeout'))).called(1);
       verifyNever(() => executor.parseFile(any()));
     });
   });

@@ -85,7 +85,7 @@ class VibeImageEmbedder {
       return await ComputeGate().runCompute(
         _embedVibesIsolate,
         params,
-        timeLimit: _embedTimeout,
+        timeout: _embedTimeout,
       );
     } on TimeoutException {
       AppLogger.w(
@@ -331,7 +331,7 @@ class VibeImageEmbedder {
       final result = await ComputeGate().runCompute(
         _extractVibesFromImageIsolate,
         imageBytes,
-        timeLimit: _extractTimeout,
+        timeout: _extractTimeout,
       );
 
       final vibes = result.vibesData.map(_vibeDataToReference).toList();

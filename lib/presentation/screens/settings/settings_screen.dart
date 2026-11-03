@@ -19,6 +19,7 @@ import 'sections/shortcut_settings_section.dart';
 import 'sections/integrations_settings_section.dart';
 import 'sections/about_settings_section.dart';
 import 'sections/agent_settings_section.dart';
+import 'sections/bigman_mod_settings_section.dart';
 import '../../agent_settings/providers/agent_prompt_draft_provider.dart';
 import 'settings_section.dart';
 
@@ -169,6 +170,13 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         widget: IntegrationsSettingsSection(
           initiallyShowDlss: widget.initiallyShowDlss,
         ),
+      ),
+      _SettingsSection(
+        id: SettingsSection.bigmanMod,
+        icon: Icons.construction_outlined,
+        selectedIcon: Icons.construction,
+        label: context.l10n.bigmanMod_settingsTitle,
+        widget: const BigmanModSettingsSection(),
       ),
       _SettingsSection(
         id: SettingsSection.about,

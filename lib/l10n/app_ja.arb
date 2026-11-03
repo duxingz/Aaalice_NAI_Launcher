@@ -3900,6 +3900,17 @@
       "count": {}
     }
   },
+  "settings_queuePipelineInterval": "パイプライン間隔（キューのみ）",
+  "settings_queuePipelineIntervalDescription": "キュー内の画像どうしを少なくともこれだけ空けます（範囲内でランダムに決定）。生成にかかった時間も含まれます。両方 0 で無効。",
+  "settings_queuePipelineIntervalMin": "最小秒数",
+  "settings_queuePipelineIntervalMax": "最大秒数",
+  "settings_queuePipelineIntervalValue": "{seconds} 秒",
+  "settings_queueAutoLoopRounds": "バッチの繰り返し回数",
+  "@settings_queuePipelineIntervalValue": {
+    "placeholders": {
+      "seconds": {}
+    }
+  },
   "settings_queueRetryIntervalValue": "{seconds} 秒",
   "@settings_queueRetryIntervalValue": {
     "placeholders": {
@@ -7453,5 +7464,59 @@
         "format": "yMMMd"
       }
     }
-  }
+  },
+  "bigmanMod_settingsTitle": "胖大叔自用改",
+  "bigmanMod_promptSectionTitle": "プロンプト編集",
+  "bigmanMod_promptSectionDescription": "入力欄内のキーボードショートカット。自動整形はツールバーのボタンと同じ設定を共有します。",
+  "bigmanMod_promptWeightShortcut": "Ctrl+↑/↓ タグの重みを調整",
+  "bigmanMod_promptWeightShortcutSubtitle": "カーソル位置または選択中のタグを 0.05 ずつ増減します。1.0 に戻ると重み構文を削除します。範囲は −10〜10 で、負の重みによる抑制も可能です。",
+  "bigmanMod_mergeMultiSelectWeight": "複数選択の重みを 1 つのブロックにまとめる",
+  "bigmanMod_mergeMultiSelectWeightSubtitle": "オンにすると、複数選択の重み調整は 0.95::a, b, c:: のような 1 つのブロックになります。オフにすると従来どおりタグごとに個別の重みになります。末尾の 0 の削除と、数字で終わる場合の保護カンマは常に有効です。",
+  "bigmanMod_promptMoveShortcut": "Ctrl+←/→ タグの位置を移動",
+  "bigmanMod_promptMoveShortcutSubtitle": "隣接するタグと入れ替えます。重みグループのタグが 1 つだけの場合はグループごと移動します。",
+  "bigmanMod_autoFormat": "自動整形（フォーカスを外した時）",
+  "bigmanMod_autoFormatSubtitle": "入力欄から離れた時に中国語の読点・空白・区切りを整えます。ツールバーのボタンと連動します。",
+  "bigmanMod_promptTagFormat": "タグ形式",
+  "bigmanMod_promptTagFormatSubtitle": "整形時にタグ内部で使う区切り：アンダースコア（long_hair、公式と同じ）または空白（long hair）。",
+  "bigmanMod_promptTagFormatUnderscore": "アンダースコア",
+  "bigmanMod_promptTagFormatSpace": "空白",
+  "bigmanMod_disableSectionTitle": "機能の停止",
+  "bigmanMod_disableSectionDescription": "オフにしても元のアイコンは残りますが、クリックしても何も起こりません。",
+  "bigmanMod_qualityPreset": "品質タグプリセットを有効化",
+  "bigmanMod_qualityPresetSubtitle": "オフにすると公式の品質タグを生成リクエストに追加しません。表示と選択は変わりません。",
+  "bigmanMod_ucPreset": "除外したい要素プリセットを有効化",
+  "bigmanMod_ucPresetSubtitle": "オフにするとプリセット内容を追加しません。表示と選択は変わりません。",
+  "bigmanMod_randomPrompt": "ランダムプロンプトツールを有効化",
+  "bigmanMod_randomPromptSubtitle": "オフにするとランダムボタン、Ctrl+R、ランダムモードの切り替えが反応しなくなります。",
+  "bigmanMod_saveNameSectionTitle": "保存ファイル名のルール",
+  "bigmanMod_saveNameSectionDescription": "テンプレートを空にすると元の「時刻-シード」命名のままです。",
+  "bigmanMod_saveNameTemplate": "名前テンプレート",
+  "bigmanMod_saveNameTemplateHint": "例：{n} または 胖大叔_{n}",
+  "bigmanMod_saveNameVariables": "使用できる変数：{n} 連番 · {seed} シード · {date} 日付 · {time} 時刻",
+  "bigmanMod_saveNameCounterMode": "連番の取得元",
+  "bigmanMod_saveNameCounterGlobal": "全体で連続カウント",
+  "bigmanMod_saveNameCounterScan": "毎回フォルダを走査して最大値",
+  "bigmanMod_saveNameCounterScanHint": "保存のたびに保存先を走査して最大番号から続けます。削除した番号は再利用されます。",
+  "bigmanMod_saveNameCounterGlobalHint": "端末内のカウンタで日付フォルダをまたいで増え続けます。番号は再利用されません（画像を削除しても）。",
+  "bigmanMod_saveNamePadding": "ゼロ埋め桁数",
+  "bigmanMod_saveNamePaddingHint": "0 はゼロ埋めなし",
+  "bigmanMod_saveNameStart": "開始番号",
+  "bigmanMod_autoDateFolder": "日付フォルダを自動作成",
+  "bigmanMod_autoDateFolderSubtitle": "オフにすると画像は日付のサブフォルダを作らず保存先フォルダに直接保存されます。",
+  "bigmanMod_promptInbox": "DSH プロンプト受信箱",
+  "bigmanMod_promptInboxSubtitle": "共有ファイルを監視し、DSH が書いたプロンプトを入力欄へ自動反映します（ネガティブとキャラクター区画を含む）。コピー＆ペーストが不要になります。",
+  "bigmanMod_uiSectionTitle": "画面と履歴",
+  "bigmanMod_uiSectionDescription": "履歴に残す枚数と、カードのホバー時に表示するショートカットボタン。",
+  "bigmanMod_historyLimit": "履歴の保持枚数",
+  "bigmanMod_historyLimitSubtitle": "増やすと過去の画像をより多く遡れます。1 枚ごとに元画像をそのまま保存するため、メモリとディスクの使用量も比例して増えます（1 枚あたり約 1.8MB）。",
+  "bigmanMod_compactQuickActions": "クイック編集を簡素化",
+  "bigmanMod_compactQuickActionsSubtitle": "ホバー時に、よく使う編集操作だけを表示します。その他の操作は右クリックメニューに残ります。",
+  "drop_importOptions": "取り込みオプション",
+  "drop_importPrompt": "ポジティブプロンプト",
+  "drop_importNegativePrompt": "ネガティブプロンプト",
+  "drop_importCharacters": "キャラクター",
+  "drop_importSettings": "生成設定",
+  "drop_importSeed": "シード",
+  "drop_img2imgWithPrompts": "img2img + プロンプト取り込み",
+  "drop_img2imgWithPromptsSubtitle": "img2img の元画像に設定し、ポジティブプロンプトとキャラクターを反映します"
 }

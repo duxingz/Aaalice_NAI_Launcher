@@ -159,7 +159,7 @@ class VibeFileParser {
           bytes: bytes,
           defaultStrength: defaultStrength,
         ),
-        timeLimit: _parseTimeout,
+        timeout: _parseTimeout,
       );
       return result;
     } on TimeoutException {
@@ -212,7 +212,7 @@ class VibeFileParser {
           bytes: bytes,
           defaultStrength: defaultStrength,
         ),
-        timeLimit: _parseTimeout,
+        timeout: _parseTimeout,
       );
       return result;
     } catch (e, stack) {

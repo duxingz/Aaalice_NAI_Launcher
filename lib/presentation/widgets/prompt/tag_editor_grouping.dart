@@ -96,11 +96,9 @@ class PromptSelectionGrouping {
     String content,
     bool separate,
   ) => span.suffix.trimLeft() == NumericWeightClosing.plain
-      ? NumericWeightClosing.closingFor(
-          content,
-          separate: separate,
-          original: span.raw,
-        )
+      ? (separate && RegExp(r'\d\s*$').hasMatch(content)
+          ? ', ::'
+          : NumericWeightClosing.plain)
       : span.suffix;
 
   PromptGroupFragment wrap(String prefix, String suffix) =>

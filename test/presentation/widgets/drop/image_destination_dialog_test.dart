@@ -91,7 +91,7 @@ void main() {
   testWidgets('shows reverse prompt before image-to-image destination', (
     tester,
   ) async {
-    ImageDestination? selected;
+    ImageDestinationSelection? selected;
 
     await tester.pumpWidget(
       ProviderScope(
@@ -151,7 +151,7 @@ void main() {
     await tester.tap(reversePromptFinder);
     await tester.pumpAndSettle();
 
-    expect(selected.toString(), equals('ImageDestination.reversePrompt'));
+    expect(selected?.destination, ImageDestination.reversePrompt);
   });
 
   testWidgets('shows exact positive and negative prompt text from metadata', (
@@ -528,7 +528,7 @@ void main() {
   testWidgets('metadata adaptive form preserves destination result', (
     tester,
   ) async {
-    ImageDestination? selected;
+    ImageDestinationSelection? selected;
     await _openMetadataDialog(
       tester,
       metadata: const NaiImageMetadata(prompt: 'masterpiece'),
@@ -540,7 +540,7 @@ void main() {
     await tester.tap(extract);
     await tester.pumpAndSettle();
 
-    expect(selected, ImageDestination.extractMetadata);
+    expect(selected?.destination, ImageDestination.extractMetadata);
     expect(find.byType(ImageDestinationDialog), findsNothing);
   });
 
@@ -614,7 +614,7 @@ Future<void> _openMetadataDialog(
   double textScale = 1,
   double keyboardHeight = 0,
   EdgeInsets padding = EdgeInsets.zero,
-  ValueChanged<ImageDestination?>? onResult,
+  ValueChanged<ImageDestinationSelection?>? onResult,
   ThemeData? theme,
 }) async {
   await tester.pumpWidget(

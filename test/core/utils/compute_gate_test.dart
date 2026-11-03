@@ -52,7 +52,7 @@ void main() {
       expect(name, 'compute-gate-probe');
     });
 
-    test('a time limit starts once the permit is granted', () {
+    test('a time limit covers queueing as well as execution', () {
       fakeAsync((async) {
         final gate = ComputeGate.forTesting(maxConcurrentTasks: 1);
         final holder = Completer<void>();
@@ -60,22 +60,22 @@ void main() {
         final task = Completer<int>();
         Object? outcome;
         gate
-            .run(() => task.future, timeLimit: const Duration(seconds: 1))
+            .run(() => task.future, timeout: const Duration(seconds: 1))
             .then<void>(
               (value) => outcome = value,
               onError: (Object e) => outcome = e,
             );
 
+        // 本改版：排队时间计入预算 —— 名额被长期占住时先超时，
+        // 而不是无限等下去把整个闸门毒死。
         async.elapse(const Duration(seconds: 5));
-        expect(outcome, isNull);
-        expect(gate.debugQueuedTasks, 1);
-        holder.complete();
-        async.elapse(const Duration(milliseconds: 999));
-        expect(outcome, isNull);
+        expect(outcome, isA<ComputeGateTimeout>());
+        expect(gate.debugQueuedTasks, 0);
 
+        holder.complete();
         task.complete(7);
         async.flushMicrotasks();
-        expect(outcome, 7);
+        expect(outcome, isA<ComputeGateTimeout>());
       });
     });
 
@@ -85,14 +85,14 @@ void main() {
         final stuck = Completer<void>();
         Object? error;
         gate
-            .run(() => stuck.future, timeLimit: const Duration(seconds: 1))
+            .run(() => stuck.future, timeout: const Duration(seconds: 1))
             .catchError((Object e) => error = e);
         var next = false;
         gate.run(() => next = true);
 
         async.elapse(const Duration(seconds: 1));
 
-        expect(error, isA<TimeoutException>());
+        expect(error, isA<ComputeGateTimeout>());
         expect(next, isTrue);
         stuck.complete();
       });
@@ -104,12 +104,12 @@ void main() {
       Object? error;
       fakeAsync((async) {
         gate
-            .runCompute(_echo, 7, timeLimit: const Duration(seconds: 1))
+            .runCompute(_echo, 7, timeout: const Duration(seconds: 1))
             .then<void>((_) {}, onError: (Object e) => error = e);
         // isolate 回包是真实事件，假时钟推进期间到不了，时限必然先到期
         async.elapse(const Duration(seconds: 1));
       });
-      expect(error, isA<TimeoutException>());
+      expect(error, isA<ComputeGateTimeout>());
       expect(await gate.runCompute(_echo, 8), 8);
     });
 

@@ -8524,6 +8524,27 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get settings_queuePipelineInterval => 'Pipeline interval (queue only)';
+
+  @override
+  String get settings_queuePipelineIntervalDescription =>
+      'Keeps at least this long between images in the queue, picked randomly inside the range. Generation time counts toward it; set both to 0 to disable.';
+
+  @override
+  String get settings_queuePipelineIntervalMin => 'Minimum seconds';
+
+  @override
+  String get settings_queuePipelineIntervalMax => 'Maximum seconds';
+
+  @override
+  String settings_queuePipelineIntervalValue(Object seconds) {
+    return '$seconds seconds';
+  }
+
+  @override
+  String get settings_queueAutoLoopRounds => 'Batch loop rounds';
+
+  @override
   String settings_queueRetryIntervalValue(Object seconds) {
     return '$seconds seconds';
   }
@@ -16256,4 +16277,196 @@ class AppLocalizationsEn extends AppLocalizations {
 
     return 'Subscription expiry: $dateString';
   }
+
+  @override
+  String get bigmanMod_settingsTitle => '胖大叔自用改';
+
+  @override
+  String get bigmanMod_promptSectionTitle => 'Prompt editing';
+
+  @override
+  String get bigmanMod_promptSectionDescription =>
+      'Keyboard shortcuts inside the prompt box. Auto-format shares its switch with the toolbar button.';
+
+  @override
+  String get bigmanMod_promptWeightShortcut => 'Ctrl+↑/↓ adjust tag weight';
+
+  @override
+  String get bigmanMod_promptWeightShortcutSubtitle =>
+      'Adds or removes 0.05 on the tag at the caret or in the selection. Dropping to 1.0 removes the weight syntax. Range -10 to 10, so weights can go negative for suppression.';
+
+  @override
+  String get bigmanMod_mergeMultiSelectWeight =>
+      'Merge a multi-selection into one weight block';
+
+  @override
+  String get bigmanMod_mergeMultiSelectWeightSubtitle =>
+      'When on, adjusting a multi-selection writes a single block such as 0.95::a, b, c::. When off, the previous behaviour is kept and every tag gets its own weight. Dropping trailing zeros and adding the guard comma after a trailing digit always apply.';
+
+  @override
+  String get bigmanMod_promptMoveShortcut => 'Ctrl+←/→ move tag position';
+
+  @override
+  String get bigmanMod_promptMoveShortcutSubtitle =>
+      'Swaps with the neighbouring tag. A weight group holding a single tag moves as a whole.';
+
+  @override
+  String get bigmanMod_autoFormat => 'Auto-format on blur';
+
+  @override
+  String get bigmanMod_autoFormatSubtitle =>
+      'Tidies Chinese commas, spaces and separators when the field loses focus. Linked with the toolbar button.';
+
+  @override
+  String get bigmanMod_promptTagFormat => 'Tag format';
+
+  @override
+  String get bigmanMod_promptTagFormatSubtitle =>
+      'Separator used inside a tag when formatting: underscore (long_hair, same as upstream) or space (long hair).';
+
+  @override
+  String get bigmanMod_promptTagFormatUnderscore => 'Underscore';
+
+  @override
+  String get bigmanMod_promptTagFormatSpace => 'Space';
+
+  @override
+  String get bigmanMod_disableSectionTitle => 'Disabled features';
+
+  @override
+  String get bigmanMod_disableSectionDescription =>
+      'Turning a feature off keeps its icon visible, but clicking it no longer does anything.';
+
+  @override
+  String get bigmanMod_qualityPreset => 'Enable quality tag preset';
+
+  @override
+  String get bigmanMod_qualityPresetSubtitle =>
+      'When off, official quality tags are no longer injected into requests. The display keeps its current selection.';
+
+  @override
+  String get bigmanMod_ucPreset => 'Enable undesired content preset';
+
+  @override
+  String get bigmanMod_ucPresetSubtitle =>
+      'When off, the preset content is no longer injected. The display keeps its current selection.';
+
+  @override
+  String get bigmanMod_randomPrompt => 'Enable random prompt tools';
+
+  @override
+  String get bigmanMod_randomPromptSubtitle =>
+      'When off, the random button, the Ctrl+R shortcut and the random-mode toggle stop responding.';
+
+  @override
+  String get bigmanMod_saveNameSectionTitle => 'Saved file name rule';
+
+  @override
+  String get bigmanMod_saveNameSectionDescription =>
+      'Leave the template empty to keep the original time-seed naming.';
+
+  @override
+  String get bigmanMod_saveNameTemplate => 'Name template';
+
+  @override
+  String bigmanMod_saveNameTemplateHint(Object n) {
+    return 'For example $n or Bigman_$n';
+  }
+
+  @override
+  String bigmanMod_saveNameVariables(
+    Object date,
+    Object n,
+    Object seed,
+    Object time,
+  ) {
+    return 'Variables: $n index · $seed seed · $date date · $time time';
+  }
+
+  @override
+  String get bigmanMod_saveNameCounterMode => 'Index source';
+
+  @override
+  String get bigmanMod_saveNameCounterGlobal => 'Global counter';
+
+  @override
+  String get bigmanMod_saveNameCounterScan =>
+      'Scan folder for the highest index';
+
+  @override
+  String get bigmanMod_saveNameCounterScanHint =>
+      'Scans the save folder on every save and continues from the highest index; numbers of deleted images are reused.';
+
+  @override
+  String get bigmanMod_saveNameCounterGlobalHint =>
+      'A local counter that keeps increasing across date folders; numbers are never reused, not even after deleting an image.';
+
+  @override
+  String get bigmanMod_saveNamePadding => 'Zero padding';
+
+  @override
+  String get bigmanMod_saveNamePaddingHint => '0 means no padding';
+
+  @override
+  String get bigmanMod_saveNameStart => 'Start index';
+
+  @override
+  String get bigmanMod_autoDateFolder => 'Auto-create date folder';
+
+  @override
+  String get bigmanMod_autoDateFolderSubtitle =>
+      'When off, images are saved directly in the target folder without a per-day subfolder.';
+
+  @override
+  String get bigmanMod_promptInbox => 'DSH prompt inbox';
+
+  @override
+  String get bigmanMod_promptInboxSubtitle =>
+      'Watches an agreed file and fills prompts written by DSH into the input box (including negative prompt and character sections), so you can skip copy-paste.';
+
+  @override
+  String get bigmanMod_uiSectionTitle => 'Interface and history';
+
+  @override
+  String get bigmanMod_uiSectionDescription =>
+      'How many images the history keeps, and which quick buttons appear when hovering a card.';
+
+  @override
+  String get bigmanMod_historyLimit => 'History limit';
+
+  @override
+  String get bigmanMod_historyLimitSubtitle =>
+      'A larger value lets you scroll further back. Every entry keeps a full-resolution copy, so memory and disk use grow with it (about 1.8 MB each).';
+
+  @override
+  String get bigmanMod_compactQuickActions => 'Compact quick edit';
+
+  @override
+  String get bigmanMod_compactQuickActionsSubtitle =>
+      'On hover, show only the common editing actions: save, copy, edit image, inpaint, enhance, image to image, generate variations, director tools, upscale. All other actions remain in the right-click menu.';
+
+  @override
+  String get drop_importOptions => 'Import options';
+
+  @override
+  String get drop_importPrompt => 'Positive prompt';
+
+  @override
+  String get drop_importNegativePrompt => 'Negative prompt';
+
+  @override
+  String get drop_importCharacters => 'Character prompts';
+
+  @override
+  String get drop_importSettings => 'Generation settings';
+
+  @override
+  String get drop_importSeed => 'Seed';
+
+  @override
+  String get drop_img2imgWithPrompts => 'Img2img + prompts';
+
+  @override
+  String get drop_img2imgWithPromptsSubtitle =>
+      'Use as the img2img source and import the positive prompt and character prompts';
 }
